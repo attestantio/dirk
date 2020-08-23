@@ -54,15 +54,6 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		log = log.Level(parameters.logLevel)
 	}
 
-	// Set up certificates
-	//	clientCertFile := filepath.Join(parameters.certPath, fmt.Sprintf("%s.crt", parameters.name))
-	//	clientKeyFile := filepath.Join(parameters.certPath, fmt.Sprintf("%s.key", parameters.name))
-	//	// CA cert file is optional.
-	//	caCertFile := filepath.Join(parameters.certPath, "ca.crt")
-	//	if _, err := os.Stat(caCertFile); os.IsNotExist(err) {
-	//		log.Debug().Msg("No ca.crt at certificate path")
-	//		caCertFile = ""
-	//	}
 	credentials, err := composeCredentials(ctx, parameters.serverCert, parameters.serverKey, parameters.caCert)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to compose client credentials")
