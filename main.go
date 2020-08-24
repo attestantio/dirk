@@ -523,14 +523,16 @@ func startMonitor(ctx context.Context) (metrics.Service, error) {
 	log.Trace().Msg("Starting metrics service")
 	var monitor metrics.Service
 	var err error
-	if viper.GetString("metrics.listen-address") != "" {
-		monitor, err = prometheusmetrics.New(ctx,
-			prometheusmetrics.WithLogLevel(logLevel(viper.GetString("log-levels.metrics"))),
-			prometheusmetrics.WithAddress(viper.GetString("metrics.listen-address")),
-		)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to start metrics service")
-		}
+	if viper.GetString("metrics.listen-address") == "" {
+		log.Debug().Msg("No metrics listen address supplied; monitor not starting")
+		return nil, nil
+	}
+	monitor, err = prometheusmetrics.New(ctx,
+		prometheusmetrics.WithLogLevel(logLevel(viper.GetString("log-levels.metrics"))),
+		prometheusmetrics.WithAddress(viper.GetString("metrics.listen-address")),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to start metrics service")
 	}
 	return monitor, nil
 }
