@@ -4,8 +4,8 @@ Dirk provides a number of metrics to check the health and performance of its act
 ## Health
 Health metrics provide a mechanism to confirm if Dirk is active and able to serve requests.
 
-`dirk_start_time_secs` is the Unix timestamp at which Dirk was started.  This value will remain the same throughout a run of Dirk; if it increments it implies that Dirk has restarted.
-`dirk_ready` is a flag stating if Dirk is ready to serve requests.  This value is 1 if Dirk is ready to serve requests, otherwise 0.
+  - `dirk_start_time_secs` is the Unix timestamp at which Dirk was started.  This value will remain the same throughout a run of Dirk; if it increments it implies that Dirk has restarted.
+  - `dirk_ready` is a flag stating if Dirk is ready to serve requests.  This value is 1 if Dirk is ready to serve requests, otherwise 0.
 
 ## Operations
 Operations metrics provide information about the number of operations taking place within Dirk.

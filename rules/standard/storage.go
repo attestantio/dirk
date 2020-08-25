@@ -45,6 +45,32 @@ func NewStore(base string) (*Store, error) {
 	}, nil
 }
 
+// FetchAll fetches a map of all keys and values.
+func (s *Store) FetchAll(ctx context.Context) (map[[49]byte][]byte, error) {
+	items := make(map[[49]byte][]byte)
+	err := s.db.View(func(txn *badger.Txn) error {
+		it := txn.NewIterator(badger.DefaultIteratorOptions)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			err := item.Value(func(v []byte) error {
+				var key [49]byte
+				copy(key[:], item.Key())
+				items[key] = v
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 // Fetch fetches a value for a given key.
 func (s *Store) Fetch(ctx context.Context, key []byte) ([]byte, error) {
 	span, _ := opentracing.StartSpanFromContext(ctx, "storage.Fetch")
