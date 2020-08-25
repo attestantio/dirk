@@ -12,12 +12,29 @@ An Ethereum 2 distributed remote keymanager.
 ## Table of Contents
 
 - [Install](#install)
+  - [Binaries](#binaries)
+  - [Docker](#docker)
+  - [Source](#source)
 - [Usage](#usage)
 - [Maintainers](#maintainers)
 - [Contribute](#contribute)
 - [License](#license)
 
 ## Install
+
+### Binaries
+
+Binaries for the latest version of `dirk` can be obtained from [the releases page](https://github.com/wealdtech/dirk/releases/latest).
+
+### Docker
+
+You can obtain the latest version of `dirk` using docker with:
+
+```
+docker pull attestant/dirk
+```
+
+### Source
 
 `dirk` is a standard Go module which can be installed with:
 
