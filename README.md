@@ -3,8 +3,7 @@
 [![Tag](https://img.shields.io/github/tag/attestantio/dirk.svg)](https://github.com/attestantio/dirk/releases/)
 [![License](https://img.shields.io/github/license/attestantio/dirk.svg)](LICENSE)
 [![GoDoc](https://godoc.org/github.com/attestantio/dirk?status.svg)](https://godoc.org/github.com/attestantio/dirk)
-[![Travis CI](https://img.shields.io/travis/attestantio/dirk.svg)](https://travis-ci.org/attestantio/dirk)
-[![codecov.io](https://img.shields.io/codecov/c/github/attestantio/dirk.svg)](https://codecov.io/github/attestantio/dirk)
+![Lint](https://github.com/attestantio/dirk/workflows/golangci-lint/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/attestantio/dirk)](https://goreportcard.com/report/github.com/attestantio/dirk)
 
 An Ethereum 2 distributed remote keymanager.
