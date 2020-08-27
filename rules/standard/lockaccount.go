@@ -20,6 +20,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 )
 
+// OnLockAccount is called when a request to lock an account needs to be approved.
 func (s *Service) OnLockAccount(ctx context.Context, metadata *rules.ReqMetadata, req *rules.LockAccountData) rules.Result {
 	span, _ := opentracing.StartSpanFromContext(ctx, "rules.OnLockAccount")
 	defer span.Finish()

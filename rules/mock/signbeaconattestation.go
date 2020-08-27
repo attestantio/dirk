@@ -19,6 +19,7 @@ import (
 	"github.com/attestantio/dirk/rules"
 )
 
+// OnSignBeaconAttestation is called when a request to sign a beacon block attestation needs to be approved.
 func (s *Service) OnSignBeaconAttestation(ctx context.Context, metadata *rules.ReqMetadata, req *rules.SignBeaconAttestationData) rules.Result {
 	return rules.APPROVED
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/attestantio/dirk/rules"
 )
 
+// OnLockWallet is called when a request to lock a wallet needs to be approved.
 func (s *Service) OnLockWallet(ctx context.Context, metadata *rules.ReqMetadata, req *rules.LockWalletData) rules.Result {
 	return rules.APPROVED
 }

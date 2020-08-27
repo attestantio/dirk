@@ -19,6 +19,7 @@ import (
 	"github.com/attestantio/dirk/rules"
 )
 
+// OnListAccounts is called when a request to list accounts needs to be approved.
 func (s *Service) OnListAccounts(ctx context.Context, metadata *rules.ReqMetadata, req *rules.AccessAccountData) rules.Result {
 	return rules.APPROVED
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/attestantio/dirk/rules"
 )
 
+// OnLockAccount is called when a request to lock an account needs to be approved.
 func (s *Service) OnLockAccount(ctx context.Context, metadata *rules.ReqMetadata, req *rules.LockAccountData) rules.Result {
 	return rules.APPROVED
 }

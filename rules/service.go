@@ -85,12 +85,20 @@ const (
 
 // Service is the interface that must be followed by a remote ruler for approval of requests.
 type Service interface {
+	// OnListAccounts is called when a request to list accounts needs to be approved.
 	OnListAccounts(ctx context.Context, metadata *ReqMetadata, req *AccessAccountData) Result
+	// OnSign is called when a request to sign generic data needs to be approved.
 	OnSign(ctx context.Context, metadata *ReqMetadata, req *SignData) Result
+	// OnSignBeaconAttestation is called when a request to sign a beacon block attestation needs to be approved.
 	OnSignBeaconAttestation(ctx context.Context, metadata *ReqMetadata, req *SignBeaconAttestationData) Result
+	// OnSignBeaconProposal is called when a request to sign a beacon block proposal needs to be approved.
 	OnSignBeaconProposal(ctx context.Context, metadata *ReqMetadata, req *SignBeaconProposalData) Result
+	// OnLockWallet is called when a request to lock a wallet needs to be approved.
 	OnLockWallet(ctx context.Context, metadata *ReqMetadata, req *LockWalletData) Result
+	// OnUnlockWallet is called when a request to unlock a wallet needs to be approved.
 	OnUnlockWallet(ctx context.Context, metadata *ReqMetadata, req *UnlockWalletData) Result
+	// OnLockAccount is called when a request to lock an account needs to be approved.
 	OnLockAccount(ctx context.Context, metadata *ReqMetadata, req *LockAccountData) Result
+	// OnUnlockAccount is called when a request to unlock an account needs to be approved.
 	OnUnlockAccount(ctx context.Context, metadata *ReqMetadata, req *UnlockAccountData) Result
 }

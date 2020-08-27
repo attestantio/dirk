@@ -20,6 +20,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 )
 
+// OnListAccounts is called when a request to list accounts needs to be approved.
 func (s *Service) OnListAccounts(ctx context.Context, metadata *rules.ReqMetadata, req *rules.AccessAccountData) rules.Result {
 	span, _ := opentracing.StartSpanFromContext(ctx, "rules.OnListAccounts")
 	defer span.Finish()
