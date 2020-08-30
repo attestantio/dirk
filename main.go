@@ -38,6 +38,7 @@ import (
 	staticchecker "github.com/attestantio/dirk/services/checker/static"
 	"github.com/attestantio/dirk/services/fetcher"
 	memfetcher "github.com/attestantio/dirk/services/fetcher/mem"
+	"github.com/attestantio/dirk/services/lister"
 	standardlister "github.com/attestantio/dirk/services/lister/standard"
 	"github.com/attestantio/dirk/services/locker"
 	syncmaplocker "github.com/attestantio/dirk/services/locker/syncmap"
@@ -312,17 +313,7 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 	}
 
 	// Set up the lister.
-	var listerMonitor metrics.ListerMonitor
-	if monitor, isMonitor := monitor.(metrics.ListerMonitor); isMonitor {
-		listerMonitor = monitor
-	}
-	lister, err := standardlister.New(ctx,
-		standardlister.WithLogLevel(logLevel(viper.GetString("log-levels.lister"))),
-		standardlister.WithMonitor(listerMonitor),
-		standardlister.WithFetcher(fetcher),
-		standardlister.WithChecker(checker),
-		standardlister.WithRuler(ruler),
-	)
+	lister, err := startLister(ctx, monitor, fetcher, checker, ruler)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialise lister")
 	}
@@ -398,6 +389,14 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 	if monitor, isMonitor := monitor.(metrics.ProcessMonitor); isMonitor {
 		processMonitor = monitor
 	}
+
+	var generationPassphrase []byte
+	if viper.GetString("process.generation-passphrase") != "" {
+		generationPassphrase, err = majordomo.Fetch(ctx, viper.GetString("process.generation-passphrase"))
+		if err != nil {
+			return errors.Wrap(err, "failed to obtain account generation passphrase for process")
+		}
+	}
 	process, err := standardprocess.New(ctx,
 		standardprocess.WithLogLevel(logLevel(viper.GetString("log-levels.process"))),
 		standardprocess.WithMonitor(processMonitor),
@@ -407,7 +406,7 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 		standardprocess.WithPeers(peers),
 		standardprocess.WithID(serverID),
 		standardprocess.WithStores(stores),
-		standardprocess.WithGenerationPassphrase([]byte(viper.GetString("process.generation-passphrase"))),
+		standardprocess.WithGenerationPassphrase(generationPassphrase),
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to create process service")
@@ -691,6 +690,20 @@ func startPeers(ctx context.Context, monitor metrics.Service) (peers.Service, er
 		staticpeers.WithLogLevel(logLevel(viper.GetString("log-levels.peers"))),
 		staticpeers.WithMonitor(peersMonitor),
 		staticpeers.WithPeers(peersMap),
+	)
+}
+
+func startLister(ctx context.Context, monitor metrics.Service, fetcher fetcher.Service, checker checker.Service, ruler ruler.Service) (lister.Service, error) {
+	var listerMonitor metrics.ListerMonitor
+	if monitor, isMonitor := monitor.(metrics.ListerMonitor); isMonitor {
+		listerMonitor = monitor
+	}
+	return standardlister.New(ctx,
+		standardlister.WithLogLevel(logLevel(viper.GetString("log-levels.lister"))),
+		standardlister.WithMonitor(listerMonitor),
+		standardlister.WithFetcher(fetcher),
+		standardlister.WithChecker(checker),
+		standardlister.WithRuler(ruler),
 	)
 }
 
