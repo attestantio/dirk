@@ -15,6 +15,7 @@ package static
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -48,22 +49,24 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		log = log.Level(parameters.logLevel)
 	}
 
+	peerNames := make(map[string]bool)
 	servicePeers := make(map[uint64]*core.Endpoint, len(parameters.peers))
 	if parameters.peers != nil {
 		for id, v := range parameters.peers {
 			peerInfo := strings.Split(v, ":")
 			if len(peerInfo) != 2 {
-				log.Warn().Str("peer", v).Msg("Malformed peer")
-				continue
+				return nil, fmt.Errorf("malformed peer %s", v)
 			}
+			if _, exists := peerNames[peerInfo[0]]; exists {
+				return nil, fmt.Errorf("duplicate peer name %s", peerInfo[0])
+			}
+			peerNames[peerInfo[0]] = true
 			port, err := strconv.Atoi(peerInfo[1])
 			if err != nil {
-				log.Warn().Str("peer", v).Err(err).Msg("Malformed port")
-				continue
+				return nil, fmt.Errorf("malformed peer port for %s", v)
 			}
 			if port == 0 {
-				log.Warn().Str("peer", v).Msg("Invalid port")
-				continue
+				return nil, fmt.Errorf("invalid peer port for %s", v)
 			}
 			servicePeers[id] = &core.Endpoint{
 				ID:   id,

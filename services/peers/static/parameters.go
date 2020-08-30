@@ -15,6 +15,7 @@ package static
 
 import (
 	"github.com/attestantio/dirk/services/metrics"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
 
@@ -70,6 +71,10 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	if parameters.monitor == nil {
 		// Use no-op monitor.
 		parameters.monitor = &noopMonitor{}
+	}
+
+	if len(parameters.peers) == 0 {
+		return nil, errors.New("no peers specified")
 	}
 
 	return &parameters, nil
