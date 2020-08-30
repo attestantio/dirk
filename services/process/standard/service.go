@@ -88,11 +88,13 @@ func (s *Service) OnPrepare(ctx context.Context,
 	participants []*core.Endpoint) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "services.process.OnPrepare")
 	defer span.Finish()
+	log.Trace().Uint64("sender_id", sender).Str("account", account).Msg("Preparing for distributed key generation")
 
 	s.generationsMu.Lock()
 	defer s.generationsMu.Unlock()
 
 	if _, err := s.getGeneration(ctx, account); err == nil {
+		log.Debug().Uint64("sender_id", sender).Str("account", account).Msg("Already in progress")
 		return ErrInProgress
 	}
 
@@ -108,6 +110,7 @@ func (s *Service) OnPrepare(ctx context.Context,
 	}
 
 	if err := s.contribution(ctx, s.generations[account]); err != nil {
+		log.Debug().Uint64("sender_id", sender).Str("account", account).Msg("Failed to generate our own contribution")
 		return errors.Wrap(err, "failed to generate own contribution")
 	}
 
@@ -118,6 +121,7 @@ func (s *Service) OnPrepare(ctx context.Context,
 func (s *Service) OnExecute(ctx context.Context, sender uint64, account string) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "services.process.OnExecute")
 	defer span.Finish()
+	log.Trace().Uint64("sender", sender).Str("account", account).Msg("Executing")
 
 	s.generationsMu.Lock()
 	defer s.generationsMu.Unlock()
@@ -139,12 +143,13 @@ func (s *Service) OnExecute(ctx context.Context, sender uint64, account string) 
 			if err != nil {
 				return errors.Wrap(err, "failed to obtain peer")
 			}
-			log.Debug().Uint64("id", s.id).Uint64("peer", id).Msg("Initiating contribution swap")
+			log.Trace().Uint64("id", s.id).Uint64("peer", id).Msg("Initiating contribution swap")
 			recipientSecret, recipientVVec, err := s.senderSvc.SendContribution(ctx, peer, account, distributionSecret, verificationVector)
 			if err != nil {
 				return errors.Wrap(err, "failed to send contribution")
 			}
 			if !verifyContribution(generation.id, recipientSecret, recipientVVec) {
+				log.Warn().Msg("Contribution invalid")
 				return fmt.Errorf("invalid contribution from %d", id)
 			}
 			if _, exists := generation.sharedSecrets[id]; exists {
@@ -268,12 +273,15 @@ func (s *Service) OnContribute(ctx context.Context, sender uint64, account strin
 	}
 
 	if !verifyContribution(generation.id, secret, vVec) {
+		log.Warn().Uint64("sender", sender).Str("account", account).Msg("Received invalid contribution")
 		return bls.SecretKey{}, nil, fmt.Errorf("invalid contribution from %d", sender)
 	}
 
+	// Store the contributed information.
 	generation.sharedSecrets[sender] = secret
 	generation.sharedVVecs[sender] = vVec
 
+	// We return our unique generated secret for the sender, and our own verification vector.
 	return generation.distributionSecrets[sender], generation.sharedVVecs[generation.id], nil
 
 }

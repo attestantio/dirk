@@ -142,8 +142,8 @@ func (s *Service) generateDistributed(ctx context.Context, credentials *checker.
 	}
 
 	// Send prepare request to all participants.
-	log.Trace().Msg("Sending prepare request to endpoints")
 	for _, participant := range participants {
+		log.Trace().Str("endpoint", participant.String()).Msg("Sending prepare request to endpoint")
 		if err := s.senderSvc.Prepare(ctx, participant, account, passphrase, signingThreshold, participants); err != nil {
 			log.Error().Err(err).Str("endpoint", participant.String()).Msg("Failed to prepare on endpoint")
 			return nil, nil, errors.Wrap(err, "failed to prepare endpoints")
@@ -151,9 +151,8 @@ func (s *Service) generateDistributed(ctx context.Context, credentials *checker.
 	}
 
 	// Send execute request to all participants.
-	log.Trace().Msg("Sending execute request to endpoints")
 	for _, participant := range participants {
-		log.Trace().Str("endpoint", participant.String()).Msg("Sending execute request to participant")
+		log.Trace().Str("endpoint", participant.String()).Msg("Sending execute request to endpoint")
 		if err := s.senderSvc.Execute(ctx, participant, account); err != nil {
 			log.Error().Err(err).Str("endpoint", participant.String()).Msg("Failed to execute on endpoint")
 			return nil, nil, errors.Wrap(err, "failed to execute generation")
@@ -172,8 +171,8 @@ func (s *Service) generateDistributed(ctx context.Context, credentials *checker.
 		return nil, nil, errors.New("failed to generate enough commit data")
 	}
 	confirmationSigs := make([][]byte, len(participants))
-	log.Trace().Msg("Sending commit request to endpoints")
 	for i, participant := range participants {
+		log.Trace().Str("endpoint", participant.String()).Msg("Sending commit request to endpoint")
 		pubKeys[i], confirmationSigs[i], err = s.senderSvc.Commit(ctx, participant, account, confirmationData)
 		if err != nil {
 			log.Error().Err(err).Str("endpoint", participant.String()).Msg("Failed to commit on endpoint")
