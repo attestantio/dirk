@@ -35,12 +35,14 @@ import (
 	staticpeers "github.com/attestantio/dirk/services/peers/static"
 	standardprocess "github.com/attestantio/dirk/services/process/standard"
 	goruler "github.com/attestantio/dirk/services/ruler/golang"
-	sender "github.com/attestantio/dirk/services/sender/grpc"
+	"github.com/attestantio/dirk/services/sender"
+	grpcsender "github.com/attestantio/dirk/services/sender/grpc"
 	mocksender "github.com/attestantio/dirk/services/sender/mock"
 	mocksigner "github.com/attestantio/dirk/services/signer/mock"
 	standardsigner "github.com/attestantio/dirk/services/signer/standard"
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
 	mockwalletmanager "github.com/attestantio/dirk/services/walletmanager/mock"
+	"github.com/attestantio/dirk/testing/mock"
 	"github.com/attestantio/dirk/testing/resources"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -263,15 +265,16 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 	process, err := standardprocess.New(ctx,
 		standardprocess.WithChecker(checker),
 		standardprocess.WithGenerationPassphrase([]byte("secret")),
-		standardprocess.WithID(1),
+		standardprocess.WithID(id),
 		standardprocess.WithPeers(peers),
-		standardprocess.WithSender(mocksender.New(1)),
+		standardprocess.WithSender(mocksender.New(id)),
 		standardprocess.WithStores(stores),
 		standardprocess.WithUnlocker(unlocker),
 	)
 	if err != nil {
 		return nil, err
 	}
+	mock.Processes[id] = process
 
 	certPEMBlock, err := ioutil.ReadFile(filepath.Join(base, fmt.Sprintf("%s.crt", name)))
 	if err != nil {
@@ -294,7 +297,7 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 		grpcapi.WithServerKey(keyPEMBlock),
 		grpcapi.WithCACert(caPEMBlock),
 		grpcapi.WithPeers(peers),
-		grpcapi.WithID(1),
+		grpcapi.WithID(id),
 		grpcapi.WithProcess(process),
 		grpcapi.WithWalletManager(mockwalletmanager.New()),
 		grpcapi.WithAccountManager(mockaccountmanager.New()),
@@ -308,7 +311,7 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 	return serverSvc, nil
 }
 
-func createSender(ctx context.Context, name string, base string) (*sender.Service, error) {
+func createSender(ctx context.Context, name string, base string) (sender.Service, error) {
 	certPEMBlock, err := ioutil.ReadFile(filepath.Join(base, fmt.Sprintf("%s.crt", name)))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to obtain server certificate")
@@ -322,10 +325,10 @@ func createSender(ctx context.Context, name string, base string) (*sender.Servic
 		return nil, errors.Wrap(err, "failed to obtain CA certificate")
 	}
 
-	return sender.New(ctx,
-		sender.WithName(name),
-		sender.WithServerCert(certPEMBlock),
-		sender.WithServerKey(keyPEMBlock),
-		sender.WithCACert(caPEMBlock),
+	return grpcsender.New(ctx,
+		grpcsender.WithName(name),
+		grpcsender.WithServerCert(certPEMBlock),
+		grpcsender.WithServerKey(keyPEMBlock),
+		grpcsender.WithCACert(caPEMBlock),
 	)
 }

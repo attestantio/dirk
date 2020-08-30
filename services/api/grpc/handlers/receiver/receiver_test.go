@@ -26,7 +26,9 @@ import (
 	mockchecker "github.com/attestantio/dirk/services/checker/mock"
 	staticpeers "github.com/attestantio/dirk/services/peers/static"
 	standardprocess "github.com/attestantio/dirk/services/process/standard"
+	mocksender "github.com/attestantio/dirk/services/sender/mock"
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
+	"github.com/attestantio/dirk/testing/mock"
 	"github.com/attestantio/dirk/testing/resources"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -66,19 +68,18 @@ func TestNonInitiator(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create receiver 1.
-	sender1, err := createSender(ctx, "signer-test01", base)
-	require.NoError(t, err)
 	process1, err := standardprocess.New(ctx,
 		standardprocess.WithChecker(checker),
 		standardprocess.WithGenerationPassphrase([]byte("secret")),
 		standardprocess.WithID(1),
 		standardprocess.WithPeers(peers),
-		standardprocess.WithSender(sender1),
+		standardprocess.WithSender(mocksender.New(1)),
 		standardprocess.WithStores(stores),
 		standardprocess.WithUnlocker(unlocker),
 		standardprocess.WithGenerationPassphrase([]byte("test")),
 	)
 	require.NoError(t, err)
+	mock.Processes[1] = process1
 
 	receiver1, err := receiverhandler.New(ctx,
 		receiverhandler.WithLogLevel(zerolog.Disabled),
@@ -88,19 +89,18 @@ func TestNonInitiator(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create receiver 2.
-	sender2, err := createSender(ctx, "signer-test02", base)
-	require.NoError(t, err)
 	process2, err := standardprocess.New(ctx,
 		standardprocess.WithChecker(checker),
 		standardprocess.WithGenerationPassphrase([]byte("secret")),
 		standardprocess.WithID(2),
 		standardprocess.WithPeers(peers),
-		standardprocess.WithSender(sender2),
+		standardprocess.WithSender(mocksender.New(2)),
 		standardprocess.WithStores(stores),
 		standardprocess.WithUnlocker(unlocker),
 		standardprocess.WithGenerationPassphrase([]byte("test")),
 	)
 	require.NoError(t, err)
+	mock.Processes[2] = process2
 
 	receiver2, err := receiverhandler.New(ctx,
 		receiverhandler.WithLogLevel(zerolog.Disabled),
@@ -110,19 +110,18 @@ func TestNonInitiator(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create receiver 3.
-	sender3, err := createSender(ctx, "signer-test03", base)
-	require.NoError(t, err)
 	process3, err := standardprocess.New(ctx,
 		standardprocess.WithChecker(checker),
 		standardprocess.WithGenerationPassphrase([]byte("secret")),
 		standardprocess.WithID(3),
 		standardprocess.WithPeers(peers),
-		standardprocess.WithSender(sender3),
+		standardprocess.WithSender(mocksender.New(3)),
 		standardprocess.WithStores(stores),
 		standardprocess.WithUnlocker(unlocker),
 		standardprocess.WithGenerationPassphrase([]byte("test")),
 	)
 	require.NoError(t, err)
+	mock.Processes[3] = process3
 
 	receiver3, err := receiverhandler.New(ctx,
 		receiverhandler.WithLogLevel(zerolog.Disabled),
