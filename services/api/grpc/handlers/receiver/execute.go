@@ -34,6 +34,7 @@ func (h *Handler) Execute(ctx context.Context, req *pb.ExecuteRequest) (*empty.E
 	err := h.process.OnExecute(ctx, senderID, req.Account)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to execute distributed key generation")
+		return nil, err
 	}
 
 	log.Trace().Msg("Completed execution successfully")
