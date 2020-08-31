@@ -48,6 +48,7 @@ go get github.com/attestantio/dirk
 The following documentation is available:
 
   - [Getting started](docs/getting_started.md) an introduction to configuring Dirk
+  - [Distributed key generation](docs/distributed_key_generation.md) setting up multiple instances of Dirk to carry out distributed key generation
   - [Prometheus metrics](docs/metrics/prometheus.md) Prometheus metrics
   - [Configuration](docs/configuration.md) Sample annotated configuration file
   - [Permissions](docs/permissions.md) Details information about Dirk's permissions
