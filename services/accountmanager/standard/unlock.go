@@ -56,8 +56,16 @@ func (s *Service) Unlock(ctx context.Context,
 	}
 
 	// Confirm approval via rules.
-	result := s.ruler.RunRules(ctx, credentials, ruler.ActionUnlockAccount, wallet.Name(), account.Name(), account.PublicKey().Marshal(), &rules.UnlockAccountData{})
-	switch result {
+	rulesData := []*ruler.RulesData{
+		{
+			WalletName:  wallet.Name(),
+			AccountName: account.Name(),
+			PubKey:      account.PublicKey().Marshal(),
+			Data:        &rules.UnlockAccountData{},
+		},
+	}
+	results := s.ruler.RunRules(ctx, credentials, ruler.ActionUnlockAccount, rulesData)
+	switch results[0] {
 	case rules.DENIED:
 		s.monitor.AccountManagerCompleted(started, "unlock", core.ResultDenied)
 		return core.ResultDenied, nil

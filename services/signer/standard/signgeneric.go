@@ -75,8 +75,16 @@ func (s *Service) SignGeneric(
 	log = log.With().Str("account", accountName).Logger()
 
 	// Confirm approval via rules.
-	result := s.ruler.RunRules(ctx, credentials, ruler.ActionSign, wallet.Name(), account.Name(), account.PublicKey().Marshal(), data)
-	switch result {
+	rulesData := []*ruler.RulesData{
+		{
+			WalletName:  wallet.Name(),
+			AccountName: account.Name(),
+			PubKey:      account.PublicKey().Marshal(),
+			Data:        data,
+		},
+	}
+	results := s.ruler.RunRules(ctx, credentials, ruler.ActionSign, rulesData)
+	switch results[0] {
 	case rules.DENIED:
 		s.monitor.SignCompleted(started, "generic", core.ResultDenied)
 		log.Debug().Str("result", "denied").Msg("Denied by rules")

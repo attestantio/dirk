@@ -104,8 +104,17 @@ func (s *Service) ListAccounts(ctx context.Context, credentials *checker.Credent
 				data := &rules.AccessAccountData{
 					Paths: paths,
 				}
-				result := s.ruler.RunRules(ctx, credentials, ruler.ActionAccessAccount, wallet.Name(), account.Name(), pubKey, data)
-				if result == rules.APPROVED {
+
+				rulesData := []*ruler.RulesData{
+					{
+						WalletName:  wallet.Name(),
+						AccountName: account.Name(),
+						PubKey:      pubKey,
+						Data:        data,
+					},
+				}
+				results := s.ruler.RunRules(ctx, credentials, ruler.ActionAccessAccount, rulesData)
+				if results[0] == rules.APPROVED {
 					accounts = append(accounts, account)
 				}
 			}
