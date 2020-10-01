@@ -41,8 +41,16 @@ var (
 	ActionUnlockAccount = "Unlock account"
 )
 
+// RulesData contains data for the rules.
+type RulesData struct {
+	WalletName  string
+	AccountName string
+	PubKey      []byte
+	Data        interface{}
+}
+
 // Service provides an interface to check requests against a rules engine.
 type Service interface {
 	// RunRules runs a set of rules for the given information.
-	RunRules(context.Context, *checker.Credentials, string, string, string, []byte, interface{}) rules.Result
+	RunRules(context.Context, *checker.Credentials, string, []*RulesData) []rules.Result
 }

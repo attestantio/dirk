@@ -94,8 +94,16 @@ func (s *Service) SignBeaconProposal(
 	log = log.With().Str("account", accountName).Logger()
 
 	// Confirm approval via rules.
-	result := s.ruler.RunRules(ctx, credentials, ruler.ActionSignBeaconProposal, wallet.Name(), account.Name(), account.PublicKey().Marshal(), data)
-	switch result {
+	rulesData := []*ruler.RulesData{
+		{
+			WalletName:  wallet.Name(),
+			AccountName: account.Name(),
+			PubKey:      account.PublicKey().Marshal(),
+			Data:        data,
+		},
+	}
+	results := s.ruler.RunRules(ctx, credentials, ruler.ActionSignBeaconProposal, rulesData)
+	switch results[0] {
 	case rules.DENIED:
 		log.Debug().Str("result", "denied").Msg("Denied by rules")
 		s.monitor.SignCompleted(started, "proposal", core.ResultDenied)

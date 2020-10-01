@@ -73,6 +73,9 @@ type LockAccountData struct{}
 // UnlockAccountData is passed to 'OnUnlockAccount' rules.
 type UnlockAccountData struct{}
 
+// CreateAccountData is passed to 'OnCreateAccount' rules.
+type CreateAccountData struct{}
+
 // Result represents the result of running a set of rules.
 type Result int
 
@@ -102,4 +105,6 @@ type Service interface {
 	OnLockAccount(ctx context.Context, metadata *ReqMetadata, req *LockAccountData) Result
 	// OnUnlockAccount is called when a request to unlock an account needs to be approved.
 	OnUnlockAccount(ctx context.Context, metadata *ReqMetadata, req *UnlockAccountData) Result
+	// OnCreateAccount is called when a request to create an account needs to be approved.
+	OnCreateAccount(ctx context.Context, metadata *ReqMetadata, req *CreateAccountData) Result
 }
