@@ -54,7 +54,7 @@ func InitStores(ctx context.Context, stores []*Store) ([]e2wtypes.Store, error) 
 		}
 		switch store.Type {
 		case "filesystem":
-			log.Trace().Str("name", store.Name).Msg("Adding filesystem store")
+			log.Trace().Str("name", store.Name).Str("location", store.Location).Str("type", store.Type).Msg("Adding filesystem store")
 			opts := make([]filesystem.Option, 0)
 			if len(store.Passphrase) > 0 {
 				opts = append(opts, filesystem.WithPassphrase([]byte(store.Passphrase)))
