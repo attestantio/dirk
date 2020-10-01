@@ -23,7 +23,7 @@ An Ethereum 2 distributed remote keymanager.
 
 ### Binaries
 
-Binaries for the latest version of `dirk` can be obtained from [the releases page](https://github.com/wealdtech/dirk/releases/latest).
+Binaries for the latest version of `dirk` can be obtained from [the releases page](https://github.com/attestantio/dirk/releases/latest).
 
 ### Docker
 
