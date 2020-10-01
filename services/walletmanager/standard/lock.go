@@ -54,8 +54,14 @@ func (s *Service) Lock(ctx context.Context,
 	}
 
 	// Confirm approval via rules.
-	result := s.ruler.RunRules(ctx, credentials, ruler.ActionLockWallet, wallet.Name(), "", nil, &rules.LockWalletData{})
-	switch result {
+	rulesData := []*ruler.RulesData{
+		{
+			WalletName: wallet.Name(),
+			Data:       &rules.LockWalletData{},
+		},
+	}
+	results := s.ruler.RunRules(ctx, credentials, ruler.ActionLockWallet, rulesData)
+	switch results[0] {
 	case rules.DENIED:
 		log.Debug().Str("result", "denied").Msg("Denied by rules")
 		s.monitor.WalletManagerCompleted(started, "lock", core.ResultDenied)
