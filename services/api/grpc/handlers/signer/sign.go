@@ -34,7 +34,7 @@ func (h *Handler) Sign(ctx context.Context, req *pb.SignRequest) (*pb.SignRespon
 		return res, nil
 	}
 	if req.GetAccount() == "" && req.GetPublicKey() == nil {
-		log.Warn().Str("result", "denied").Msg("Neither accout nor public key specified")
+		log.Warn().Str("result", "denied").Msg("Neither account nor public key specified")
 		res.State = pb.ResponseState_DENIED
 		return res, nil
 	}
