@@ -22,6 +22,7 @@ import (
 	e2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
+// OnSign is called when a request to sign generic data needs to be approved.
 func (s *Service) OnSign(ctx context.Context, metadata *rules.ReqMetadata, req *rules.SignData) rules.Result {
 	span, _ := opentracing.StartSpanFromContext(ctx, "rules.OnSign")
 	defer span.Finish()

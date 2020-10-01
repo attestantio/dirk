@@ -20,6 +20,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 )
 
+// OnUnlockAccount is called when a request to unlock an account needs to be approved.
 func (s *Service) OnUnlockAccount(ctx context.Context, metadata *rules.ReqMetadata, req *rules.UnlockAccountData) rules.Result {
 	span, _ := opentracing.StartSpanFromContext(ctx, "rules.OnUnlockAccount")
 	defer span.Finish()

@@ -24,6 +24,7 @@ import (
 // Service is the mock lister service.
 type Service struct{}
 
+// New creates a new mock lister service.
 func New() *Service {
 	return &Service{}
 }

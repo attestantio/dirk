@@ -15,6 +15,7 @@ package mock
 
 import "github.com/attestantio/dirk/services/process"
 
+// Processes is a map of local process services.
 var Processes map[uint64]process.Service
 
 func init() {

@@ -71,7 +71,10 @@ import (
 	standardmajordomo "github.com/wealdtech/go-majordomo/standard"
 )
 
+// ReleaseVersion is the release version for the code.
 var ReleaseVersion = "0.8.0"
+
+// BuildVersion is the build version for the code.
 var BuildVersion = uint64(1)
 
 func main() {

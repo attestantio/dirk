@@ -29,6 +29,7 @@ type signBeaconAttestationState struct {
 	TargetEpoch int64
 }
 
+// OnSignBeaconAttestation is called when a request to sign a beacon block attestation needs to be approved.
 func (s *Service) OnSignBeaconAttestation(ctx context.Context, metadata *rules.ReqMetadata, req *rules.SignBeaconAttestationData) rules.Result {
 	span, _ := opentracing.StartSpanFromContext(ctx, "rules.OnSignBeaconAttestation")
 	defer span.Finish()

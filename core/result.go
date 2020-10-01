@@ -16,6 +16,7 @@ package core
 // Result represents the result of a process.
 type Result int
 
+// Possible results of a process.
 const (
 	ResultUnknown Result = iota
 	ResultSucceeded

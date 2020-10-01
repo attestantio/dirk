@@ -20,6 +20,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 )
 
+// OnUnlockWallet is called when a request to unlock a wallet needs to be approved.
 func (s *Service) OnUnlockWallet(ctx context.Context, metadata *rules.ReqMetadata, req *rules.UnlockWalletData) rules.Result {
 	span, _ := opentracing.StartSpanFromContext(ctx, "rules.OnUnlockWallet")
 	defer span.Finish()

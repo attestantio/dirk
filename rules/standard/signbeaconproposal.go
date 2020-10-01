@@ -28,6 +28,7 @@ type signBeaconProposalState struct {
 	Slot int64
 }
 
+// OnSignBeaconProposal is called when a request to sign a beacon block proposal needs to be approved.
 func (s *Service) OnSignBeaconProposal(ctx context.Context, metadata *rules.ReqMetadata, req *rules.SignBeaconProposalData) rules.Result {
 	span, _ := opentracing.StartSpanFromContext(ctx, "rules.OnSignBeaconProposal")
 	defer span.Finish()

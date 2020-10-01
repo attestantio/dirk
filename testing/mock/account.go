@@ -22,6 +22,7 @@ import (
 	e2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
+// Account is a mock account.
 type Account struct {
 	id         uuid.UUID
 	name       string

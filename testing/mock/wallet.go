@@ -20,6 +20,7 @@ import (
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
 
+// Wallet is a mock wallet structure.
 type Wallet struct {
 	id   uuid.UUID
 	name string
@@ -57,6 +58,7 @@ func (a *Wallet) Version() uint {
 	return 1
 }
 
+// Accounts returns the accounts in the wallet.
 func (a *Wallet) Accounts(ctx context.Context) <-chan e2wtypes.Account {
 	ch := make(chan e2wtypes.Account, 1024)
 	close(ch)

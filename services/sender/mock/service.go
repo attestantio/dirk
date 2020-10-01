@@ -22,10 +22,12 @@ import (
 	"github.com/herumi/bls-eth-go-binary/bls"
 )
 
+// Service is a mock sender service.
 type Service struct {
 	id uint64
 }
 
+// New creates a new mock sender service.
 func New(id uint64) *Service {
 	return &Service{
 		id: id,

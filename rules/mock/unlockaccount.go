@@ -19,7 +19,7 @@ import (
 	"github.com/attestantio/dirk/rules"
 )
 
-// OnUnlockWallet is called when a request to unlock a wallet needs to be approved.
+// OnUnlockAccount is called when a request to unlock an account needs to be approved.
 func (s *Service) OnUnlockAccount(ctx context.Context, metadata *rules.ReqMetadata, req *rules.UnlockAccountData) rules.Result {
 	return rules.APPROVED
 }

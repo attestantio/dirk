@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// metrics tracks various metrics that measure the performance of dirk.
+// Package metrics tracks various metrics that measure the performance of dirk.
 package metrics
 
 import (

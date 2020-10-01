@@ -76,6 +76,7 @@ type UnlockAccountData struct{}
 // Result represents the result of running a set of rules.
 type Result int
 
+// Possible results of running a set of rules.
 const (
 	UNKNOWN Result = iota
 	APPROVED

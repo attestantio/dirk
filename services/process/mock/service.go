@@ -24,6 +24,7 @@ import (
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
 
+// Config is the configuration for the mock process service.
 type Config struct {
 	CheckerSvc           checker.Service
 	SenderSvc            sender.Service
