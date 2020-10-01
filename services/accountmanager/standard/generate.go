@@ -75,8 +75,15 @@ func (s *Service) Generate(ctx context.Context,
 		return core.ResultDenied, nil, nil, errors.Wrap(err, "invalid account name")
 	}
 	// Confirm approval via rules.
-	result := s.ruler.RunRules(ctx, credentials, ruler.ActionCreateAccount, walletName, accountName, nil, nil)
-	switch result {
+	rulesData := []*ruler.RulesData{
+		{
+			WalletName:  walletName,
+			AccountName: accountName,
+			Data:        &rules.CreateAccountData{},
+		},
+	}
+	results := s.ruler.RunRules(ctx, credentials, ruler.ActionCreateAccount, rulesData)
+	switch results[0] {
 	case rules.DENIED:
 		s.monitor.AccountManagerCompleted(started, "generate", core.ResultDenied)
 		return core.ResultDenied, nil, nil, nil
