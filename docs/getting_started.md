@@ -93,11 +93,17 @@ At this point you also need a minimal configuration file so `dirk` knows which c
   "server": {
     "id": 212483780,
     "name": "server.example.com",
-    "listen-address": "localhost:9091",
-    "cert-path": "security"
+    "listen-address": "localhost:9091"
+  },
+  "certificates": {
+    "ca-cert": "file:///home/user/dirk/security/ca.crt",
+    "server-cert": "file:///home/user/dirk/security/server.example.com.crt",
+    "server-key": "file:///home/user/dirk/security/server.example.com.key"
   }
 }
 ```
+
+Note that you will need to change the "/home/user/" piece to point to your own home directory.
 
 (The `id` and `listen-address` fields here will be explained later).
 
@@ -122,7 +128,11 @@ The next step is to configure `dirk` to know which clients have access to which 
     "id": 212483780,
     "name": "server.example.com",
     "listen-address": "localhost:9091",
-    "cert-path": "security"
+  },
+  "certificates": {
+    "ca-cert": "file:///home/user/dirk/security/ca.crt",
+    "server-cert": "file:///home/user/dirk/security/server.example.com.crt",
+    "server-key": "file:///home/user/dirk/security/server.example.com.key"
   },
   "permissions": {
     "client1": {
