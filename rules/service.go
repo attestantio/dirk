@@ -84,6 +84,24 @@ const (
 	FAILED
 )
 
+// String implements the stringer interface.
+func (r Result) String() string {
+	return []string{
+		"Unknown",
+		"Approved",
+		"Denied",
+		"Failed",
+	}[r]
+}
+
+// SlashingProtection provides the slashing protection for a given key.
+type SlashingProtection struct {
+	PubKey                     []byte
+	HighestProposedSlot        int64
+	HighestAttestedSourceEpoch int64
+	HighestAttestedTargetEpoch int64
+}
+
 // Service is the interface that must be followed by a remote ruler for approval of requests.
 type Service interface {
 	// OnListAccounts is called when a request to list accounts needs to be approved.
@@ -102,4 +120,8 @@ type Service interface {
 	OnLockAccount(ctx context.Context, metadata *ReqMetadata, req *LockAccountData) Result
 	// OnUnlockAccount is called when a request to unlock an account needs to be approved.
 	OnUnlockAccount(ctx context.Context, metadata *ReqMetadata, req *UnlockAccountData) Result
+	// ExportSlashingProtection exports the slashing protection data.
+	ExportSlashingProtection(ctx context.Context) (map[[48]byte]*SlashingProtection, error)
+	// ImportSlashingProtection impports the slashing protection data.
+	ImportSlashingProtection(ctx context.Context, protection map[[48]byte]*SlashingProtection) error
 }

@@ -17,6 +17,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
+
+	// #nosec G108
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -25,8 +29,6 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-
-	"net/http"
 
 	"github.com/attestantio/dirk/cmd"
 	"github.com/attestantio/dirk/core"
@@ -162,6 +164,10 @@ func fetchConfig() error {
 	pflag.String("tracing-address", "", "Address to which to send tracing data")
 	pflag.Bool("show-certificates", false, "show server certificates and exit")
 	pflag.Bool("show-permissions", false, "show client permissions and exit")
+	pflag.Bool("export-slashing-protection", false, "export slashing protection data and exit")
+	pflag.Bool("import-slashing-protection", false, "import slashing protection data and exit")
+	pflag.String("genesis-validators-root", "", "genesis validators root required for slashing protection import or export")
+	pflag.String("slashing-protection-file", "", "location of slashing protection file for import or export")
 	pflag.Parse()
 	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
 		return errors.Wrap(err, "failed to bind pflags to viper")
@@ -206,12 +212,12 @@ func fetchConfig() error {
 func initProfiling() error {
 	profileAddress := viper.GetString("profile-address")
 	if profileAddress != "" {
+		runtime.SetMutexProfileFraction(1)
+		runtime.SetBlockProfileRate(1)
+		log.Info().Str("profileAddress", profileAddress).Msg("Starting profile server")
 		go func() {
-			runtime.SetMutexProfileFraction(1)
 			if err := http.ListenAndServe(profileAddress, nil); err != nil {
 				log.Error().Str("profileAddress", profileAddress).Err(err).Msg("Failed to start profile server")
-			} else {
-				log.Info().Str("profileAddress", profileAddress).Msg("Started profile server")
 			}
 		}()
 	}
@@ -270,6 +276,14 @@ func runCommands(ctx context.Context, majordomo majordomo.Service) {
 		}
 		checker.DumpPermissions(permissions)
 		os.Exit(0)
+	}
+
+	if viper.GetBool("export-slashing-protection") {
+		exportSlashingProtection(ctx)
+	}
+
+	if viper.GetBool("import-slashing-protection") {
+		importSlashingProtection(ctx)
 	}
 }
 

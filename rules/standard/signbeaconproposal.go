@@ -16,7 +16,9 @@ package standard
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/gob"
+	"fmt"
 
 	"github.com/attestantio/dirk/rules"
 	"github.com/opentracing/opentracing-go"
@@ -26,6 +28,37 @@ import (
 
 type signBeaconProposalState struct {
 	Slot int64
+}
+
+// Encode encodes the proposal state.
+func (s *signBeaconProposalState) Encode() []byte {
+	data := make([]byte, 1+8)
+	// Version.
+	data[0] = 0x01
+
+	if s != nil {
+		// Slot.
+		binary.LittleEndian.PutUint64(data[1:9], uint64(s.Slot))
+	}
+	return data
+}
+
+// Decode decodes the proposal state.
+func (s *signBeaconProposalState) Decode(data []byte) error {
+	var err error
+	if len(data) == 0 {
+		return errors.New("no data supplied")
+	}
+	switch data[0] {
+	case 0x01:
+		if len(data) != 9 {
+			return fmt.Errorf("invalid version 1 data size %d", len(data))
+		}
+		s.Slot = int64(binary.LittleEndian.Uint64(data[1:9]))
+	default:
+		err = gob.NewDecoder(bytes.NewBuffer(data)).Decode(s)
+	}
+	return err
 }
 
 // OnSignBeaconProposal is called when a request to sign a beacon block proposal needs to be approved.
@@ -69,23 +102,25 @@ func (s *Service) OnSignBeaconProposal(ctx context.Context, metadata *rules.ReqM
 }
 
 func (s *Service) fetchSignBeaconProposalState(ctx context.Context, pubKey []byte) (*signBeaconProposalState, error) {
-	state := &signBeaconProposalState{
-		Slot: -1,
-	}
+	state := &signBeaconProposalState{}
 	key := make([]byte, len(pubKey)+len(actionSignBeaconProposal))
 	copy(key, pubKey)
 	copy(key[len(pubKey):], actionSignBeaconProposal)
 	data, err := s.store.Fetch(ctx, key)
-	if err == nil {
-		buf := bytes.NewBuffer(data)
-		dec := gob.NewDecoder(buf)
-		err = dec.Decode(&state)
+	if err != nil {
+		if err.Error() == "not found" {
+			// No value; set it to -1.
+			state.Slot = -1
+		} else {
+			return nil, err
+		}
+	} else {
+		err = state.Decode(data)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to decode state")
 		}
-	} else if err.Error() != "not found" {
-		return nil, err
 	}
+	log.Trace().Int64("slot", state.Slot).Msg("Returning proposal state from store")
 	return state, nil
 }
 
@@ -93,11 +128,12 @@ func (s *Service) storeSignBeaconProposalState(ctx context.Context, pubKey []byt
 	key := make([]byte, len(pubKey)+len(actionSignBeaconProposal))
 	copy(key, pubKey)
 	copy(key[len(pubKey):], actionSignBeaconProposal)
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	if err := enc.Encode(state); err != nil {
+
+	err := s.store.Store(ctx, key, state.Encode())
+	if err != nil {
 		return err
 	}
-	value := buf.Bytes()
-	return s.store.Store(ctx, key, value)
+
+	log.Trace().Int64("slot", state.Slot).Msg("Stored proposal state to store")
+	return nil
 }

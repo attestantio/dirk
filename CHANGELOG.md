@@ -1,4 +1,5 @@
 # Development
+  - Add commands to import and export slashing protection data
   - Provide additional trace logging for distributed key generation
   - Enforce requirement that peer names cannot be the same
   - Exit early in distributed key generation if execution fails

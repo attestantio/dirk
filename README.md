@@ -51,7 +51,8 @@ The following documentation is available:
   - [Distributed key generation](docs/distributed_key_generation.md) setting up multiple instances of Dirk to carry out distributed key generation
   - [Prometheus metrics](docs/metrics/prometheus.md) Prometheus metrics
   - [Configuration](docs/configuration.md) Sample annotated configuration file
-  - [Permissions](docs/permissions.md) Details information about Dirk's permissions
+  - [Permissions](docs/permissions.md) Detailed information about Dirk's permissions
+  - [Slashing protection interchange](docs/interchange.md) importing and exporting slashing protection data
 
 ## Maintainers
 

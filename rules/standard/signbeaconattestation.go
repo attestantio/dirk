@@ -16,7 +16,9 @@ package standard
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/gob"
+	"fmt"
 
 	"github.com/attestantio/dirk/rules"
 	"github.com/opentracing/opentracing-go"
@@ -27,6 +29,40 @@ import (
 type signBeaconAttestationState struct {
 	SourceEpoch int64
 	TargetEpoch int64
+}
+
+// Encode encodes the attestation state.
+func (s *signBeaconAttestationState) Encode() []byte {
+	data := make([]byte, 1+8+8)
+	// Version.
+	data[0] = 0x01
+
+	if s != nil {
+		// Source epoch.
+		binary.LittleEndian.PutUint64(data[1:9], uint64(s.SourceEpoch))
+		// Target epoch.
+		binary.LittleEndian.PutUint64(data[9:17], uint64(s.TargetEpoch))
+	}
+	return data
+}
+
+// Decode decodes the attestation state.
+func (s *signBeaconAttestationState) Decode(data []byte) error {
+	var err error
+	if len(data) == 0 {
+		return errors.New("no data supplied")
+	}
+	switch data[0] {
+	case 0x01:
+		if len(data) != 17 {
+			return fmt.Errorf("invalid version 1 data size %d", len(data))
+		}
+		s.SourceEpoch = int64(binary.LittleEndian.Uint64(data[1:9]))
+		s.TargetEpoch = int64(binary.LittleEndian.Uint64(data[9:17]))
+	default:
+		err = gob.NewDecoder(bytes.NewBuffer(data)).Decode(s)
+	}
+	return err
 }
 
 // OnSignBeaconAttestation is called when a request to sign a beacon block attestation needs to be approved.
@@ -92,24 +128,26 @@ func (s *Service) OnSignBeaconAttestation(ctx context.Context, metadata *rules.R
 }
 
 func (s *Service) fetchSignBeaconAttestationState(ctx context.Context, pubKey []byte) (*signBeaconAttestationState, error) {
-	state := &signBeaconAttestationState{
-		SourceEpoch: -1,
-		TargetEpoch: -1,
-	}
+	state := &signBeaconAttestationState{}
 	key := make([]byte, len(pubKey)+len(actionSignBeaconAttestation))
 	copy(key, pubKey)
 	copy(key[len(pubKey):], actionSignBeaconAttestation)
 	data, err := s.store.Fetch(ctx, key)
-	if err == nil {
-		buf := bytes.NewBuffer(data)
-		dec := gob.NewDecoder(buf)
-		err = dec.Decode(&state)
+	if err != nil {
+		if err.Error() == "not found" {
+			// No values; set them to -1.
+			state.SourceEpoch = -1
+			state.TargetEpoch = -1
+		} else {
+			return nil, err
+		}
+	} else {
+		err := state.Decode(data)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to decode state")
 		}
-	} else if err.Error() != "not found" {
-		return nil, err
 	}
+	log.Trace().Int64("source_epoch", state.SourceEpoch).Int64("target_epoch", state.TargetEpoch).Msg("Returning attestation state from store")
 	return state, nil
 }
 
@@ -117,11 +155,12 @@ func (s *Service) storeSignBeaconAttestationState(ctx context.Context, pubKey []
 	key := make([]byte, len(pubKey)+len(actionSignBeaconAttestation))
 	copy(key, pubKey)
 	copy(key[len(pubKey):], actionSignBeaconAttestation)
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	if err := enc.Encode(state); err != nil {
+
+	err := s.store.Store(ctx, key, state.Encode())
+	if err != nil {
 		return err
 	}
-	value := buf.Bytes()
-	return s.store.Store(ctx, key, value)
+
+	log.Trace().Int64("source_epoch", state.SourceEpoch).Int64("target_epoch", state.TargetEpoch).Msg("Stored attestation state to store")
+	return nil
 }
