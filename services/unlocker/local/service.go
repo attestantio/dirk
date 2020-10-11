@@ -63,7 +63,7 @@ func (s *Service) UnlockWallet(ctx context.Context, wallet e2wtypes.Wallet) (boo
 
 	locker, isUnlocker := wallet.(e2wtypes.WalletLocker)
 	if !isUnlocker {
-		// Account doesn't support unlocking.
+		// Wallet does not support unlocking.
 		return true, nil
 	}
 
@@ -94,7 +94,7 @@ func (s *Service) UnlockAccount(ctx context.Context, wallet e2wtypes.Wallet, acc
 
 	locker, isUnlocker := account.(e2wtypes.AccountLocker)
 	if !isUnlocker {
-		// Account doesn't support unlocking.
+		// Account does not support unlocking.
 		return true, nil
 	}
 
