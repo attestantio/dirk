@@ -1,4 +1,6 @@
 # Development
+  - Add endpoint to sign multiple attestations in a single call
+  - Provide hard-coded daemon for testing (see `testing` directory)
   - Add commands to import and export slashing protection data
   - Provide additional trace logging for distributed key generation
   - Enforce requirement that peer names cannot be the same
