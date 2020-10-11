@@ -101,7 +101,7 @@ func TestCheckAccess(t *testing.T) {
 		},
 		{
 			name:        "DeniedClient",
-			credentials: &checker.Credentials{Client: "Deny"},
+			credentials: &checker.Credentials{Client: "Deny this client"},
 			accountName: "Test wallet/Test account 2",
 			action:      ruler.ActionSign,
 			res:         core.ResultDenied,
