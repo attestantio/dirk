@@ -15,12 +15,12 @@ package standard
 
 import (
 	"context"
-	"errors"
 
 	"github.com/attestantio/dirk/util/loggers"
 	badger "github.com/dgraph-io/badger/v2"
 	"github.com/dgraph-io/badger/v2/options"
 	"github.com/opentracing/opentracing-go"
+	"github.com/pkg/errors"
 )
 
 // Store holds key/value pairs in a badger database.
@@ -102,6 +102,38 @@ func (s *Store) Fetch(ctx context.Context, key []byte) ([]byte, error) {
 		return nil, err
 	}
 	return value, nil
+}
+
+// BatchStore stores multiple keys and values.
+func (s *Store) BatchStore(ctx context.Context, keys [][]byte, values [][]byte) error {
+	span, _ := opentracing.StartSpanFromContext(ctx, "storage.BatchStore")
+	defer span.Finish()
+
+	if len(keys) == 0 {
+		return errors.New("no keys provided")
+	}
+	if len(keys) != len(values) {
+		return errors.New("key/value length mismatch")
+	}
+	for i := range keys {
+		if len(keys[i]) == 0 {
+			return errors.New("empty key provided")
+		}
+		if len(values[i]) == 0 {
+			return errors.New("empty value provided")
+		}
+	}
+
+	wb := s.db.NewWriteBatch()
+	defer wb.Cancel()
+
+	for i := range keys {
+		if err := wb.Set(keys[i], values[i]); err != nil {
+			return errors.Wrap(err, "failed to set")
+		}
+	}
+
+	return wb.Flush()
 }
 
 // Store stores the value for a given key.
