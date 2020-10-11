@@ -54,38 +54,38 @@ func TestListAccounts(t *testing.T) {
 	}{
 		{
 			name:   "Empty",
-			client: "Valid client",
+			client: "client1",
 			err:    "no request specified",
 		},
 		{
 			name:   "MissingPaths",
-			client: "Valid client",
+			client: "client1",
 			req:    &pb.ListAccountsRequest{},
 		},
 		{
 			name:   "EmptyPaths",
-			client: "Valid client",
+			client: "client1",
 			req: &pb.ListAccountsRequest{
 				Paths: []string{},
 			},
 		},
 		{
 			name:   "EmptyPath",
-			client: "Valid client",
+			client: "client1",
 			req: &pb.ListAccountsRequest{
 				Paths: []string{""},
 			},
 		},
 		{
 			name:   "NoWallet",
-			client: "Valid client",
+			client: "client1",
 			req: &pb.ListAccountsRequest{
 				Paths: []string{"/Account"},
 			},
 		},
 		{
 			name:   "UnknownWallet",
-			client: "Valid client",
+			client: "client1",
 			req: &pb.ListAccountsRequest{
 				Paths: []string{"Unknown/.*"},
 			},
@@ -93,7 +93,7 @@ func TestListAccounts(t *testing.T) {
 		},
 		{
 			name:   "UnknownPath",
-			client: "Valid client",
+			client: "client1",
 			req: &pb.ListAccountsRequest{
 				Paths: []string{"Wallet 1/nothinghere"},
 			},
@@ -101,7 +101,7 @@ func TestListAccounts(t *testing.T) {
 		},
 		{
 			name:   "BadPath",
-			client: "Valid client",
+			client: "client1",
 			req: &pb.ListAccountsRequest{
 				Paths: []string{"Wallet 1/.***"},
 			},
@@ -109,7 +109,7 @@ func TestListAccounts(t *testing.T) {
 		},
 		{
 			name:   "All",
-			client: "Valid client",
+			client: "client1",
 			req: &pb.ListAccountsRequest{
 				Paths: []string{"Wallet 1"},
 			},
@@ -125,7 +125,7 @@ func TestListAccounts(t *testing.T) {
 		},
 		{
 			name:   "Subset",
-			client: "Valid client",
+			client: "client1",
 			req: &pb.ListAccountsRequest{
 				Paths: []string{"Wallet 1/Account [0-9]+"},
 			},
@@ -133,7 +133,7 @@ func TestListAccounts(t *testing.T) {
 		},
 		{
 			name:   "Distributed",
-			client: "Valid client",
+			client: "client1",
 			req: &pb.ListAccountsRequest{
 				Paths: []string{"Wallet 2"},
 			},

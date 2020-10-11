@@ -55,36 +55,36 @@ func TestLock(t *testing.T) {
 	}{
 		{
 			name:   "Missing",
-			client: "Valid client",
+			client: "client1",
 			err:    "no request specified",
 		},
 		{
 			name:   "Empty",
-			client: "Valid client",
+			client: "client1",
 			req:    &pb.LockAccountRequest{},
 			state:  pb.ResponseState_DENIED,
 		},
 		{
 			name:   "WalletUnknown",
-			client: "Valid client",
+			client: "client1",
 			req:    &pb.LockAccountRequest{Account: "Unknown"},
 			state:  pb.ResponseState_DENIED,
 		},
 		{
 			name:   "AccountNil",
-			client: "Valid client",
+			client: "client1",
 			req:    &pb.LockAccountRequest{Account: "Wallet 1"},
 			state:  pb.ResponseState_DENIED,
 		},
 		{
 			name:   "AccountEmpty",
-			client: "Valid client",
+			client: "client1",
 			req:    &pb.LockAccountRequest{Account: "Wallet 1/"},
 			state:  pb.ResponseState_DENIED,
 		},
 		{
 			name:   "AccountUnknown",
-			client: "Valid client",
+			client: "client1",
 			req:    &pb.LockAccountRequest{Account: "Wallet 1/Unknown"},
 			state:  pb.ResponseState_DENIED,
 		},
@@ -96,7 +96,7 @@ func TestLock(t *testing.T) {
 		},
 		{
 			name:   "Good",
-			client: "Valid client",
+			client: "client1",
 			req:    &pb.LockAccountRequest{Account: "Wallet 1/Account 1"},
 			state:  pb.ResponseState_SUCCEEDED,
 		},

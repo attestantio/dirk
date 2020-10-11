@@ -35,19 +35,19 @@ func TestUnlock(t *testing.T) {
 	}{
 		{
 			name:   "Missing",
-			client: "Valid client",
+			client: "client1",
 			state:  pb.ResponseState_DENIED,
 			err:    "no request specified",
 		},
 		{
 			name:   "Empty",
-			client: "Valid client",
+			client: "client1",
 			req:    &pb.UnlockWalletRequest{},
 			state:  pb.ResponseState_DENIED,
 		},
 		{
 			name:   "WalletUnknown",
-			client: "Valid client",
+			client: "client1",
 			req: &pb.UnlockWalletRequest{
 				Wallet: "Unknown",
 			},
@@ -55,7 +55,7 @@ func TestUnlock(t *testing.T) {
 		},
 		{
 			name:   "Good",
-			client: "Valid client",
+			client: "client1",
 			req: &pb.UnlockWalletRequest{
 				Wallet:     "Wallet 1",
 				Passphrase: []byte("Wallet 1 passphrase"),
@@ -73,7 +73,7 @@ func TestUnlock(t *testing.T) {
 		},
 		{
 			name:   "PassphraseIncorrect",
-			client: "Valid client",
+			client: "client1",
 			req: &pb.UnlockWalletRequest{
 				Wallet:     "Wallet 1",
 				Passphrase: []byte("Wallet 1 passphrase bad"),

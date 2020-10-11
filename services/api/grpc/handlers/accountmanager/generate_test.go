@@ -38,13 +38,13 @@ func TestGenerate(t *testing.T) {
 		},
 		{
 			name:   "Empty",
-			client: "Valid client",
+			client: "client1",
 			state:  pb.ResponseState_DENIED,
 			err:    "no request specified",
 		},
 		{
 			name:   "GoodSimpleGeneration",
-			client: "Valid client",
+			client: "client1",
 			req: &pb.GenerateRequest{
 				Account:    "Wallet 1/New Account",
 				Passphrase: []byte("test"),
@@ -53,7 +53,7 @@ func TestGenerate(t *testing.T) {
 		},
 		{
 			name:   "GoodCompositeGeneration",
-			client: "Valid client",
+			client: "client1",
 			req: &pb.GenerateRequest{
 				Account:          "Wallet 1/New Account",
 				Participants:     uint32(3),

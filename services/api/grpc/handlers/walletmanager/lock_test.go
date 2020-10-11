@@ -58,19 +58,19 @@ func TestLock(t *testing.T) {
 	}{
 		{
 			name:   "Missing",
-			client: "Valid client",
+			client: "client1",
 			state:  pb.ResponseState_DENIED,
 			err:    "no request specified",
 		},
 		{
 			name:   "Empty",
-			client: "Valid client",
+			client: "client1",
 			req:    &pb.LockWalletRequest{},
 			state:  pb.ResponseState_DENIED,
 		},
 		{
 			name:   "WalletUnknown",
-			client: "Valid client",
+			client: "client1",
 			req: &pb.LockWalletRequest{
 				Wallet: "Unknown",
 			},
@@ -86,7 +86,7 @@ func TestLock(t *testing.T) {
 		},
 		{
 			name:   "Good",
-			client: "Valid client",
+			client: "client1",
 			req: &pb.LockWalletRequest{
 				Wallet: "Wallet 1",
 			},
