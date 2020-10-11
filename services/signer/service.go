@@ -37,6 +37,13 @@ type Service interface {
 		pubKey []byte,
 		data *rules.SignBeaconAttestationData) (core.Result, []byte)
 
+	// SignBeaconAttestations signs multiple beacon attestations.
+	SignBeaconAttestations(ctx context.Context,
+		credentials *checker.Credentials,
+		accountName []string,
+		pubKey [][]byte,
+		data []*rules.SignBeaconAttestationData) ([]core.Result, [][]byte)
+
 	// SignBeaconProposal signs a proposal for a beacon block.
 	SignBeaconProposal(ctx context.Context,
 		credentials *checker.Credentials,

@@ -113,6 +113,8 @@ type Service interface {
 	OnSign(ctx context.Context, metadata *ReqMetadata, req *SignData) Result
 	// OnSignBeaconAttestation is called when a request to sign a beacon block attestation needs to be approved.
 	OnSignBeaconAttestation(ctx context.Context, metadata *ReqMetadata, req *SignBeaconAttestationData) Result
+	// OnSignBeaconAttestations is called when a request to sign multiple beacon block attestations needs to be approved.
+	OnSignBeaconAttestations(ctx context.Context, metadata []*ReqMetadata, req []*SignBeaconAttestationData) []Result
 	// OnSignBeaconProposal is called when a request to sign a beacon block proposal needs to be approved.
 	OnSignBeaconProposal(ctx context.Context, metadata *ReqMetadata, req *SignBeaconProposalData) Result
 	// OnLockWallet is called when a request to lock a wallet needs to be approved.

@@ -15,23 +15,32 @@ package mock
 
 import (
 	"context"
-	"strings"
 
 	"github.com/attestantio/dirk/services/checker"
+	static "github.com/attestantio/dirk/services/checker/static"
 )
 
-// Service is a checker that returns true all clients and accounts except those that start with "Deny".
-type Service struct{}
-
-// New creates a new mock checker.
-func New() (*Service, error) {
-	return &Service{}, nil
-}
-
-// Check returns true unless the client or account is "Deny".
-func (s *Service) Check(ctx context.Context, credentials *checker.Credentials, account string, operation string) bool {
-	if credentials == nil {
-		return false
+// New creates a new mock checker that will deny clients called 'Deny this client' and any accounts starting with 'Deny'.
+func New() (checker.Service, error) {
+	permissions := map[string][]*checker.Permissions{
+		"Deny this client": {
+			{
+				Path:       ".*",
+				Operations: []string{"None"},
+			},
+		},
+		"client1": {
+			{
+				Path:       ".*/Deny.*",
+				Operations: []string{"None"},
+			},
+			{
+				Path:       ".*",
+				Operations: []string{"All"},
+			},
+		},
 	}
-	return !(strings.HasPrefix(credentials.Client, "Deny") || strings.Contains(account, "/Deny"))
+	return static.New(context.Background(),
+		static.WithPermissions(permissions),
+	)
 }

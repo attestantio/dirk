@@ -98,12 +98,19 @@ func (s *Service) runRules(ctx context.Context,
 	action string,
 	rulesData []*ruler.RulesData,
 ) []rules.Result {
+
+	if len(rulesData) > 1 && action == ruler.ActionSignBeaconAttestation {
+		return s.runRulesForMultipleBeaconAttestations(ctx, credentials, action, rulesData)
+	}
+
 	results := make([]rules.Result, len(rulesData))
 	for i := range rulesData {
 		results[i] = rules.UNKNOWN
 	}
-
 	for i := range rulesData {
+		if rulesData[i] == nil {
+			continue
+		}
 		var name string
 		if rulesData[i].AccountName == "" {
 			name = rulesData[i].WalletName
@@ -202,6 +209,49 @@ func (s *Service) runRules(ctx context.Context,
 	}
 
 	return results
+}
+
+// runRulesForMultipleBeaconAttestations is the fast path for multisigning beacon attestations.
+func (s *Service) runRulesForMultipleBeaconAttestations(ctx context.Context,
+	credentials *checker.Credentials,
+	action string,
+	rulesData []*ruler.RulesData,
+) []rules.Result {
+	results := make([]rules.Result, len(rulesData))
+	for i := range rulesData {
+		results[i] = rules.UNKNOWN
+	}
+
+	metadatas := make([]*rules.ReqMetadata, len(rulesData))
+	reqData := make([]*rules.SignBeaconAttestationData, len(rulesData))
+	var err error
+	for i := range rulesData {
+		var name string
+		if rulesData[i].AccountName == "" {
+			name = rulesData[i].WalletName
+		} else {
+			name = fmt.Sprintf("%s/%s", rulesData[i].WalletName, rulesData[i].AccountName)
+		}
+		log := log.With().Str("account", name).Logger()
+
+		// We are strict here; any failure in metadata or data will result in an immediate return.
+		// This ensures that the later code is simplified, and user errors are picked up quickly.
+		metadatas[i], err = s.assembleMetadata(ctx, credentials, rulesData[i].AccountName, rulesData[i].PubKey)
+		if err != nil {
+			log.Warn().Err(err).Msg("Failed to assemble metadata")
+			results[i] = rules.FAILED
+			return results
+		}
+		data, isBeaconAttestationData := rulesData[i].Data.(*rules.SignBeaconAttestationData)
+		if !isBeaconAttestationData {
+			log.Warn().Msg("Data is not for signing beacon attestation")
+			results[i] = rules.FAILED
+			return results
+		}
+		reqData[i] = data
+	}
+
+	return s.rules.OnSignBeaconAttestations(ctx, metadatas, reqData)
 }
 
 func (s *Service) assembleMetadata(ctx context.Context, credentials *checker.Credentials, accountName string, pubKey []byte) (*rules.ReqMetadata, error) {

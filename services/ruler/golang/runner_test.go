@@ -602,8 +602,8 @@ func TestRunRules(t *testing.T) {
 			credentials: &checker.Credentials{
 				Client: "signbeaconattestation",
 			},
-			results:  []rules.Result{rules.APPROVED, rules.FAILED},
-			logEntry: "Data not of expected type",
+			results:  []rules.Result{rules.UNKNOWN, rules.FAILED},
+			logEntry: "Data is not for signing beacon attestation",
 		},
 		{
 			name:   "SignBeaconAttestationGood",

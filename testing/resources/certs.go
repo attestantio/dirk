@@ -18,7 +18,8 @@ import (
 	"path/filepath"
 )
 
-var caCrt = `-----BEGIN CERTIFICATE-----
+// CACrt is the certificate authority certificate.
+var CACrt = `-----BEGIN CERTIFICATE-----
 MIIFEjCCAvqgAwIBAgIBATANBgkqhkiG9w0BAQsFADAoMSYwJAYDVQQDEx1UZXN0
 aW5nIGNlcnRpZmljYXRlIGF1dGhvcml0eTAgFw0yMDA3MTQxOTExNDVaGA8yMTE5
 MDcxNDE5MTE0M1owKDEmMCQGA1UEAxMdVGVzdGluZyBjZXJ0aWZpY2F0ZSBhdXRo
@@ -48,7 +49,9 @@ fm+IPsuBZZDxcbeps2pW5VzxTU2q2Aww0AoucreSnPgZelk8U0WAuS3afqNjCCsd
 630H9+Ssr3qrRX7iNRpLL2itWxduURi7ff4wJyDXsCIPVGAe/zyPuYKy2xdvwQcK
 qN0RjB5h
 -----END CERTIFICATE-----`
-var signerTest01Crt = `-----BEGIN CERTIFICATE-----
+
+// SignerTest01Crt is the certificate for singer-test01.
+var SignerTest01Crt = `-----BEGIN CERTIFICATE-----
 MIIEWTCCAkGgAwIBAgIQOmQoybWcXv5kykIKSdE5YjANBgkqhkiG9w0BAQsFADAo
 MSYwJAYDVQQDEx1UZXN0aW5nIGNlcnRpZmljYXRlIGF1dGhvcml0eTAgFw0yMDA3
 MTQxOTEyNTZaGA8yMTE5MDcxNDE5MTE0MlowGDEWMBQGA1UEAxMNc2lnbmVyLXRl
@@ -74,7 +77,9 @@ wu/ezoj80BkYEP5Q6YOT1pDHUsNQwJW/cSV0ELGkfxovrN9VLRGJR+8uJ6j0wWMk
 5cPmnLsvAuLPBO3iY+/w1ZKU40nebTwZL+2MyOAEidbLwqAtOhlsj9f8r0o4XBU0
 QQ9lLQoXywGU8bfdgw==
 -----END CERTIFICATE-----`
-var signerTest01Key = `-----BEGIN RSA PRIVATE KEY-----
+
+// SignerTest01Key is the certificate for singer-test01.
+var SignerTest01Key = `-----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEArI3QYd7U8s9S+s6OSL0Em/HxBqITLNO2YO/03QCOxc5+A2XD
 yp0n25YMYQThh240gmDWk2pC4ppR50mwfh12cZ+VW60QUZsLdrBcVs7DcVjE2nqm
 WLsTjWwMnWqKHFvcTjEicRgNmmQFmQUDGK6MI3bC57tI25oBzonwSZS+840CsvWk
@@ -101,7 +106,9 @@ ZKyEuQKBgQCvmHrSdXM+YvtYeCATDT7r5G0CsUPuxsAXrkdRocoE5Nxkkub3hNmK
 K3sG1MRrPsTtBgvdnBnvP4m2KiSCXfrsDNfWXGcxPfsLbJhjtmdmQ3roKdiEab3O
 /usXIC7wM2aweTKmN9A1nBcWugIVop7yS3JzQm1uNWfzPWTWuL4RMA==
 -----END RSA PRIVATE KEY-----`
-var signerTest02Crt = `-----BEGIN CERTIFICATE-----
+
+// SignerTest02Crt is the certificate for singer-test02.
+var SignerTest02Crt = `-----BEGIN CERTIFICATE-----
 MIIEWjCCAkKgAwIBAgIRAJ+RF/lFEwUcn+ENsCNJPQAwDQYJKoZIhvcNAQELBQAw
 KDEmMCQGA1UEAxMdVGVzdGluZyBjZXJ0aWZpY2F0ZSBhdXRob3JpdHkwIBcNMjAw
 NzE0MTkxMzA3WhgPMjExOTA3MTQxOTExNDJaMBgxFjAUBgNVBAMTDXNpZ25lci10
@@ -127,7 +134,9 @@ F35AG+it80P21FzlMuLpnI3zbFomlx1U7Acf2lSpYshdRrcVpIfet3M8ZaraSDNO
 mdY+QOjjjLpHwI64KqeJuCPbzdUrZW2Vth5DkDUwyX+Cld4G2HI3362NeI4gzWzG
 tnOTVaeHiYpxrArnLno=
 -----END CERTIFICATE-----`
-var signerTest02Key = `-----BEGIN RSA PRIVATE KEY-----
+
+// SignerTest02Key is the key for singer-test02.
+var SignerTest02Key = `-----BEGIN RSA PRIVATE KEY-----
 MIIEpQIBAAKCAQEAp6i9lEGdCUjMlgW3JASBlDfo1ywotM2pYSvF/H2T0YC7m4H5
 IaiSJ2sDcucgg+qlRC2qKSdGFYsCRQrVykczLsjJB+sOGfeD6D0zDJwMpH17i85l
 HKN4o54aMM5EZg+4YI9SUQrHCrq5ExcWXmMqOr0LHxSY7hseg0u9GelLBB3H+11Q
@@ -154,7 +163,9 @@ vyIG/4ECgYEAvMFs1kpWmIGuW1LI+gbXil+LLpR6l/4Lr9dbcW2oSTF88TW7Ijs6
 kIoeB/eLMWt8jDnyp9G/UoB9jfFgtvZ+gGyPizZQWy02sY0laQnmq9RXA8dkIPtL
 8zLX+YwCSclX5slV0OWwqTlzp757AYHx1rLFgaFt3rVwY6lveVITjH0=
 -----END RSA PRIVATE KEY-----`
-var signerTest03Crt = `-----BEGIN CERTIFICATE-----
+
+// SignerTest03Crt is the certificate for singer-test03.
+var SignerTest03Crt = `-----BEGIN CERTIFICATE-----
 MIIEWjCCAkKgAwIBAgIRAJu28fjs8COygbgpPnST4icwDQYJKoZIhvcNAQELBQAw
 KDEmMCQGA1UEAxMdVGVzdGluZyBjZXJ0aWZpY2F0ZSBhdXRob3JpdHkwIBcNMjAw
 NzE0MTkxMzM0WhgPMjExOTA3MTQxOTExNDJaMBgxFjAUBgNVBAMTDXNpZ25lci10
@@ -180,7 +191,9 @@ EdgVypD4J+EsKHM4vS150qV0Ipm0TbXPQNMcttm1MaBUWoiOl2ZWhhnLH3eIMTVP
 AtjX7nZ2WsXL62pOOPRzmq4mDRklrZOGJLALlAbh2GV6Vlgl0INLhGKMCg4zR9zC
 1PBzRN/jGLFUtPWDcfo=
 -----END CERTIFICATE-----`
-var signerTest03Key = `-----BEGIN RSA PRIVATE KEY-----
+
+// SignerTest03Key is the certificate for singer-test03.
+var SignerTest03Key = `-----BEGIN RSA PRIVATE KEY-----
 MIIEogIBAAKCAQEAxoNlihf9lXDAbGDKYEwIqLj/XqFw5L1UHfexlMjH0x/Ds9ZP
 sjWf1lFP5Oc99x05AMiZC8a3g4Dq4pPsLmXi06BGweNeDd5uyS+osW6OY7dANd+L
 /MzXrRmrAc/Gt5fiamPa3kD8sk6zIr2uc3BpAyU01Wnq1a3XJXz6uwBeDZ7BT9aj
@@ -207,7 +220,9 @@ egYdAoGAFH2UHTH4pa0U0PXG0GMZG40gMpBLN4jJTruynf/viwdvoKkpUWdjbjl8
 GNwlttIq9YzYfrUTLn1sYhROrEUIUFmxc2ttFGPjMUifzosVDUbzMRbwhOpSgzof
 K6dgyN0czk0YccR6L6TCQ+lGL1zNdE567TUMT8DcujPRzPp6NhA=
 -----END RSA PRIVATE KEY-----`
-var signerTest04Crt = `-----BEGIN CERTIFICATE-----
+
+// SignerTest04Crt is the certificate for singer-test04.
+var SignerTest04Crt = `-----BEGIN CERTIFICATE-----
 MIIEWTCCAkGgAwIBAgIQSVCO/y+/drLLF1/Ehl5HAjANBgkqhkiG9w0BAQsFADAo
 MSYwJAYDVQQDEx1UZXN0aW5nIGNlcnRpZmljYXRlIGF1dGhvcml0eTAgFw0yMDA3
 MTQxOTEzNDVaGA8yMTE5MDcxNDE5MTE0MlowGDEWMBQGA1UEAxMNc2lnbmVyLXRl
@@ -233,7 +248,9 @@ hedkCs/Yc/n4FDuudYvdsDHFT2x0HTZn+qkIX57gpzSek3+1b3I5hJQtWgcSx/NR
 neIRkZVTCW0R6hfKW7lea9rDTHMiyJ8jpscZjqg5KITLxJJ3ipg3miXxjeUMOZRW
 6u0QVYXCMU+um5odFQ==
 -----END CERTIFICATE-----`
-var signerTest04Key = `-----BEGIN RSA PRIVATE KEY-----
+
+// SignerTest04Key is the key for singer-test04.
+var SignerTest04Key = `-----BEGIN RSA PRIVATE KEY-----
 MIIEpQIBAAKCAQEA426MmmE0gxGxIwI0YUaKnXnWUwY1QYI6KaMK/L8NWYEYi8xp
 yoKnbrutRuiDPV/JW3wkzCOBtoDVSi6Imgw8Lk8WfP37+MRNuOikYbExcjXTdH8V
 YgaWlOjNarobu72i7uYFL/NY96floG0jBVkpAU0EOIZSfnTDcXkq3+i0EvAUcv2q
@@ -260,7 +277,9 @@ mWUszhUf8341XH7b03XU7ZGA/uL1s+pdme+0VzGVK+CqXRg2agGJ1b7tFiCTMoIM
 C7YbhCkChxM6hbgehwGWH8xj1jbVkliPe0XpABVkIACXKtQMzhg4shHlCmRTgZ+h
 xNFJxVdoGRAVUthJyUTcAxWZMH4K5giMdzcQk4YxANekoBmUw3itinA=
 -----END RSA PRIVATE KEY-----`
-var signerTest05Crt = `-----BEGIN CERTIFICATE-----
+
+// SignerTest05Crt is the certificate for singer-test05.
+var SignerTest05Crt = `-----BEGIN CERTIFICATE-----
 MIIEWTCCAkGgAwIBAgIQFx8Gc/4fzxgTzS4MtpoovTANBgkqhkiG9w0BAQsFADAo
 MSYwJAYDVQQDEx1UZXN0aW5nIGNlcnRpZmljYXRlIGF1dGhvcml0eTAgFw0yMDA3
 MTQxOTEzNTNaGA8yMTE5MDcxNDE5MTE0MlowGDEWMBQGA1UEAxMNc2lnbmVyLXRl
@@ -286,7 +305,9 @@ DQenKzBwoeY+faTZq30wAyvxfVWh1uebTxIf/7nUdUkVPVZDCwhbQCMxomXHwOhF
 vVTqf0eZISAIaBg+dVBe3NNCAfT89DtCE5j/pnqwbcK5sQYF1oxLLs0Wchz31L7Z
 8lyeVv/66rxC8CrFSQ==
 -----END CERTIFICATE-----`
-var signerTest05Key = `-----BEGIN RSA PRIVATE KEY-----
+
+// SignerTest05Key is the key for singer-test05.
+var SignerTest05Key = `-----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEAq4Kje4YaeVYrYyuppfwSnxRKP7b3y2NNSiAFR7V2+WSA0GJj
 0yJS5oGDdVoConLvQb+cy5aiz9n/6btz5LIlplowa05/3WBKlJZY3ZSCHw+K+Aky
 L4VaJIrArexgQ3tXeDeIAEaQ0J924DXh5MB0oIGjBDtfHPnClYvkOOOBboHQpuMv
@@ -313,7 +334,9 @@ Qn/3nKECgYASJ8lZrUMTl74amFSGVrd4xRPhKJTer4C1HeLlwUaAKlEksNvpNecw
 l3inYSityX8BXZzOje0pINg9Hd4+ylPzh1PxqCrRjyNNb5R4z2nJrVb8hDCcoG/p
 Mia3unc6Qwos7FDwj9okULGK9P+lq+3vDvtiFflTZZsq46qmzrEmtQ==
 -----END RSA PRIVATE KEY-----`
-var clientTest01Crt = `-----BEGIN CERTIFICATE-----
+
+// ClientTest01Crt is the certificate for client-test01.
+var ClientTest01Crt = `-----BEGIN CERTIFICATE-----
 MIIEWTCCAkGgAwIBAgIQEmQiGczWl8GehMItbxxtpTANBgkqhkiG9w0BAQsFADAo
 MSYwJAYDVQQDEx1UZXN0aW5nIGNlcnRpZmljYXRlIGF1dGhvcml0eTAgFw0yMDA3
 MTQxOTE0MTBaGA8yMTE5MDcxNDE5MTE0MlowGDEWMBQGA1UEAxMNY2xpZW50LXRl
@@ -339,7 +362,9 @@ riQ2B5PmKjvDz+nrR7aIR3nMFSlA2UAM4sGU0hmAR9XQRf7unKW95tcKRLx/+Blt
 b71wse/U4f4QKz+JUntuY/x+Q13/np/DUDz0koYRtwqe+J4nlZdSH9on1i8lTXcj
 yWJYDKQTImOKFINmag==
 -----END CERTIFICATE-----`
-var clientTest01Key = `-----BEGIN RSA PRIVATE KEY-----
+
+// ClientTest01Key is the key for client-test01.
+var ClientTest01Key = `-----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEAyCqeUpdaAp7b+2U5hCD6zNgko0I6fOr2HYuAPIYCDvB4pOg8
 WGoMMl441Xkezw57kniEvDydPLdBVzkiviyqN0ETnbZfRkpJVeQ/pZdPYOSct8Wq
 Jgc8d8rW3x+OEZwgTF+jexTvH63JlP61DB7f7Ax3X914SX9j2KYq/AmKFMK0A5Eq
@@ -366,7 +391,9 @@ kCivtwKBgQC0EKA/1BQ5dN30iz6GyBneCtJauJFnBsiNkn8ERpnfgMh1b1XlNRtj
 mCJtFtCCoOFlEW09up2daZew9yI7dJVcFqlJgSNAoQGze+1WZXEA2QhHfJprSmGi
 MWxGRw6f60FdvZss49OMsMDyRetDDL/dWzwXVQ4QfEAYpDBUUSSMFg==
 -----END RSA PRIVATE KEY-----`
-var clientTest02Crt = `-----BEGIN CERTIFICATE-----
+
+// ClientTest02Crt is the certificate for client-test02.
+var ClientTest02Crt = `-----BEGIN CERTIFICATE-----
 MIIEWjCCAkKgAwIBAgIRANEPhPoPTEoCoNdq5yZgyDcwDQYJKoZIhvcNAQELBQAw
 KDEmMCQGA1UEAxMdVGVzdGluZyBjZXJ0aWZpY2F0ZSBhdXRob3JpdHkwIBcNMjAw
 NzE0MTkxNDE4WhgPMjExOTA3MTQxOTExNDJaMBgxFjAUBgNVBAMTDWNsaWVudC10
@@ -392,7 +419,9 @@ jjWljvDx7qK/t4gwk23/9SQoPp66Yr60Jxm2vK1o70wxxKAe0G/skMO7oH8+1td/
 L/7LyA4miSuym3OotnmL54xOAIZvwdr7ULlHaADt6N3QUpmjIfF5za7dzCek8iWv
 +gv/m7jLA2aihJxgcOM=
 -----END CERTIFICATE-----`
-var clientTest02Key = `-----BEGIN RSA PRIVATE KEY-----
+
+// ClientTest02Key is the key for client-test02.
+var ClientTest02Key = `-----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEAqODE1RetKlNjL3HFdpj/9yCzONIc04Q4EaSXfiIw9Sgbzblm
 0ZfbyZUU9zbsJo42IBuExM2DMRMJ6Zjh0gprZhsuLECj6Le4I64Kl3VSre//f7qj
 pdob/QfdgGIiujm9nr93bH8LxgqtCPgqaGkKnSGMDeWUFTFzjM3hZbu+P4yvxxQt
@@ -419,7 +448,9 @@ V8PnYQKBgHJ6g/YmCVsTETxiL7jQlLhmiitI4DBtu7FJmh8L75eyZs7JyXrrsmu7
 +IMc+2eF2yB0Po9TInzCyN/eLVANZEL0uqQjT1F8MoftJspe5GxRtTtT/iv02B/O
 5DKMSYKqDJVSH4D+Rw9RJNYQvElXBXo2/jwnTxaEXUarNP8WDRb1
 -----END RSA PRIVATE KEY-----`
-var clientTest03Crt = `-----BEGIN CERTIFICATE-----
+
+// ClientTest03Crt is the certificate for client-test03.
+var ClientTest03Crt = `-----BEGIN CERTIFICATE-----
 MIIEWjCCAkKgAwIBAgIRAOEjdJ1nM7Zr50Ht9TA4s4EwDQYJKoZIhvcNAQELBQAw
 KDEmMCQGA1UEAxMdVGVzdGluZyBjZXJ0aWZpY2F0ZSBhdXRob3JpdHkwIBcNMjAw
 NzE0MTkxNDI2WhgPMjExOTA3MTQxOTExNDJaMBgxFjAUBgNVBAMTDWNsaWVudC10
@@ -445,7 +476,9 @@ yaDE2hKJ3EAMU19pENsoQ03RUdXZdNcIgV9bfQXjVNQgR0M3BJsvtmD1Axc2iz8Y
 muV8tNq6HtzTVQENwY9XjOQuMA0eIhjfScNtopgVqzKuH+OtmkMULK/MREce6G3D
 ZDPJlY1l7uBTkvtcg/4=
 -----END CERTIFICATE-----`
-var clientTest03Key = `-----BEGIN RSA PRIVATE KEY-----
+
+// ClientTest03Key is the key for client-test03.
+var ClientTest03Key = `-----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEAoInswVcsfIstIkQs5obf/6bykZ80TAQmrtAW+VS4WJMwDJ0A
 isbu5Pfm4u9K4FdxzjsxX2BCURR6jQyqqHUULvK5gjAUsMkv7gCyZNprP0HFFVw+
 90Org9ptqwET12vQK6DSdDjZ2jk0Uxh6+hIfqG4go+5ucrh6ml+0AXDOAF6nTfB+
@@ -473,57 +506,75 @@ XDCQeaEUOuLjokRojHrN27ghz3wJoUJzTdjtHZ+yE9s2cW9VXRUxkun0aLcQd/iY
 xvXEII1qCvhI4mmWvbcepvtswQmTEeOroM/27/IIEAOvTyqd6rDi2A==
 -----END RSA PRIVATE KEY-----`
 
+// SignerCerts gives access to signer certificates by ID.
+var SignerCerts = map[uint64][]byte{
+	1: []byte(SignerTest01Crt),
+	2: []byte(SignerTest02Crt),
+	3: []byte(SignerTest03Crt),
+	4: []byte(SignerTest04Crt),
+	5: []byte(SignerTest05Crt),
+}
+
+// SignerKeys gives access to signer keys by ID.
+var SignerKeys = map[uint64][]byte{
+	1: []byte(SignerTest01Key),
+	2: []byte(SignerTest02Key),
+	3: []byte(SignerTest03Key),
+	4: []byte(SignerTest04Key),
+	5: []byte(SignerTest05Key),
+}
+
 // SetupCerts sets up a number of certificates on-disk in the provided location.
 func SetupCerts(base string) error {
-	if err := ioutil.WriteFile(filepath.Join(base, "ca.crt"), []byte(caCrt), 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(base, "ca.crt"), []byte(CACrt), 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(base, "signer-test01.crt"), []byte(signerTest01Crt), 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(base, "signer-test01.crt"), []byte(SignerTest01Crt), 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(base, "signer-test01.key"), []byte(signerTest01Key), 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(base, "signer-test01.key"), []byte(SignerTest01Key), 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(base, "signer-test02.crt"), []byte(signerTest02Crt), 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(base, "signer-test02.crt"), []byte(SignerTest02Crt), 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(base, "signer-test02.key"), []byte(signerTest02Key), 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(base, "signer-test02.key"), []byte(SignerTest02Key), 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(base, "signer-test03.crt"), []byte(signerTest03Crt), 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(base, "signer-test03.crt"), []byte(SignerTest03Crt), 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(base, "signer-test03.key"), []byte(signerTest03Key), 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(base, "signer-test03.key"), []byte(SignerTest03Key), 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(base, "signer-test04.crt"), []byte(signerTest04Crt), 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(base, "signer-test04.crt"), []byte(SignerTest04Crt), 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(base, "signer-test04.key"), []byte(signerTest04Key), 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(base, "signer-test04.key"), []byte(SignerTest04Key), 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(base, "signer-test05.crt"), []byte(signerTest05Crt), 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(base, "signer-test05.crt"), []byte(SignerTest05Crt), 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(base, "signer-test05.key"), []byte(signerTest05Key), 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(base, "signer-test05.key"), []byte(SignerTest05Key), 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(base, "client-test01.crt"), []byte(clientTest01Crt), 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(base, "client-test01.crt"), []byte(ClientTest01Crt), 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(base, "client-test01.key"), []byte(clientTest01Key), 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(base, "client-test01.key"), []byte(ClientTest01Key), 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(base, "client-test02.crt"), []byte(clientTest02Crt), 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(base, "client-test02.crt"), []byte(ClientTest02Crt), 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(base, "client-test02.key"), []byte(clientTest02Key), 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(base, "client-test02.key"), []byte(ClientTest02Key), 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(base, "client-test03.crt"), []byte(clientTest03Crt), 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(base, "client-test03.crt"), []byte(ClientTest03Crt), 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(base, "client-test03.key"), []byte(clientTest03Key), 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(base, "client-test03.key"), []byte(ClientTest03Key), 0600); err != nil {
 		return err
 	}
 

@@ -86,10 +86,6 @@ func (s *Service) Check(ctx context.Context, credentials *checker.Credentials, a
 		log.Warn().Err(err).Str("result", "denied").Msg("Missing wallet name")
 		return false
 	}
-	if accountName == "" {
-		log.Warn().Err(err).Str("result", "denied").Msg("Missing account name")
-		return false
-	}
 
 	paths, exists := s.access[credentials.Client]
 	if !exists {
