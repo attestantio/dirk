@@ -63,50 +63,49 @@ func (s *Service) contribution(ctx context.Context, generation *generation) erro
 	return nil
 }
 
-// zeroContribution generates a contribution with the leading secret key 0, used to aggregate without altering an already-present
-// key.
-//func (s *Service) zeroContribution(ctx context.Context, generation *generation) error {
-//	threshold := generation.threshold
-//	participants := generation.participants
+// zeroContribution generates a contribution with the leading secret key 0, used to aggregate without altering an already-present key.
+// func (s *Service) zeroContribution(ctx context.Context, generation *generation) error {
+// 	threshold := generation.threshold
+// 	participants := generation.participants
 //
-//	// Create arrays of m secret and public (verification) keys.
-//	sks := make([]bls.SecretKey, threshold)
-//	verificationKeys := make([]bls.PublicKey, threshold)
-//	for i := uint32(0); i < threshold; i++ {
-//		sks[i] = bls.SecretKey{}
-//		if i > 0 {
-//			sks[i].SetByCSPRNG()
-//		}
-//		verificationKeys[i] = *sks[i].GetPublicKey()
-//	}
+// 	// Create arrays of m secret and public (verification) keys.
+// 	sks := make([]bls.SecretKey, threshold)
+// 	verificationKeys := make([]bls.PublicKey, threshold)
+// 	for i := uint32(0); i < threshold; i++ {
+// 		sks[i] = bls.SecretKey{}
+// 		if i > 0 {
+// 			sks[i].SetByCSPRNG()
+// 		}
+// 		verificationKeys[i] = *sks[i].GetPublicKey()
+// 	}
 //
-//	// Generate a secret for each ID.
-//	secrets := make(map[uint64]bls.SecretKey, len(participants))
-//	for _, participant := range participants {
-//		secret := bls.SecretKey{}
-//		if err := secret.Set(sks, util.BLSID(participant.ID)); err != nil {
-//			return errors.Wrap(err, "failed to set contribution")
-//		}
-//		secrets[participant.ID] = secret
-//	}
+// 	// Generate a secret for each ID.
+// 	secrets := make(map[uint64]bls.SecretKey, len(participants))
+// 	for _, participant := range participants {
+// 		secret := bls.SecretKey{}
+// 		if err := secret.Set(sks, util.BLSID(participant.ID)); err != nil {
+// 			return errors.Wrap(err, "failed to set contribution")
+// 		}
+// 		secrets[participant.ID] = secret
+// 	}
 //
-//	// Confirm the secrets.
-//	for k, v := range secrets {
-//		var vVecKey bls.PublicKey
-//		if err := vVecKey.Set(verificationKeys, util.BLSID(k)); err != nil {
-//			return errors.Wrap(err, "failed contribution generation")
-//		}
-//		if !v.GetPublicKey().IsEqual(&vVecKey) {
-//			return errors.New("failed contribution verification")
-//		}
-//	}
+// 	// Confirm the secrets.
+// 	for k, v := range secrets {
+// 		var vVecKey bls.PublicKey
+// 		if err := vVecKey.Set(verificationKeys, util.BLSID(k)); err != nil {
+// 			return errors.Wrap(err, "failed contribution generation")
+// 		}
+// 		if !v.GetPublicKey().IsEqual(&vVecKey) {
+// 			return errors.New("failed contribution verification")
+// 		}
+// 	}
 //
-//	generation.sharedSecrets[generation.id] = secrets[generation.id]
-//	generation.sharedVVecs[generation.id] = verificationKeys
-//	generation.distributionSecrets = secrets
+// 	generation.sharedSecrets[generation.id] = secrets[generation.id]
+// 	generation.sharedVVecs[generation.id] = verificationKeys
+// 	generation.distributionSecrets = secrets
 //
-//	return nil
-//}
+// 	return nil
+// }
 
 // verifyContribution verifies another participant's contribution.
 func verifyContribution(id uint64, secretShare bls.SecretKey, vVec []bls.PublicKey) bool {

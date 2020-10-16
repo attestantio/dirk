@@ -27,7 +27,6 @@ import (
 	zerologger "github.com/rs/zerolog/log"
 	"github.com/wealdtech/go-bytesutil"
 	e2wallet "github.com/wealdtech/go-eth2-wallet"
-	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 	hd "github.com/wealdtech/go-eth2-wallet-hd/v2"
 	nd "github.com/wealdtech/go-eth2-wallet-nd/v2"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
@@ -43,6 +42,7 @@ type Service struct {
 	walletsMx     sync.RWMutex
 	accounts      map[string]e2wtypes.Account
 	accountsMx    sync.RWMutex
+	encryptor     e2wtypes.Encryptor
 }
 
 // module-wide log.
@@ -63,6 +63,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 
 	s := &Service{
 		monitor:     parameters.monitor,
+		encryptor:   parameters.encryptor,
 		stores:      parameters.stores,
 		pubKeyPaths: make(map[[48]byte]string),
 		wallets:     make(map[string]e2wtypes.Wallet),
@@ -173,10 +174,9 @@ func (s *Service) FetchAccountByKey(ctx context.Context, pubKey []byte) (e2wtype
 	}
 
 	// We don't.  Trawl wallets to find the result.
-	encryptor := keystorev4.New()
 	for _, store := range s.stores {
 		for walletBytes := range store.RetrieveWallets() {
-			wallet, err := walletFromBytes(ctx, walletBytes, store, encryptor)
+			wallet, err := walletFromBytes(ctx, walletBytes, store, s.encryptor)
 			if err != nil {
 				log.Error().Err(err).Msg("Failed to decode wallet")
 				continue

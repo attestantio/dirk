@@ -31,7 +31,6 @@ import (
 	zerologger "github.com/rs/zerolog/log"
 	e2wallet "github.com/wealdtech/go-eth2-wallet"
 	distributed "github.com/wealdtech/go-eth2-wallet-distributed"
-	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
 
@@ -41,6 +40,7 @@ type Service struct {
 	senderSvc            sender.Service
 	peersSvc             peers.Service
 	unlockerSvc          unlocker.Service
+	encryptor            e2wtypes.Encryptor
 	id                   uint64
 	stores               []e2wtypes.Store
 	generationPassphrase []byte
@@ -72,6 +72,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		peersSvc:             parameters.peers,
 		id:                   parameters.id,
 		stores:               parameters.stores,
+		encryptor:            parameters.encryptor,
 		generationPassphrase: parameters.generationPassphrase,
 		generations:          make(map[string]*generation),
 	}
@@ -219,7 +220,7 @@ func (s *Service) OnCommit(ctx context.Context, sender uint64, account string, c
 		log.Warn().Err(err).Str("path", account).Msg("Failed to obtain wallet and accout names from path")
 		return nil, nil, ErrNotCreated
 	}
-	retrievedWallet, err := distributed.OpenWallet(ctx, walletName, s.stores[0], keystorev4.New())
+	retrievedWallet, err := distributed.OpenWallet(ctx, walletName, s.stores[0], s.encryptor)
 	if err != nil {
 		log.Warn().Err(err).Msg("Failed to retrieve wallet for created account")
 		return nil, nil, ErrNotCreated
@@ -304,7 +305,7 @@ func (s *Service) storeDistributedKey(ctx context.Context,
 	for i := range verificationVector {
 		vVec[i] = verificationVector[i].Serialize()
 	}
-	wallet, err := distributed.OpenWallet(ctx, walletName, store, keystorev4.New())
+	wallet, err := distributed.OpenWallet(ctx, walletName, store, s.encryptor)
 	if err != nil {
 		return errors.Wrap(err, "failed to open wallet")
 	}

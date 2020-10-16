@@ -138,19 +138,19 @@ func (s *Service) createServer(name string, certPEMBlock []byte, keyPEMBlock []b
 	}
 
 	if name == "" {
-		return errors.New("No server name provided; cannot proceed")
+		return errors.New("no server name provided; cannot proceed")
 	}
 
 	serverCert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
 	if err != nil {
-		return errors.Wrap(err, "Failed to load server keypair")
+		return errors.Wrap(err, "failed to load server keypair")
 	}
 
 	certPool := x509.NewCertPool()
 	if len(caPEMBlock) > 0 {
 		// Read in the certificate authority certificate; this is required to validate client certificates on incoming connections.
 		if ok := certPool.AppendCertsFromPEM(caPEMBlock); !ok {
-			return errors.Wrap(err, "Could not add CA certificate to pool")
+			return errors.New("could not add CA certificate to pool")
 		}
 	}
 

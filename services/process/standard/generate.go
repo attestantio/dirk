@@ -138,7 +138,7 @@ func (s *Service) generateDistributed(ctx context.Context, credentials *checker.
 	participants, err := s.peersSvc.Suitable(numParticipants)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to select suitable participants")
-		return nil, nil, errors.New("No suitable participants")
+		return nil, nil, errors.New("no suitable participants")
 	}
 
 	// Send prepare request to all participants.

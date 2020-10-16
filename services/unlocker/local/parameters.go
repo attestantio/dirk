@@ -15,6 +15,7 @@ package local
 
 import (
 	"github.com/attestantio/dirk/services/metrics"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
 
@@ -67,7 +68,9 @@ func WithAccountPassphrases(passphrases []string) Parameter {
 // parseAndCheckParameters parses and checks parameters to ensure that mandatory parameters are present and correct.
 func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	parameters := parameters{
-		logLevel: zerolog.GlobalLevel(),
+		logLevel:           zerolog.GlobalLevel(),
+		walletPassphrases:  []string{},
+		accountPassphrases: []string{},
 	}
 	for _, p := range params {
 		if params != nil {
@@ -78,6 +81,12 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	if parameters.monitor == nil {
 		// Use no-op monitor.
 		parameters.monitor = &noopMonitor{}
+	}
+	if parameters.walletPassphrases == nil {
+		return nil, errors.New("no wallet passphrases supplied")
+	}
+	if parameters.accountPassphrases == nil {
+		return nil, errors.New("no account passphrases supplied")
 	}
 
 	return &parameters, nil

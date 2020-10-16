@@ -19,6 +19,7 @@ import (
 
 	"github.com/attestantio/dirk/services/unlocker/local"
 	"github.com/attestantio/dirk/testing/mock"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	e2types "github.com/wealdtech/go-eth2-types/v2"
@@ -28,6 +29,53 @@ import (
 	scratch "github.com/wealdtech/go-eth2-wallet-store-scratch"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
+
+func TestService(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name   string
+		params []local.Parameter
+		err    string
+	}{
+		{
+			name: "Nil",
+		},
+		{
+			name: "NilWalletPassphrases",
+			params: []local.Parameter{
+				local.WithWalletPassphrases(nil),
+			},
+			err: "problem with parameters: no wallet passphrases supplied",
+		},
+		{
+			name: "NilAccountPassphrases",
+			params: []local.Parameter{
+				local.WithAccountPassphrases(nil),
+			},
+			err: "problem with parameters: no account passphrases supplied",
+		},
+		{
+			name: "Good",
+			params: []local.Parameter{
+				local.WithMonitor(nil),
+				local.WithLogLevel(zerolog.Disabled),
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := local.New(ctx, test.params...)
+
+			if test.err != "" {
+				require.EqualError(t, err, test.err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
 
 func TestUnlockWallet(t *testing.T) {
 	ctx := context.Background()

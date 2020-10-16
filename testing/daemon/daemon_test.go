@@ -23,6 +23,6 @@ import (
 
 func TestDaemon(t *testing.T) {
 	ctx := context.Background()
-	_, _, err := daemon.New(ctx, "", 1, 12345)
+	_, _, err := daemon.New(ctx, "", 1, 12345, map[uint64]string{1: "server-test01:12345"})
 	require.NoError(t, err)
 }

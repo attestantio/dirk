@@ -74,7 +74,7 @@ import (
 )
 
 // ReleaseVersion is the release version for the code.
-var ReleaseVersion = "0.8.0"
+var ReleaseVersion = "0.9.0-prerelease"
 
 // BuildVersion is the build version for the code.
 var BuildVersion = uint64(1)
@@ -107,7 +107,8 @@ func main() {
 
 	closer, err := initTracing()
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to initialise tracing")
+		log.Error().Err(err).Msg("Failed to initialise tracing")
+		return
 	}
 	if closer != nil {
 		defer closer.Close()
@@ -116,12 +117,14 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU() * 8)
 
 	if err := e2types.InitBLS(); err != nil {
-		log.Fatal().Err(err).Msg("Failed to initialise BLS library")
+		log.Error().Err(err).Msg("Failed to initialise BLS library")
+		return
 	}
 
 	monitor, err := startMonitor(ctx)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to start metrics service")
+		log.Error().Err(err).Msg("Failed to start metrics service")
+		return
 	}
 	setBuildVersion(ctx, monitor)
 	var readyMonitor metrics.ReadyMonitor
@@ -134,7 +137,8 @@ func main() {
 
 	err = startServices(ctx, majordomo, monitor)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to initialise services")
+		log.Error().Err(err).Msg("Failed to initialise services")
+		return
 	}
 	readyMonitor.Ready(true)
 
@@ -197,7 +201,7 @@ func fetchConfig() error {
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return errors.Wrap(err, "failed to read configuration file")
+			return errors.New("failed to read configuration file")
 		}
 	}
 
@@ -588,7 +592,7 @@ func initStores(ctx context.Context) ([]e2wtypes.Store, error) {
 		return nil, errors.Wrap(err, "failed to initialise stores")
 	}
 	if len(stores) == 0 {
-		return nil, errors.Wrap(err, "no stores")
+		return nil, errors.New("no stores")
 	}
 	return stores, nil
 }

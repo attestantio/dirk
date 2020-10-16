@@ -17,13 +17,15 @@ import (
 	"github.com/attestantio/dirk/services/metrics"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
 
 type parameters struct {
-	logLevel zerolog.Level
-	monitor  metrics.FetcherMonitor
-	stores   []e2wtypes.Store
+	logLevel  zerolog.Level
+	monitor   metrics.FetcherMonitor
+	encryptor e2wtypes.Encryptor
+	stores    []e2wtypes.Store
 }
 
 // Parameter is the interface for service parameters.
@@ -51,6 +53,13 @@ func WithMonitor(monitor metrics.FetcherMonitor) Parameter {
 	})
 }
 
+// WithEncryptor sets the encryptor for this module.
+func WithEncryptor(encryptor e2wtypes.Encryptor) Parameter {
+	return parameterFunc(func(p *parameters) {
+		p.encryptor = encryptor
+	})
+}
+
 // WithStores sets the stores for this module.
 func WithStores(stores []e2wtypes.Store) Parameter {
 	return parameterFunc(func(p *parameters) {
@@ -61,7 +70,8 @@ func WithStores(stores []e2wtypes.Store) Parameter {
 // parseAndCheckParameters parses and checks parameters to ensure that mandatory parameters are present and correct.
 func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	parameters := parameters{
-		logLevel: zerolog.GlobalLevel(),
+		logLevel:  zerolog.GlobalLevel(),
+		encryptor: keystorev4.New(),
 	}
 	for _, p := range params {
 		if params != nil {
@@ -73,8 +83,8 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 		// Use no-op monitor.
 		parameters.monitor = &noopMonitor{}
 	}
-	if parameters.stores == nil {
-		return nil, errors.New("no stores specified")
+	if parameters.encryptor == nil {
+		return nil, errors.New("no encryptor specified")
 	}
 	if len(parameters.stores) == 0 {
 		return nil, errors.New("no stores specified")

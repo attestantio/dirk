@@ -21,6 +21,7 @@ import (
 	"github.com/attestantio/dirk/services/unlocker"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
 
@@ -30,6 +31,7 @@ type parameters struct {
 	checker              checker.Service
 	sender               sender.Service
 	unlocker             unlocker.Service
+	encryptor            e2wtypes.Encryptor
 	id                   uint64
 	peers                peers.Service
 	stores               []e2wtypes.Store
@@ -82,6 +84,13 @@ func WithUnlocker(unlocker unlocker.Service) Parameter {
 	})
 }
 
+// WithEncryptor sets the encryptor for this module.
+func WithEncryptor(encryptor e2wtypes.Encryptor) Parameter {
+	return parameterFunc(func(p *parameters) {
+		p.encryptor = encryptor
+	})
+}
+
 // WithPeers sets the peers for this module.
 func WithPeers(peers peers.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
@@ -113,7 +122,8 @@ func WithGenerationPassphrase(generationPassphrase []byte) Parameter {
 // parseAndCheckParameters parses and checks parameters to ensure that mandatory parameters are present and correct.
 func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	parameters := parameters{
-		logLevel: zerolog.GlobalLevel(),
+		logLevel:  zerolog.GlobalLevel(),
+		encryptor: keystorev4.New(),
 	}
 	for _, p := range params {
 		if params != nil {
@@ -133,6 +143,9 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	}
 	if parameters.unlocker == nil {
 		return nil, errors.New("no unlocker specified")
+	}
+	if parameters.encryptor == nil {
+		return nil, errors.New("no encryptor specified")
 	}
 	if parameters.id == 0 {
 		return nil, errors.New("no ID specified")
