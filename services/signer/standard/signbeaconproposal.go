@@ -22,16 +22,8 @@ import (
 	"github.com/attestantio/dirk/rules"
 	"github.com/attestantio/dirk/services/checker"
 	"github.com/attestantio/dirk/services/ruler"
+	spec "github.com/attestantio/go-eth2-client/spec/phase0"
 )
-
-// BeaconBlockHeader is a copy of the Ethereum 2 BeaconBlockHeader struct with SSZ size information.
-type BeaconBlockHeader struct {
-	Slot          uint64
-	ProposerIndex uint64
-	ParentRoot    []byte `ssz-size:"32"`
-	StateRoot     []byte `ssz-size:"32"`
-	BodyRoot      []byte `ssz-size:"32"`
-}
 
 // SignBeaconProposal signs a proposal for a beacon block.
 func (s *Service) SignBeaconProposal(
@@ -114,22 +106,28 @@ func (s *Service) SignBeaconProposal(
 		return core.ResultFailed, nil
 	}
 
-	// Obtain the signing root of the data.
-	blockHeader := &BeaconBlockHeader{
+	// Create a spec version of the beacon block header to obtain its hash tree root.
+	blockHeader := &spec.BeaconBlockHeader{
 		Slot:          data.Slot,
 		ProposerIndex: data.ProposerIndex,
 		ParentRoot:    data.ParentRoot,
 		StateRoot:     data.StateRoot,
 		BodyRoot:      data.BodyRoot,
 	}
-
-	// Sign it.
-	signingRoot, err := generateSigningRootFromData(ctx, blockHeader, data.Domain)
+	dataRoot, err := blockHeader.HashTreeRoot()
+	if err != nil {
+		log.Error().Err(err).Str("result", "failed").Msg("Failed to generate data root")
+		s.monitor.SignCompleted(started, "proposal", core.ResultFailed)
+		return core.ResultFailed, nil
+	}
+	signingRoot, err := generateSigningRoot(ctx, dataRoot[:], data.Domain)
 	if err != nil {
 		log.Error().Err(err).Str("result", "failed").Msg("Failed to generate signing root")
 		s.monitor.SignCompleted(started, "proposal", core.ResultFailed)
 		return core.ResultFailed, nil
 	}
+
+	// Sign it.
 	signature, err := signRoot(ctx, account, signingRoot[:])
 	if err != nil {
 		log.Error().Err(err).Str("result", "failed").Msg("Failed to sign")

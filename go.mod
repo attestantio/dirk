@@ -6,8 +6,10 @@ require (
 	cloud.google.com/go v0.68.0 // indirect
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v0.9.0 // indirect
+	github.com/attestantio/go-eth2-client v0.6.8
 	github.com/dgraph-io/badger/v2 v2.2007.2
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
+	github.com/ferranbt/fastssz v0.0.0-20200826142241-3a913c5a1313
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/golang/protobuf v1.4.2
 	github.com/golang/snappy v0.0.2 // indirect
@@ -24,7 +26,6 @@ require (
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/common v0.14.0 // indirect
 	github.com/prometheus/procfs v0.2.0 // indirect
-	github.com/prysmaticlabs/go-ssz v0.0.0-20200612203617-6d5c9aa213ae
 	github.com/rs/zerolog v1.20.0
 	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/assertions v1.0.0 // indirect

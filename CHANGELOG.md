@@ -1,4 +1,5 @@
 # Development
+  - Use fastssz for calculating hash tree roots
   - Add endpoint to sign multiple attestations in a single call
   - Provide hard-coded daemon for testing (see `testing` directory)
   - Add commands to import and export slashing protection data

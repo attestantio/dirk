@@ -22,22 +22,8 @@ import (
 	"github.com/attestantio/dirk/rules"
 	"github.com/attestantio/dirk/services/checker"
 	"github.com/attestantio/dirk/services/ruler"
+	spec "github.com/attestantio/go-eth2-client/spec/phase0"
 )
-
-// Checkpoint is a copy of the Ethereum 2 Checkpoint struct with SSZ size information.
-type Checkpoint struct {
-	Epoch uint64
-	Root  []byte `ssz-size:"32"`
-}
-
-// BeaconAttestation is a copy of the Ethereum 2 BeaconAttestation struct with SSZ size information.
-type BeaconAttestation struct {
-	Slot            uint64
-	CommitteeIndex  uint64
-	BeaconBlockRoot []byte `ssz-size:"32"`
-	Source          *Checkpoint
-	Target          *Checkpoint
-}
 
 // SignBeaconAttestation signs a attestation for a beacon block.
 func (s *Service) SignBeaconAttestation(
@@ -130,28 +116,34 @@ func (s *Service) SignBeaconAttestation(
 		return core.ResultFailed, nil
 	}
 
-	// Create a local copy of the data; we need ssz size information to calculate the correct root.
-	attestation := &BeaconAttestation{
+	// Create a spec version of the attestation to obtain its hash tree root.
+	attestation := &spec.AttestationData{
 		Slot:            data.Slot,
-		CommitteeIndex:  data.CommitteeIndex,
+		Index:           data.CommitteeIndex,
 		BeaconBlockRoot: data.BeaconBlockRoot,
-		Source: &Checkpoint{
+		Source: &spec.Checkpoint{
 			Epoch: data.Source.Epoch,
 			Root:  data.Source.Root,
 		},
-		Target: &Checkpoint{
+		Target: &spec.Checkpoint{
 			Epoch: data.Target.Epoch,
 			Root:  data.Target.Root,
 		},
 	}
-
-	// Sign it.
-	signingRoot, err := generateSigningRootFromData(ctx, attestation, data.Domain)
+	dataRoot, err := attestation.HashTreeRoot()
 	if err != nil {
 		log.Error().Err(err).Str("result", "failed").Msg("Failed to generate signing root")
 		s.monitor.SignCompleted(started, "attestation", core.ResultFailed)
 		return core.ResultFailed, nil
 	}
+	signingRoot, err := generateSigningRoot(ctx, dataRoot[:], data.Domain)
+	if err != nil {
+		log.Error().Err(err).Str("result", "failed").Msg("Failed to generate signing root")
+		s.monitor.SignCompleted(started, "attestation", core.ResultFailed)
+		return core.ResultFailed, nil
+	}
+
+	// Sign it.
 	signature, err := signRoot(ctx, account, signingRoot[:])
 	if err != nil {
 		log.Error().Err(err).Str("result", "failed").Msg("Failed to sign")

@@ -95,13 +95,14 @@ func (s *Service) SignGeneric(
 		return core.ResultFailed, nil
 	}
 
-	// Sign it.
-	signingRoot, err := generateSigningRootFromRoot(ctx, data.Data, data.Domain)
+	signingRoot, err := generateSigningRoot(ctx, data.Data, data.Domain)
 	if err != nil {
 		log.Error().Err(err).Str("result", "failed").Msg("Failed to generate signing root")
 		s.monitor.SignCompleted(started, "generic", core.ResultFailed)
 		return core.ResultFailed, nil
 	}
+
+	// Sign it.
 	signature, err := signRoot(ctx, account, signingRoot[:])
 	if err != nil {
 		log.Error().Err(err).Str("result", "failed").Msg("Failed to sign")

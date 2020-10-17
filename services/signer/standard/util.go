@@ -17,28 +17,16 @@ import (
 	context "context"
 	"errors"
 
-	ssz "github.com/prysmaticlabs/go-ssz"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
 
-func generateSigningRootFromData(ctx context.Context, data interface{}, domain []byte) ([32]byte, error) {
-	objRoot, err := ssz.HashTreeRoot(data)
-	if err != nil {
-		return [32]byte{}, err
+// generateSigningRoot generates a signing root from a data root and domain.
+func generateSigningRoot(ctx context.Context, root []byte, domain []byte) ([32]byte, error) {
+	signingData := &SigningRoot{
+		DataRoot: root,
+		Domain:   domain,
 	}
-
-	return generateSigningRootFromRoot(ctx, objRoot[:], domain)
-}
-
-func generateSigningRootFromRoot(ctx context.Context, root []byte, domain []byte) ([32]byte, error) {
-	signingData := struct {
-		Hash   []byte `ssz-size:"32"`
-		Domain []byte `ssz-size:"32"`
-	}{
-		Hash:   root,
-		Domain: domain,
-	}
-	return ssz.HashTreeRoot(signingData)
+	return signingData.HashTreeRoot()
 }
 
 func signRoot(ctx context.Context, account e2wtypes.Account, root []byte) ([]byte, error) {

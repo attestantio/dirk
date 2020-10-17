@@ -23,6 +23,7 @@ import (
 	"github.com/attestantio/dirk/services/checker"
 	"github.com/attestantio/dirk/services/ruler"
 	"github.com/attestantio/dirk/util"
+	spec "github.com/attestantio/go-eth2-client/spec/phase0"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
 
@@ -171,29 +172,36 @@ func (s *Service) SignBeaconAttestations(
 				continue
 			}
 
-			// Create a local copy of the data; we need ssz size information to calculate the correct root.
-			attestation := &BeaconAttestation{
+			// Create a spec version of the attestation to obtain its hash tree root.
+			attestation := &spec.AttestationData{
 				Slot:            data[i].Slot,
-				CommitteeIndex:  data[i].CommitteeIndex,
+				Index:           data[i].CommitteeIndex,
 				BeaconBlockRoot: data[i].BeaconBlockRoot,
-				Source: &Checkpoint{
+				Source: &spec.Checkpoint{
 					Epoch: data[i].Source.Epoch,
 					Root:  data[i].Source.Root,
 				},
-				Target: &Checkpoint{
+				Target: &spec.Checkpoint{
 					Epoch: data[i].Target.Epoch,
 					Root:  data[i].Target.Root,
 				},
 			}
-
-			// Sign it.
-			signingRoot, err := generateSigningRootFromData(ctx, attestation, data[i].Domain)
+			dataRoot, err := attestation.HashTreeRoot()
+			if err != nil {
+				log.Error().Err(err).Str("result", "failed").Msg("Failed to generate data root")
+				s.monitor.SignCompleted(started, "attestation", core.ResultFailed)
+				results[i] = core.ResultFailed
+				continue
+			}
+			signingRoot, err := generateSigningRoot(ctx, dataRoot[:], data[i].Domain)
 			if err != nil {
 				log.Error().Err(err).Str("result", "failed").Msg("Failed to generate signing root")
 				s.monitor.SignCompleted(started, "attestation", core.ResultFailed)
 				results[i] = core.ResultFailed
 				continue
 			}
+
+			// Sign it.
 			signature, err := signRoot(ctx, accounts[i], signingRoot[:])
 			if err != nil {
 				log.Error().Err(err).Str("result", "failed").Msg("Failed to sign")
