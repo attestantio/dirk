@@ -74,10 +74,10 @@ import (
 )
 
 // ReleaseVersion is the release version for the code.
-var ReleaseVersion = "0.9.0-prerelease"
+var ReleaseVersion = "0.9.0"
 
 // BuildVersion is the build version for the code.
-var BuildVersion = uint64(1)
+var BuildVersion = uint64(2)
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
