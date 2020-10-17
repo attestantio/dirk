@@ -1,4 +1,4 @@
-# Development
+# Version 0.9.0
   - Use fastssz for calculating hash tree roots
   - Add endpoint to sign multiple attestations in a single call
   - Provide hard-coded daemon for testing (see `testing` directory)
