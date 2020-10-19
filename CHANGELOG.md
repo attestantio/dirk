@@ -1,3 +1,6 @@
+# Development
+  - Add `--version` flag to print software version
+
 # Version 0.9.0
   - Use fastssz for calculating hash tree roots
   - Add endpoint to sign multiple attestations in a single call

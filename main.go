@@ -168,6 +168,7 @@ func fetchConfig() error {
 	pflag.String("tracing-address", "", "Address to which to send tracing data")
 	pflag.Bool("show-certificates", false, "show server certificates and exit")
 	pflag.Bool("show-permissions", false, "show client permissions and exit")
+	pflag.Bool("version", false, "show Dirk version exit")
 	pflag.Bool("export-slashing-protection", false, "export slashing protection data and exit")
 	pflag.Bool("import-slashing-protection", false, "import slashing protection data and exit")
 	pflag.String("genesis-validators-root", "", "genesis validators root required for slashing protection import or export")
@@ -257,6 +258,11 @@ func initTracing() (io.Closer, error) {
 }
 
 func runCommands(ctx context.Context, majordomo majordomo.Service) {
+	if viper.GetBool("version") {
+		fmt.Printf("%s\n", ReleaseVersion)
+		os.Exit(0)
+	}
+
 	if viper.GetBool("show-certificates") {
 		err := cmd.ShowCertificates(ctx, majordomo)
 		if err != nil {
