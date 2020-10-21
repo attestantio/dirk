@@ -15,7 +15,12 @@ package daemon_test
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
+	"net"
+	"os"
 	"testing"
+	"time"
 
 	"github.com/attestantio/dirk/testing/daemon"
 	"github.com/stretchr/testify/require"
@@ -23,6 +28,32 @@ import (
 
 func TestDaemon(t *testing.T) {
 	ctx := context.Background()
-	_, _, err := daemon.New(ctx, "", 1, 12345, map[uint64]string{1: "server-test01:12345"})
+	// #nosec G404
+	port := uint32(12000 + rand.Intn(4000))
+	_, path, err := daemon.New(ctx, "", 1, port, map[uint64]string{1: fmt.Sprintf("signer-test01:%d", port)})
 	require.NoError(t, err)
+	os.RemoveAll(path)
+}
+
+func TestCancelDaemon(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	// #nosec G404
+	port := uint32(12000 + rand.Intn(4000))
+	_, path, err := daemon.New(ctx, "", 1, port, map[uint64]string{1: fmt.Sprintf("signer-test01:%d", port)})
+	require.NoError(t, err)
+	defer os.RemoveAll(path)
+	require.True(t, endpointAlive(fmt.Sprintf("signer-test01:%d", port)))
+	cancel()
+	// Sleep for a second to allow graceful stop of the daemon.
+	time.Sleep(time.Second)
+	require.False(t, endpointAlive(fmt.Sprintf("signer-test01:%d", port)))
+}
+
+func endpointAlive(address string) bool {
+	conn, err := net.DialTimeout("tcp", address, 5*time.Second)
+	if err == nil {
+		conn.Close()
+		return true
+	}
+	return false
 }

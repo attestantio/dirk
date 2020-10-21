@@ -120,6 +120,13 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start API server")
 	}
+
+	// Cancel service on context done.
+	go func() {
+		<-ctx.Done()
+		s.grpcServer.GracefulStop()
+	}()
+
 	return s, nil
 }
 
