@@ -1,4 +1,4 @@
-# Development
+# Version 0.9.1
   - Ensure GRPC service shuts down on context cancel
   - Add `--version` flag to print software version
 
