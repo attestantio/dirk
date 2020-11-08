@@ -118,18 +118,18 @@ func (s *Service) SignBeaconAttestation(
 
 	// Create a spec version of the attestation to obtain its hash tree root.
 	attestation := &spec.AttestationData{
-		Slot:            data.Slot,
-		Index:           data.CommitteeIndex,
-		BeaconBlockRoot: data.BeaconBlockRoot,
+		Slot:  spec.Slot(data.Slot),
+		Index: spec.CommitteeIndex(data.CommitteeIndex),
 		Source: &spec.Checkpoint{
-			Epoch: data.Source.Epoch,
-			Root:  data.Source.Root,
+			Epoch: spec.Epoch(data.Source.Epoch),
 		},
 		Target: &spec.Checkpoint{
-			Epoch: data.Target.Epoch,
-			Root:  data.Target.Root,
+			Epoch: spec.Epoch(data.Target.Epoch),
 		},
 	}
+	copy(attestation.BeaconBlockRoot[:], data.BeaconBlockRoot)
+	copy(attestation.Source.Root[:], data.Source.Root)
+	copy(attestation.Target.Root[:], data.Target.Root)
 	dataRoot, err := attestation.HashTreeRoot()
 	if err != nil {
 		log.Error().Err(err).Str("result", "failed").Msg("Failed to generate signing root")

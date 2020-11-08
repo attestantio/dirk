@@ -6,10 +6,10 @@ require (
 	cloud.google.com/go v0.70.0 // indirect
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v0.9.0 // indirect
-	github.com/attestantio/go-eth2-client v0.6.8
+	github.com/attestantio/go-eth2-client v0.6.9
 	github.com/dgraph-io/badger/v2 v2.2007.2
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
-	github.com/ferranbt/fastssz v0.0.0-20201020132831-68dc48984fd3
+	github.com/ferranbt/fastssz v0.0.0-20201030134205-9b9624098321
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.2 // indirect

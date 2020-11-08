@@ -1,4 +1,5 @@
-# Development
+# Version 0.9.2
+  - Use go-eth2-client specified types
   - Remove go-ssz in dependencies
 
 # Version 0.9.1

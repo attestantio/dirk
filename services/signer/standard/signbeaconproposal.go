@@ -108,12 +108,12 @@ func (s *Service) SignBeaconProposal(
 
 	// Create a spec version of the beacon block header to obtain its hash tree root.
 	blockHeader := &spec.BeaconBlockHeader{
-		Slot:          data.Slot,
-		ProposerIndex: data.ProposerIndex,
-		ParentRoot:    data.ParentRoot,
-		StateRoot:     data.StateRoot,
-		BodyRoot:      data.BodyRoot,
+		Slot:          spec.Slot(data.Slot),
+		ProposerIndex: spec.ValidatorIndex(data.ProposerIndex),
 	}
+	copy(blockHeader.ParentRoot[:], data.ParentRoot)
+	copy(blockHeader.StateRoot[:], data.StateRoot)
+	copy(blockHeader.BodyRoot[:], data.BodyRoot)
 	dataRoot, err := blockHeader.HashTreeRoot()
 	if err != nil {
 		log.Error().Err(err).Str("result", "failed").Msg("Failed to generate data root")
