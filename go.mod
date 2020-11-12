@@ -37,13 +37,13 @@ require (
 	github.com/wealdtech/eth2-signer-api v1.6.0
 	github.com/wealdtech/go-bytesutil v1.1.1
 	github.com/wealdtech/go-eth2-types/v2 v2.5.1
-	github.com/wealdtech/go-eth2-wallet v1.14.2
+	github.com/wealdtech/go-eth2-wallet v1.14.3
 	github.com/wealdtech/go-eth2-wallet-distributed v1.1.2
 	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.1.2
-	github.com/wealdtech/go-eth2-wallet-hd/v2 v2.5.2
+	github.com/wealdtech/go-eth2-wallet-hd/v2 v2.5.3
 	github.com/wealdtech/go-eth2-wallet-nd/v2 v2.3.2
 	github.com/wealdtech/go-eth2-wallet-store-filesystem v1.16.13
-	github.com/wealdtech/go-eth2-wallet-store-s3 v1.9.1
+	github.com/wealdtech/go-eth2-wallet-store-s3 v1.9.2
 	github.com/wealdtech/go-eth2-wallet-store-scratch v1.6.1
 	github.com/wealdtech/go-eth2-wallet-types/v2 v2.8.1
 	github.com/wealdtech/go-majordomo v1.0.1

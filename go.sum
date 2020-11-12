@@ -73,6 +73,8 @@ github.com/aws/aws-sdk-go v1.33.17 h1:vngPRchZs603qLtJH7lh2pBCDqiFxA9+9nDWJ5WYJ5
 github.com/aws/aws-sdk-go v1.33.17/go.mod h1:5zCpMtNQVjRREroY7sYe8lOMRSxkhG6MZveU8YkpAk0=
 github.com/aws/aws-sdk-go v1.35.14 h1:nucVVXXjAr9UkmYCBWxQWRuYa5KOlaXjuJGg2ulW0K0=
 github.com/aws/aws-sdk-go v1.35.14/go.mod h1:tlPOdRjfxPBpNIwqDj61rmsnA85v9jc0Ps9+muhnW+k=
+github.com/aws/aws-sdk-go v1.35.26 h1:MawRvDpAp/Ai859dPC1xo1fdU/BIkijoHj0DwXLXXkI=
+github.com/aws/aws-sdk-go v1.35.26/go.mod h1:tlPOdRjfxPBpNIwqDj61rmsnA85v9jc0Ps9+muhnW+k=
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
@@ -162,7 +164,9 @@ github.com/go-kit/kit v0.10.0/go.mod h1:xUsJbQ/Fp4kEt7AFgCuvyX4a71u8h9jB8tj/ORgO
 github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9GBnD5lWE=
 github.com/go-logfmt/logfmt v0.4.0/go.mod h1:3RMwSq7FuexP4Kalkev3ejPJsZTpXXBr9+V4qmtdjCk=
 github.com/go-logfmt/logfmt v0.5.0/go.mod h1:wCYkCAKZfumFQihp8CzCvQ3paCTfi41vtzG1KdI/P7A=
+github.com/go-playground/locales v0.13.0 h1:HyWk6mgj5qFqCT5fjGBuRArbVDfE4hi8+e8ceBS/t7Q=
 github.com/go-playground/locales v0.13.0/go.mod h1:taPMhCMXrRLJO55olJkUXHZBHCxTMfnGwq/HNwmWNS8=
+github.com/go-playground/universal-translator v0.17.0 h1:icxd5fm+REJzpZx7ZfpaD876Lmtgy7VtROAbHHXk8no=
 github.com/go-playground/universal-translator v0.17.0/go.mod h1:UkSxE5sNxxRwHyU+Scu5vgOQjsIJAF8j9muTVoKLVtA=
 github.com/go-sql-driver/mysql v1.4.0/go.mod h1:zAC/RDZ24gD3HViQzih4MyKcchzm+sOG5ZlKdlhCg5w=
 github.com/go-sql-driver/mysql v1.5.0/go.mod h1:DCzpHaOWr8IXmIStZouvnhqoel9Qv2LBy8hT2VhHyBg=
@@ -324,6 +328,7 @@ github.com/kr/pretty v0.2.0/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfn
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0 h1:45sCR5RtlFHMR4UwH9sdQ5TC8v0qDQCHnXt+kaKSTVE=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
+github.com/leodido/go-urn v1.2.0 h1:hpXL4XnriNwQ/ABnpepYM/1vCLWNDfUNts8dX3xTG6Y=
 github.com/leodido/go-urn v1.2.0/go.mod h1:+8+nEpDfqqsY+g338gtMEUOtuK+4dEMhiQEgxpxOKII=
 github.com/lightstep/lightstep-tracer-common/golang/gogo v0.0.0-20190605223551-bc2310a04743/go.mod h1:qklhhLq1aX+mtWk9cPHPzaBjWImj5ULL6C7HFJtXQMM=
 github.com/lightstep/lightstep-tracer-go v0.18.1/go.mod h1:jlF1pusYV4pidLvZ+XD0UBX0ZE6WURAspgAczcDHrL4=
@@ -540,8 +545,11 @@ github.com/wealdtech/go-eth2-types/v2 v2.5.1 h1:59VZuwgqRaTjBu3b3CCaxG05XTmANtuT
 github.com/wealdtech/go-eth2-types/v2 v2.5.1/go.mod h1:UUtEgRum8HkPvImpu5+hFYRanMUjP0k6KWqHlYkOGbk=
 github.com/wealdtech/go-eth2-util v1.6.1 h1:gYW2s6iea/6NoSuSbisMqETpcnQYfqQnpmGLPYc0XHY=
 github.com/wealdtech/go-eth2-util v1.6.1/go.mod h1:0hCjncDU0yi6dzGgrCgWAj6grdvJ6loEKCGpCMfxo9c=
+github.com/wealdtech/go-eth2-util v1.6.2 h1:Gk7xVTG/bY1IUw/8wxOf97DuPbLTGGoZ0k5dNayudhk=
+github.com/wealdtech/go-eth2-util v1.6.2/go.mod h1:0hCjncDU0yi6dzGgrCgWAj6grdvJ6loEKCGpCMfxo9c=
 github.com/wealdtech/go-eth2-wallet v1.14.2 h1:pk6JGQdeEafVmZw5JYg2gk/8IeZjf0mY8gjufdTfYo8=
 github.com/wealdtech/go-eth2-wallet v1.14.2/go.mod h1:irzlGFMyRCWlvGgdI7IjS+/Oyr3Y+Dkkh5kxo0VCRDg=
+github.com/wealdtech/go-eth2-wallet v1.14.3/go.mod h1:cGFCLvyUua84+WQ9e9ETnXjx9hnlZgjRRYYltn+RfOE=
 github.com/wealdtech/go-eth2-wallet-distributed v1.1.2 h1:ABE1tyxGfXAPPphQ32dval7+9aP61BsIdtvuOJr3azY=
 github.com/wealdtech/go-eth2-wallet-distributed v1.1.2/go.mod h1:BRl33Vt9urhVuNHGiBfrf0gRs+U+gKSWCV2kmzD5xTw=
 github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.1.2 h1:JRZGHJWTX9iEYNg1jKSuO5WBrLVwMLExkJg04esRgss=
@@ -550,12 +558,16 @@ github.com/wealdtech/go-eth2-wallet-encryptor-unencrypted v1.0.1 h1:x6bq8cVgRgfh
 github.com/wealdtech/go-eth2-wallet-encryptor-unencrypted v1.0.1/go.mod h1:49K88T/4LNQpB8ghVcjTKeRRi/bZHeYjN8Ef5S23yps=
 github.com/wealdtech/go-eth2-wallet-hd/v2 v2.5.2 h1:3EYbuUrs4cCId+WxFAtx+H/uQXRRlBLzosMRSijpwps=
 github.com/wealdtech/go-eth2-wallet-hd/v2 v2.5.2/go.mod h1:hmDme779S5sqxN+W+zmHpS0K8n13fGekHM3gUUB1Ip0=
+github.com/wealdtech/go-eth2-wallet-hd/v2 v2.5.3 h1:9Gt/UGrg3wWkZEFuXOdmm5Ih/wOJPP/p8l9v3MIPPzc=
+github.com/wealdtech/go-eth2-wallet-hd/v2 v2.5.3/go.mod h1:UzS7JsWmOGjaSky+NTSjriTpdv+Vww1pWemb+3+GRk8=
 github.com/wealdtech/go-eth2-wallet-nd/v2 v2.3.2 h1:NwJV/Ll90WhqxhCcYCdHYWIURGXDt/GRPNFOvu4kzbg=
 github.com/wealdtech/go-eth2-wallet-nd/v2 v2.3.2/go.mod h1:WyFAmQHBIUN4hd9hAZQ9Py+N7c+mmlpDSTgiNxvICCM=
 github.com/wealdtech/go-eth2-wallet-store-filesystem v1.16.13 h1:zVV0kL6TZ1fW/Od9BW9e7W5UJB78gNbcbRQK+HeJOL8=
 github.com/wealdtech/go-eth2-wallet-store-filesystem v1.16.13/go.mod h1:x6sKafiDSvsUeiYZq7TE/ZWIWeAToXLIqgb7KCehgjU=
 github.com/wealdtech/go-eth2-wallet-store-s3 v1.9.1 h1:YGw5YanOepPGalSyvDKwCEdwvAmG9E3pwo7v6jR/7IM=
 github.com/wealdtech/go-eth2-wallet-store-s3 v1.9.1/go.mod h1:FR+mhCaoZN4d+EEBSV2QT2cO4szdKvDLTHRygMrH6fk=
+github.com/wealdtech/go-eth2-wallet-store-s3 v1.9.2 h1:HFT1w+8icvHj5Yb1qDZUjzIQYnFbau1ahYwB08kwwJM=
+github.com/wealdtech/go-eth2-wallet-store-s3 v1.9.2/go.mod h1:oKDDrc/BMDotY8/zT9TfmnELt+QMaPCiWwTiBmjlwTw=
 github.com/wealdtech/go-eth2-wallet-store-scratch v1.6.1 h1:vv9lR8K76FUSNbzUU25MN4HNhZIBBI1kJBNfHq2WjRY=
 github.com/wealdtech/go-eth2-wallet-store-scratch v1.6.1/go.mod h1:qnI6/VRpFyKGV+DhzdC1zmx2sA7mRRanCFlk4RYzoYs=
 github.com/wealdtech/go-eth2-wallet-types/v2 v2.8.1 h1:pcvljXdc/CqXl/JAXXtd6Ey5SqfOq9MvQutvM+5wvHQ=
@@ -931,7 +943,9 @@ gopkg.in/cheggaaa/pb.v1 v1.0.25/go.mod h1:V/YB90LKu/1FcN3WVnfiiE5oMCibMjukxqG/qS
 gopkg.in/errgo.v2 v2.1.0/go.mod h1:hNsd1EY+bozCKY1Ytp96fpM3vjJbqLJn88ws8XvfDNI=
 gopkg.in/fsnotify.v1 v1.4.7/go.mod h1:Tz8NjZHkW78fSQdbUxIjBTcgA1z1m8ZHf0WmKUhAMys=
 gopkg.in/gcfg.v1 v1.2.3/go.mod h1:yesOnuUOFQAhST5vPY4nbZsb/huCgGGXlipJsBn0b3o=
+gopkg.in/go-playground/assert.v1 v1.2.1 h1:xoYuJVE7KT85PYWrN730RguIQO0ePzVRfFMXadIrXTM=
 gopkg.in/go-playground/assert.v1 v1.2.1/go.mod h1:9RXL0bg/zibRAgZUYszZSwO/z8Y/a8bDuhia5mkpMnE=
+gopkg.in/go-playground/validator.v9 v9.30.0 h1:Wk0Z37oBmKj9/n+tPyBHZmeL19LaCoK3Qq48VwYENss=
 gopkg.in/go-playground/validator.v9 v9.30.0/go.mod h1:+c9/zcJMFNgbLvly1L1V+PpxWdVbfP1avr/N00E2vyQ=
 gopkg.in/ini.v1 v1.51.0 h1:AQvPpx3LzTDM0AjnIRlVFwFFGC+npRopjZxLJj6gdno=
 gopkg.in/ini.v1 v1.51.0/go.mod h1:pNLf8WUiyNEtQjuu5G5vTm06TEv9tsIgeAvK8hOrP4k=
