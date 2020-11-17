@@ -37,7 +37,6 @@ type SlashingProtection struct {
 
 // SlashingProtectionMetadata is the structure for slashing protection metadata.
 type SlashingProtectionMetadata struct {
-	InterchangeFormat        string `json:"interchange_format"`
 	InterchangeFormatVersion string `json:"interchange_format_version"`
 	GenesisValidatorsRoot    string `json:"genesis_validators_root"`
 }
@@ -110,8 +109,7 @@ func fetchSlashingProtection(ctx context.Context) (*SlashingProtection, error) {
 	}
 	res := &SlashingProtection{
 		Metadata: &SlashingProtectionMetadata{
-			InterchangeFormat:        "complete",
-			InterchangeFormatVersion: "4",
+			InterchangeFormatVersion: "5",
 			GenesisValidatorsRoot:    fmt.Sprintf("%#x", genesisValidatorsRoot),
 		},
 		Data: make([]*SlashingProtectionData, 0),
@@ -171,16 +169,13 @@ func storeSlashingProtection(ctx context.Context, protection *SlashingProtection
 	zerolog.SetGlobalLevel(zerolog.Disabled)
 	// Confirm format and metadata.
 	if protection == nil {
-		return fmt.Errorf("interchange format incorrect; expected complete, found %s", protection.Metadata.InterchangeFormat)
+		return errors.New("slashing protection missing")
 	}
 	if protection.Metadata == nil {
 		return errors.New("no metadata in file")
 	}
-	if protection.Metadata.InterchangeFormat != "complete" {
-		return fmt.Errorf("interchange format incorrect; expected complete, found %s", protection.Metadata.InterchangeFormat)
-	}
-	if protection.Metadata.InterchangeFormatVersion != "4" {
-		return fmt.Errorf("interchange format incorrect; expected 4, found %s", protection.Metadata.InterchangeFormatVersion)
+	if protection.Metadata.InterchangeFormatVersion != "5" {
+		return fmt.Errorf("interchange format incorrect; expected 5, found %s", protection.Metadata.InterchangeFormatVersion)
 	}
 	if viper.GetString("genesis-validators-root") == "" {
 		return errors.New("genesis-validators-root is required for import")

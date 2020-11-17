@@ -74,7 +74,7 @@ import (
 )
 
 // ReleaseVersion is the release version for the code.
-var ReleaseVersion = "0.9.2"
+var ReleaseVersion = "0.9.5"
 
 // BuildVersion is the build version for the code.
 var BuildVersion = uint64(2)
