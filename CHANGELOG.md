@@ -1,3 +1,6 @@
+# Version 1.0.0
+  - Mainnet release
+
 # Version 0.9.5
   - Pre-mainnet release
   - Update slashing protection import/export format to version 5
