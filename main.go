@@ -86,10 +86,6 @@ func main() {
 		zerologger.Fatal().Err(err).Msg("Failed to fetch configuration")
 	}
 
-	if err := initLogging(); err != nil {
-		log.Fatal().Err(err).Msg("Failed to initialise logging")
-	}
-
 	majordomo, err := initMajordomo(ctx)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialise majordomo")
@@ -97,6 +93,14 @@ func main() {
 
 	// runCommands will not return if a command is run.
 	runCommands(ctx, majordomo)
+
+	if err := initLogging(); err != nil {
+		log.Fatal().Err(err).Msg("Failed to initialise logging")
+	}
+
+	if viper.GetString("server.name") == "" {
+		log.Fatal().Err(err).Msg("No server name set; cannot start")
+	}
 
 	logModules()
 	log.Info().Str("version", ReleaseVersion).Msg("Starting dirk")
@@ -204,10 +208,6 @@ func fetchConfig() error {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return errors.New("failed to read configuration file")
 		}
-	}
-
-	if viper.GetString("server.name") == "" {
-		return errors.New("missing server name; configuration not supplied")
 	}
 
 	return nil
