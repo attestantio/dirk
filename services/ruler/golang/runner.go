@@ -77,6 +77,9 @@ func (s *Service) RunRules(ctx context.Context,
 			pubKeyMap[key] = true
 		}
 
+		// Throw a lock around the entire locking process.  This avoids situations where two concurrent
+		// goroutines try locking (a,b) and (b,a), respectively, and cause a deadlock.
+		s.locker.PreLock()
 		// Lock each public key as we come to it, to ensure that there can only be a single active rule
 		// (and hence data update) for a given public key at any time.
 		for i := range rulesData {
@@ -85,6 +88,7 @@ func (s *Service) RunRules(ctx context.Context,
 			s.locker.Lock(lockKey)
 			defer s.locker.Unlock(lockKey)
 		}
+		s.locker.PostLock()
 	}
 
 	return s.runRules(ctx, credentials, action, rulesData)
