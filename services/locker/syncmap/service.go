@@ -27,7 +27,8 @@ import (
 type Service struct {
 	monitor      metrics.LockerMonitor
 	locks        *sync.Map
-	newLockMutex *sync.Mutex
+	newLockMutex sync.Mutex
+	mapLock      sync.Mutex
 }
 
 // module-wide log.
@@ -47,15 +48,29 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 	}
 
 	s := &Service{
-		monitor:      parameters.monitor,
-		locks:        &sync.Map{},
-		newLockMutex: &sync.Mutex{},
+		monitor: parameters.monitor,
+		locks:   &sync.Map{},
 	}
 
 	return s, nil
 }
 
+// PreLock must be called prior to locking one or more public keys.
+// It obtains a locker-wide mutex, to ensure that only one goroutine
+// can be locking or unlocking groups of public keys at a time.
+func (s *Service) PreLock() {
+	s.mapLock.Lock()
+}
+
+// PostLock must be called after locking one or more public keys.
+// It frees the locker-wide mutex obtained by PreLock().
+func (s *Service) PostLock() {
+	s.mapLock.Unlock()
+}
+
 // Lock acquires a lock for a given public key.
+// If more than one lock is being acquired in a batch, ensure that
+// PreLock() is called beforehand and PostLock() afterwards.
 func (s *Service) Lock(key [48]byte) {
 	lock, exists := s.locks.Load(key)
 	if !exists {
