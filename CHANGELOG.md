@@ -1,4 +1,6 @@
 # Development
+  - Do not ignore `storage-path` configuration value
+  - Move `server.storage-path` to `storage-path`
   - Explicitly close database on shutdown, with delay to allow completion
   - Wrap batch account locking with a parent mutex
 

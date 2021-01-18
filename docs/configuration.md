@@ -28,8 +28,6 @@ server:
   # listen-address is the interface and port on which Dirk will listen for requests; change `127.0.0.1`
   # to `0.0.0.0` to listen on all network interfaces.
   listen-address: 127.0.0.1:13141
-  # storage-path is the path where information created by the slashing protection system is stored.
-  storage-path: /home/me/dirk/protection
 certificates:
   # server-cert is the majordomo URL to the server's certificate.
   server-cert: file:///home/me/dirk/security/certificates/myserver.example.com.crt
@@ -38,6 +36,9 @@ certificates:
   # ca-cert is the certificate of the CA that issued the client certificates.  If not present Dirk will use
   # the standard CA certificates supplied with the server.
   ca-cert: file:///home/me/dirk/security/certificates/ca.crt
+# storage-path is the path where information created by the slashing protection system is stored.  If not
+# supplied it will default to using the 'storage' directory in the user's home directory.
+storage-path: /home/me/dirk/protection
 # stores is a list of locations and types of Ethereum 2 stores.  If no stores are supplied Dirk will use the
 # default filesystem store.
 stores:

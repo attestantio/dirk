@@ -97,11 +97,11 @@ server:
   id: 1
   name: `hostname`-1
   listen-address: 0.0.0.0:8881
-  storage-path: ${HOME}/dirk-multi/1/storage
 certificates:
   ca-cert: file://${HOME}/dirk-multi/1/security/ca.crt
   server-cert: file://${HOME}/dirk-multi/1/security/`hostname`-1.crt
   server-key: file://${HOME}/dirk-multi/1/security/`hostname`-1.key
+storage-path: ${HOME}/dirk-multi/1/storage
 stores:
 - name: Local
   type: filesystem
@@ -127,11 +127,11 @@ server:
   id: 2
   name: `hostname`-2
   listen-address: 0.0.0.0:8882
-  storage-path: ${HOME}/dirk-multi/2/storage
 certificates:
   ca-cert: file://${HOME}/dirk-multi/2/security/ca.crt
   server-cert: file://${HOME}/dirk-multi/2/security/`hostname`-2.crt
   server-key: file://${HOME}/dirk-multi/2/security/`hostname`-2.key
+storage-path: ${HOME}/dirk-multi/2/storage
 stores:
 - name: Local
   type: filesystem
@@ -157,11 +157,11 @@ server:
   id: 3
   name: `hostname`-3
   listen-address: 0.0.0.0:8883
-  storage-path: ${HOME}/dirk-multi/3/storage
 certificates:
   ca-cert: file://${HOME}/dirk-multi/3/security/ca.crt
   server-cert: file://${HOME}/dirk-multi/3/security/`hostname`-3.crt
   server-key: file://${HOME}/dirk-multi/3/security/`hostname`-3.key
+storage-path: ${HOME}/dirk-multi/3/storage
 stores:
 - name: Local
   type: filesystem
