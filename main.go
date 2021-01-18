@@ -205,7 +205,7 @@ func fetchConfig() error {
 	viper.AutomaticEnv()
 
 	// Defaults.
-	viper.Set("server.storage-path", "storage")
+	viper.SetDefault("storage-path", "storage")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
@@ -586,7 +586,7 @@ func logModules() {
 func initRules(ctx context.Context) (rules.Service, error) {
 	return standardrules.New(ctx,
 		standardrules.WithLogLevel(logLevel(viper.GetString("log-levels.rules"))),
-		standardrules.WithStoragePath(resolvePath(viper.GetString("server.storage-path"))),
+		standardrules.WithStoragePath(resolvePath(viper.GetString("storage-path"))),
 		standardrules.WithAdminIPs(viper.GetStringSlice("server.rules.admin-ips")),
 	)
 }

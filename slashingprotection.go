@@ -256,5 +256,5 @@ func storeSlashingProtection(ctx context.Context, protection *SlashingProtection
 		return errors.Wrap(err, "failed to obtain slashing protection")
 	}
 
-	return errors.New("not implemented")
+	return nil
 }
