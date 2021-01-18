@@ -1,4 +1,4 @@
-# Development
+# Version 1.0.1
   - Do not ignore `storage-path` configuration value
   - Move `server.storage-path` to `storage-path`
   - Explicitly close database on shutdown, with delay to allow completion
