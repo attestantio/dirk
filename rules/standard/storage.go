@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2021 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -56,7 +56,9 @@ func (s *Store) FetchAll(ctx context.Context) (map[[49]byte][]byte, error) {
 			err := item.Value(func(v []byte) error {
 				var key [49]byte
 				copy(key[:], item.Key())
-				items[key] = v
+				value := make([]byte, len(v))
+				copy(value, v)
+				items[key] = value
 				return nil
 			})
 			if err != nil {
@@ -89,7 +91,8 @@ func (s *Store) Fetch(ctx context.Context, key []byte) ([]byte, error) {
 			}
 		}
 		err = item.Value(func(val []byte) error {
-			value = val
+			value = make([]byte, len(val))
+			copy(value, val)
 			return nil
 		})
 		if err != nil {

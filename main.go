@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2021 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	// #nosec G108
 	_ "net/http/pprof"
@@ -161,6 +162,8 @@ func main() {
 
 	log.Info().Msg("Stopping dirk")
 	readyMonitor.Ready(false)
+	// Give services a chance to stop cleanly before we exit.
+	time.Sleep(2 * time.Second)
 }
 
 // fetchConfig fetches configuration from various sources.

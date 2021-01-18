@@ -1,4 +1,5 @@
 # Development
+  - Explicitly close database on shutdown, with delay to allow completion
   - Wrap batch account locking with a parent mutex
 
 # Version 1.0.0
