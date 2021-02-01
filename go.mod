@@ -7,18 +7,17 @@ require (
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v0.9.0 // indirect
 	github.com/attestantio/go-eth2-client v0.6.15
-	github.com/aws/aws-sdk-go v1.35.35 // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.2
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
-	github.com/ferranbt/fastssz v0.0.0-20201030134205-9b9624098321
+	github.com/ferranbt/fastssz v0.0.0-20210120143747-11b9eff30ea9
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/goccy/go-yaml v1.8.4 // indirect
 	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/google/go-cmp v0.5.4 // indirect
-	github.com/google/uuid v1.1.2
+	github.com/google/uuid v1.2.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
-	github.com/herumi/bls-eth-go-binary v0.0.0-20201104034342-d782bdf735de
+	github.com/herumi/bls-eth-go-binary v0.0.0-20210130185500-57372fb27371
 	github.com/jackc/puddle v1.1.2
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
@@ -40,19 +39,18 @@ require (
 	github.com/uber/jaeger-lib v2.4.0+incompatible // indirect
 	github.com/wealdtech/eth2-signer-api v1.6.0
 	github.com/wealdtech/go-bytesutil v1.1.1
-	github.com/wealdtech/go-eth2-types/v2 v2.5.1
-	github.com/wealdtech/go-eth2-wallet v1.14.3
-	github.com/wealdtech/go-eth2-wallet-distributed v1.1.2
-	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.1.2
-	github.com/wealdtech/go-eth2-wallet-hd/v2 v2.5.3
-	github.com/wealdtech/go-eth2-wallet-nd/v2 v2.3.2
-	github.com/wealdtech/go-eth2-wallet-store-filesystem v1.16.13
-	github.com/wealdtech/go-eth2-wallet-store-s3 v1.9.2
-	github.com/wealdtech/go-eth2-wallet-store-scratch v1.6.1
-	github.com/wealdtech/go-eth2-wallet-types/v2 v2.8.1
+	github.com/wealdtech/go-eth2-types/v2 v2.5.2
+	github.com/wealdtech/go-eth2-wallet v1.14.4
+	github.com/wealdtech/go-eth2-wallet-distributed v1.1.3
+	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.1.3
+	github.com/wealdtech/go-eth2-wallet-hd/v2 v2.5.4
+	github.com/wealdtech/go-eth2-wallet-nd/v2 v2.3.3
+	github.com/wealdtech/go-eth2-wallet-store-filesystem v1.16.14
+	github.com/wealdtech/go-eth2-wallet-store-s3 v1.9.4
+	github.com/wealdtech/go-eth2-wallet-store-scratch v1.6.2
+	github.com/wealdtech/go-eth2-wallet-types/v2 v2.8.2
 	github.com/wealdtech/go-majordomo v1.0.1
 	go.uber.org/atomic v1.7.0 // indirect
-	golang.org/x/crypto v0.0.0-20201124201722-c8d3bf9c5392 // indirect
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
 	golang.org/x/oauth2 v0.0.0-20201109201403-9fd604954f58 // indirect
 	google.golang.org/appengine v1.6.7 // indirect

@@ -1,3 +1,6 @@
+# Version 1.0.2
+  - Update dependencies
+
 # Version 1.0.1
   - Do not ignore `storage-path` configuration value
   - Move `server.storage-path` to `storage-path`
