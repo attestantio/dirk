@@ -43,11 +43,7 @@ func (s *Service) setupWalletManagerMetrics() error {
 		Name:      "requests_total",
 		Help:      "The number of wallet manager requests.",
 	}, []string{"request", "result"})
-	if err := prometheus.Register(s.walletManagerRequests); err != nil {
-		return err
-	}
-
-	return nil
+	return prometheus.Register(s.walletManagerRequests)
 }
 
 // WalletManagerCompleted is called when a wallet manager process is complete.

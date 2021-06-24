@@ -41,11 +41,7 @@ func (s *Service) setupListerMetrics() error {
 		Name:      "requests_total",
 		Help:      "The number of account list requests.",
 	}, []string{"result"})
-	if err := prometheus.Register(s.listerRequests); err != nil {
-		return err
-	}
-
-	return nil
+	return prometheus.Register(s.listerRequests)
 }
 
 // ListAccountsCompleted is called when an account list process has completed.

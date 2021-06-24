@@ -80,7 +80,7 @@ func (h *Handler) ListAccounts(ctx context.Context, req *pb.ListAccountsRequest)
 						log.Warn().Str("participant", v).Msg("Invalid format for participant")
 						continue
 					}
-					port, err := strconv.Atoi(parts[1])
+					port, err := strconv.ParseUint(parts[1], 10, 32)
 					if err != nil {
 						log.Warn().Str("participant", v).Err(err).Msg("Invalid port for participant")
 						continue

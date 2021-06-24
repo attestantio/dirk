@@ -43,11 +43,7 @@ func (s *Service) setupSignerMetrics() error {
 		Name:      "requests_total",
 		Help:      "The number of sign requests.",
 	}, []string{"request", "result"})
-	if err := prometheus.Register(s.signerRequests); err != nil {
-		return err
-	}
-
-	return nil
+	return prometheus.Register(s.signerRequests)
 }
 
 // SignCompleted is called when a signing process is complete.

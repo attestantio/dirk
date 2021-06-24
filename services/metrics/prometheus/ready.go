@@ -23,11 +23,7 @@ func (s *Service) setupReadyMetrics() error {
 		Name:      "ready",
 		Help:      "1 if Dirk is ready to serve requests, otherwise 0.",
 	})
-	if err := prometheus.Register(s.ready); err != nil {
-		return err
-	}
-
-	return nil
+	return prometheus.Register(s.ready)
 }
 
 // Ready is called when the service is ready to serve requests, or when it stops being so.

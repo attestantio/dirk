@@ -72,7 +72,7 @@ func TestSignBeaconAttestation(t *testing.T) {
 					Epoch: 4,
 				},
 				Target: &rules.Checkpoint{
-					Epoch: 5,
+					Epoch: 8,
 				},
 			},
 			res: rules.APPROVED,
@@ -86,7 +86,7 @@ func TestSignBeaconAttestation(t *testing.T) {
 					Epoch: 4,
 				},
 				Target: &rules.Checkpoint{
-					Epoch: 5,
+					Epoch: 8,
 				},
 			},
 			res: rules.DENIED,
@@ -98,6 +98,34 @@ func TestSignBeaconAttestation(t *testing.T) {
 				Domain: _byteStr(t, "0100000000000000000000000000000000000000000000000000000000000000"),
 				Source: &rules.Checkpoint{
 					Epoch: 3,
+				},
+				Target: &rules.Checkpoint{
+					Epoch: 8,
+				},
+			},
+			res: rules.DENIED,
+		},
+		{
+			name:     "Surrounding",
+			metadata: &rules.ReqMetadata{},
+			req: &rules.SignBeaconAttestationData{
+				Domain: _byteStr(t, "0100000000000000000000000000000000000000000000000000000000000000"),
+				Source: &rules.Checkpoint{
+					Epoch: 3,
+				},
+				Target: &rules.Checkpoint{
+					Epoch: 9,
+				},
+			},
+			res: rules.DENIED,
+		},
+		{
+			name:     "Surrounded",
+			metadata: &rules.ReqMetadata{},
+			req: &rules.SignBeaconAttestationData{
+				Domain: _byteStr(t, "0100000000000000000000000000000000000000000000000000000000000000"),
+				Source: &rules.Checkpoint{
+					Epoch: 5,
 				},
 				Target: &rules.Checkpoint{
 					Epoch: 6,

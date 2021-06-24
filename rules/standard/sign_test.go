@@ -52,6 +52,14 @@ func TestSign(t *testing.T) {
 		res      rules.Result
 	}{
 		{
+			name: "MetadataNil",
+			req: &rules.SignData{
+				Data:   _byteStr(t, "0000000000000000000000000000000000000000000000000000000000000000"),
+				Domain: _byteStr(t, "0200000000000000000000000000000000000000000000000000000000000000"),
+			},
+			res: rules.FAILED,
+		},
+		{
 			name:     "AttestationDomain",
 			metadata: &rules.ReqMetadata{},
 			req: &rules.SignData{

@@ -61,7 +61,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 				return nil, fmt.Errorf("duplicate peer name %s", peerInfo[0])
 			}
 			peerNames[peerInfo[0]] = true
-			port, err := strconv.Atoi(peerInfo[1])
+			port, err := strconv.ParseUint(peerInfo[1], 10, 32)
 			if err != nil {
 				return nil, fmt.Errorf("malformed peer port for %s", v)
 			}

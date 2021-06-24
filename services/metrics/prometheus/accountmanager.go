@@ -43,11 +43,7 @@ func (s *Service) setupAccountManagerMetrics() error {
 		Name:      "requests_total",
 		Help:      "The number of account manager requests.",
 	}, []string{"request", "result"})
-	if err := prometheus.Register(s.accountManagerRequests); err != nil {
-		return err
-	}
-
-	return nil
+	return prometheus.Register(s.accountManagerRequests)
 }
 
 // AccountManagerCompleted is called when an account manager process is complete.

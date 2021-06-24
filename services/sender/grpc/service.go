@@ -227,7 +227,9 @@ func (s *Service) obtainConnection(ctx context.Context, address string) (*puddle
 			}...)
 		}
 		destructor := func(val interface{}) {
-			val.(*grpc.ClientConn).Close()
+			if err := val.(*grpc.ClientConn).Close(); err != nil {
+				log.Warn().Err(err).Msg("Failed to close client connection")
+			}
 		}
 		pool = puddle.NewPool(constructor, destructor, 32)
 		s.connectionPools[address] = pool

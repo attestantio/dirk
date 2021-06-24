@@ -26,6 +26,11 @@ import (
 func (s *Service) OnSign(ctx context.Context, metadata *rules.ReqMetadata, req *rules.SignData) rules.Result {
 	span, _ := opentracing.StartSpanFromContext(ctx, "rules.OnSign")
 	defer span.Finish()
+
+	if metadata == nil {
+		log.Warn().Msg("No metadata to evaluate request")
+		return rules.FAILED
+	}
 	log := log.With().Str("client", metadata.Client).Str("account", metadata.Account).Str("rule", "sign").Logger()
 
 	if bytes.Equal(req.Domain[0:4], e2types.DomainBeaconAttester[:]) {
@@ -39,6 +44,10 @@ func (s *Service) OnSign(ctx context.Context, metadata *rules.ReqMetadata, req *
 
 	// Voluntary exit requests must come from an approved IP address.
 	if bytes.Equal(req.Domain[0:4], e2types.DomainVoluntaryExit[:]) {
+		if metadata.IP == "" {
+			log.Warn().Msg("Not signing voluntary exit request from unknown source")
+			return rules.DENIED
+		}
 		validIP := false
 		for i := range s.adminIPs {
 			if metadata.IP == s.adminIPs[i] {
@@ -47,7 +56,7 @@ func (s *Service) OnSign(ctx context.Context, metadata *rules.ReqMetadata, req *
 			}
 		}
 		if !validIP {
-			log.Warn().Msg("Not signing voluntary exit request from unapproved IP address")
+			log.Warn().Str("request_ip", metadata.IP).Msg("Not signing voluntary exit request from unapproved IP address")
 			return rules.DENIED
 		}
 	}

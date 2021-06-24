@@ -33,11 +33,7 @@ func (s *Service) setupBaseMetrics() error {
 		Name:      "build",
 		Help:      "The build number of this instance.",
 	})
-	if err := prometheus.Register(s.build); err != nil {
-		return err
-	}
-
-	return nil
+	return prometheus.Register(s.build)
 }
 
 // Build is called when the build number is established.
