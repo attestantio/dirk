@@ -28,6 +28,9 @@ server:
   # listen-address is the interface and port on which Dirk will listen for requests; change `127.0.0.1`
   # to `0.0.0.0` to listen on all network interfaces.
   listen-address: 127.0.0.1:13141
+  rules:
+    # admin-ips is a list of IP addresses from which requests for voluntary exists will be accepted.
+    admin-ips: [ 1.2.3.4, 5.6.7.8 ]
 certificates:
   # server-cert is the majordomo URL to the server's certificate.
   server-cert: file:///home/me/dirk/security/certificates/myserver.example.com.crt
