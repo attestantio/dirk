@@ -20,6 +20,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -82,7 +83,9 @@ func TestAbortUnknownEndpoint(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, senderSvc.Prepare(ctx, participants[0], accountName, []byte("test"), 2, participants))
-	require.EqualError(t, senderSvc.Abort(ctx, &core.Endpoint{ID: 11111, Name: "unknown", Port: 1111}, accountName), "Failed to call Abort(): rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing dial tcp: lookup unknown: Temporary failure in name resolution\"")
+	err = senderSvc.Abort(ctx, &core.Endpoint{ID: 11111, Name: "unknown", Port: 1111}, accountName)
+	require.Error(t, err)
+	require.True(t, strings.HasPrefix(err.Error(), "Failed to call Abort(): rpc error: code = Unavailable"))
 }
 
 func TestEndToEnd(t *testing.T) {
