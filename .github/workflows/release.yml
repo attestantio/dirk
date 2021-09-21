@@ -50,7 +50,7 @@ jobs:
 
     - name: Fetch xgo
       run: |
-       go get github.com/suburbandad/xgo
+       go get github.com/wealdtech/xgo
 
     - name: Cross-compile linux
       run: |
