@@ -1,6 +1,9 @@
 # Prometheus metrics
 Dirk provides a number of metrics to check the health and performance of its activities.  Dirk's default implementation uses Prometheus to provide these metrics.  The metrics server listens on the address provided by the `metrics.address` configuration value.
 
+## Version
+The version of Dirk can be found in the `dirk_release` metric, in the `version` label.
+
 ## Health
 Health metrics provide a mechanism to confirm if Dirk is active and able to serve requests.
 

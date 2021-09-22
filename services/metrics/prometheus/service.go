@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2021 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,9 +26,6 @@ import (
 
 // Service is a metrics service exposing metrics via prometheus.
 type Service struct {
-	ready prometheus.Gauge
-	build prometheus.Gauge
-
 	accountManagerProcessTimer *prometheus.HistogramVec
 	accountManagerRequests     *prometheus.CounterVec
 
@@ -60,12 +57,6 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 
 	s := &Service{}
 
-	if err := s.setupBaseMetrics(); err != nil {
-		return nil, errors.Wrap(err, "failed to set up base metrics")
-	}
-	if err := s.setupReadyMetrics(); err != nil {
-		return nil, errors.Wrap(err, "failed to set up ready metrics")
-	}
 	if err := s.setupAccountManagerMetrics(); err != nil {
 		return nil, errors.Wrap(err, "failed to set up account manager metrics")
 	}
@@ -87,4 +78,9 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 	}()
 
 	return s, nil
+}
+
+// Presenter returns the presenter for the events.
+func (s *Service) Presenter() string {
+	return "prometheus"
 }
