@@ -77,9 +77,6 @@ import (
 // ReleaseVersion is the release version for the code.
 var ReleaseVersion = "1.0.4"
 
-// BuildVersion is the build version for the code.
-var BuildVersion = uint64(4)
-
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -131,21 +128,19 @@ func main() {
 		log.Error().Err(err).Msg("Failed to start metrics service")
 		return
 	}
-	setBuildVersion(ctx, monitor)
-	var readyMonitor metrics.ReadyMonitor
-	if monitor, isMonitor := monitor.(metrics.ReadyMonitor); isMonitor {
-		readyMonitor = monitor
-	} else {
-		readyMonitor = &noopMonitor{}
+	if err := registerMetrics(ctx, monitor); err != nil {
+		log.Error().Err(err).Msg("Failed to register metrics")
+		return
 	}
-	readyMonitor.Ready(false)
+	setRelease(ctx, ReleaseVersion)
+	setReady(ctx, false)
 
 	err = startServices(ctx, majordomo, monitor)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to initialise services")
 		return
 	}
-	readyMonitor.Ready(true)
+	setReady(ctx, true)
 
 	log.Info().Msg("All services operational")
 
@@ -161,7 +156,8 @@ func main() {
 	}
 
 	log.Info().Msg("Stopping dirk")
-	readyMonitor.Ready(false)
+	setReady(ctx, false)
+
 	// Give services a chance to stop cleanly before we exit.
 	time.Sleep(2 * time.Second)
 }
@@ -297,12 +293,6 @@ func runCommands(ctx context.Context, majordomo majordomo.Service) {
 
 	if viper.GetBool("import-slashing-protection") {
 		importSlashingProtection(ctx)
-	}
-}
-
-func setBuildVersion(ctx context.Context, monitor metrics.Service) {
-	if monitor, isMonitor := monitor.(metrics.BaseMonitor); isMonitor {
-		monitor.Build(BuildVersion)
 	}
 }
 
@@ -752,9 +742,3 @@ func resolvePath(path string) string {
 	}
 	return filepath.Join(baseDir, path)
 }
-
-type noopMonitor struct{}
-
-func (n *noopMonitor) Ready(ready bool)       {}
-func (n *noopMonitor) Build(build uint64)     {}
-func (n *noopMonitor) Ruleset(ruleset string) {}

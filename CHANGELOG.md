@@ -1,3 +1,6 @@
+# Development
+  - provide release metric in `dirk_release`
+
 # Version 1.0.4
   - Update dependencies
 

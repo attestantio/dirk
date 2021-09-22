@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2021 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,18 +21,9 @@ import (
 )
 
 // Service is the generic metrics service.
-type Service interface{}
-
-// BaseMonitor provides base information about the instance.
-type BaseMonitor interface {
-	// Build is called when the build number is established.
-	Build(build uint64)
-}
-
-// ReadyMonitor provides information about if the process is ready.
-type ReadyMonitor interface {
-	// Ready is called when the service is ready to serve requests, or when it stops being so.
-	Ready(ready bool)
+type Service interface {
+	// Presenter provides the presenter for this service.
+	Presenter() string
 }
 
 // UnlockerMonitor monitors the unlocker service.
