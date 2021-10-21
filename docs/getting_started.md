@@ -25,56 +25,86 @@ $ ethdo account create --account=wallet2/account4 --passphrase=secret
 Here we have two wallets, one for each set of validator clients.  It is possible for different wallets to have different features, such as level of security and location, but for the purposes of this example they are both standard (non-deterministic) wallets (see ethdo documentation for other options).
 
 #### Creating certificates
-We need a certificate for the wallet daemon.  We could use a certificate from a well-known certificate authority such as LetsEncrypt, or we could create our own; we will create our own using [certstrap](https://github.com/square/certstrap).
+We need a certificate for the wallet daemon.  We could use a certificate from a well-known certificate authority such as LetsEncrypt, or we could create our own; we will create our own using OpenSSL.
+
+> Note that creating and using certificates is a complicated process.  Please ensure that you understand what each of the following steps and parameters do before deploying to a production environment, as you may require different values.
 
 First, we create the certificate authority.  Note the key created in this process is critical to the security of your deposits and should be protected with all reasonable measures; this should include a passphrase when promted.
-```
-$ certstrap --depot-path . init --common-name "dirk authority" --expires "3 years"
-Enter passphrase (empty for no passphrase): 
-Enter same passphrase again: 
-Created ./dirk_authority.key (encrypted by passphrase)
-Created ./dirk_authority.crt
-Created ./dirk_authority.crl
-```
-
-The server needs its own certificate.  We use the sample name `server.example.com` here but you should replace this with the name of your server.  If you are testing `dirk` locally you can use `localhost` instead of the server name.
-```
-$ certstrap --depot-path . request-cert --common-name server.example.com
-Enter passphrase (empty for no passphrase): 
-Enter same passphrase again: 
-Created ./server.example.com.key
-Created ./server.example.com.csr
-$ certstrap --depot-path . sign --CA "dirk authority" --expires="3 years" server.example.com
-Enter passphrase for CA key (empty for no passphrase): 
-Created ./server.example.com.crt from ./server.example.com.csr signed by ./dirk_authority.key
-```
-
-Next, we create and sign certificates for the three clients that will be connecting to the daemon.  Note the keys created here should not have a passphrase supplied; they will reside with the valdiator clients so use of the key is should be possible without requiring human intervention (to allow for server restarts _etc._).  For the first client:
 
 ```
-$ certstrap --depot-path . request-cert --common-name client1
-Enter passphrase (empty for no passphrase): 
-Enter same passphrase again: 
-Created ./client1.key
-Created ./client1.csr
-$ certstrap --depot-path . sign --CA "dirk authority" --expires="3 years" client1
-Enter passphrase for CA key (empty for no passphrase): 
-Created ./client1.crt from ./client1.csr signed by ./dirk_authority.key
+openssl genrsa -des3 -out dirk_authority.key 4096
 ```
+
+Once the key is generated we need to create the certificate itself:
+
+```
+openssl req -x509 -new -nodes -key dirk_authority.key -sha256 -days 1825 -out dirk_authority.crt
+```
+
+The server and each client need their own certificates.  The process for creating each certificate is the same, so follow the below process for each server and just change the name each time from `server.example.com` to whatever you need (e.g. `client1`, `client2`, `client3` for the above configuration).
+
+First, create a key for the server in question:
+
+```
+openssl genrsa -out server.example.com.key 4096
+```
+
+Once the key is generated we need to create a file that contains details about the server name and the functions of the certificate.  Create a file `server.example.com.ext` with the following contents:
+
+```
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = server.example.com
+```
+
+The above is enough to create the server's certificate signing request:
+
+```
+openssl req -out server.example.com.csr -key server.example.com.key -new -subj "/CN=server.example.com" -addext "subjectAltName=DNS:server.example.com"
+```
+
+And this can then be signed by the certificate authority to generate the final valid certificate:
+
+```
+openssl x509 -req -in server.example.com.csr -CA dirk_authority.crt -CAkey dirk_authority.key -CAcreateserial -out server.example.com.crt -days 1825 -sha256 -extfile server.example.com.ext
+```
+
+The certificate content should be confirmed with:
+
+```
+openssl x509 -in server.example.com.crt -text -noout
+```
+
+If the above instructions have been followed the output from the above command should include:
+
+```
+X509v3 Subject Alternative Name:
+  DNS:server.example.com
+```
+
+This information is required for Go programs (notably, Vouch) to validate connections to Dirk.
 
 and the same commands can be used for the other clients, using "client2" and "client3" in place of "client1".  At this point you should have the following files:
 
   - `client1.crt`: the signed certificate for client1; needs to be moved to the server running client1
   - `client1.csr`: the signing request for client1; can be deleted
+  - `client1.ext`: the signing extension data for client1; can be deleted
   - `client1.key`: the key for client1; needs to be moved to the server running client1
   - `client2.crt`: the signed certificate for client2; needs to be moved to the server running client3
   - `client2.csr`: the signing request for client2; can be deleted
+  - `client2.ext`: the signing extension data for client2; can be deleted
   - `client2.key`: the key for client2; needs to be moved to the server running client3
   - `client3.crt`: the signed certificate for client3; needs to be moved to the server running client3
   - `client3.csr`: the signing request for client3; can be deleted
+  - `client3.ext`: the signing extension data for client3; can be deleted
   - `client3.key`: the key for client3; needs to be moved to the server running client3
   - `server.example.com.crt`: the certificate for `dirk`; needs to be moved to the server running `dirk`
   - `server.example.com.csr`: the signing request for `dirk`; can be deleted
+  - `server.example.com.ext`: the signing extension data for `dirk`; can be deleted
   - `server.example.com.key`: the key for `dirk`; needs to be moved to the server running `dirk`
   - `dirk_authority.crl`: the certificate revocation list for dirk; needs to be copied to the server running `dirk`
   - `dirk_authority.crt`: the certificate for dirk; needs to be copied to all clients
