@@ -21,6 +21,7 @@ import (
 	"github.com/attestantio/dirk/core"
 	receiverhandler "github.com/attestantio/dirk/services/api/grpc/handlers/receiver"
 	mockchecker "github.com/attestantio/dirk/services/checker/mock"
+	memfetcher "github.com/attestantio/dirk/services/fetcher/mem"
 	"github.com/attestantio/dirk/services/peers"
 	staticpeers "github.com/attestantio/dirk/services/peers/static"
 	process "github.com/attestantio/dirk/services/process"
@@ -48,6 +49,11 @@ func TestNew(t *testing.T) {
 	stores, err := core.InitStores(ctx, nil)
 	require.NoError(t, err)
 
+	fetcherSvc, err := memfetcher.New(ctx,
+		memfetcher.WithStores(stores),
+	)
+	require.NoError(t, err)
+
 	peersSvc, err := staticpeers.New(ctx,
 		staticpeers.WithPeers(map[uint64]string{
 			1: "signer-test01:8881",
@@ -69,6 +75,7 @@ func TestNew(t *testing.T) {
 		standardprocess.WithID(1),
 		standardprocess.WithPeers(peersSvc),
 		standardprocess.WithSender(senderSvc),
+		standardprocess.WithFetcher(fetcherSvc),
 		standardprocess.WithStores(stores),
 		standardprocess.WithUnlocker(unlockerSvc),
 	)

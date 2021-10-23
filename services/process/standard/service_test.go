@@ -23,6 +23,8 @@ import (
 	"github.com/attestantio/dirk/core"
 	"github.com/attestantio/dirk/services/checker"
 	mockchecker "github.com/attestantio/dirk/services/checker/mock"
+	"github.com/attestantio/dirk/services/fetcher"
+	memfetcher "github.com/attestantio/dirk/services/fetcher/mem"
 	"github.com/attestantio/dirk/services/metrics"
 	"github.com/attestantio/dirk/services/metrics/prometheus"
 	"github.com/attestantio/dirk/services/peers"
@@ -72,12 +74,21 @@ func createProcessService(ctx context.Context, id uint64) (process.Service, erro
 		return nil, err
 	}
 
+	fetcherSvc, err := memfetcher.New(ctx,
+		memfetcher.WithStores(stores),
+		memfetcher.WithEncryptor(keystorev4.New()),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create memory fetcher")
+	}
+
 	process, err := standardprocess.New(ctx,
 		standardprocess.WithChecker(checkerSvc),
 		standardprocess.WithGenerationPassphrase([]byte("secret")),
 		standardprocess.WithID(id),
 		standardprocess.WithPeers(peers),
 		standardprocess.WithSender(sendermock.New(id)),
+		standardprocess.WithFetcher(fetcherSvc),
 		standardprocess.WithStores(stores),
 		standardprocess.WithUnlocker(unlockerSvc),
 	)
@@ -109,6 +120,12 @@ func TestNew(t *testing.T) {
 		3: "signer-test03:8883",
 	}
 
+	fetcherSvc, err := memfetcher.New(ctx,
+		memfetcher.WithStores(stores),
+		memfetcher.WithEncryptor(keystorev4.New()),
+	)
+	require.NoError(t, err)
+
 	peersSvc, err := staticpeers.New(ctx,
 		staticpeers.WithPeers(endpoints),
 	)
@@ -135,6 +152,7 @@ func TestNew(t *testing.T) {
 		endpoints            map[uint64]string
 		generationPassphrase []byte
 		sender               sender.Service
+		fetcher              fetcher.Service
 		unlocker             unlocker.Service
 		id                   uint64
 		err                  string
@@ -150,6 +168,7 @@ func TestNew(t *testing.T) {
 			endpoints:            endpoints,
 			generationPassphrase: []byte("secret"),
 			sender:               senderSvc,
+			fetcher:              fetcherSvc,
 			unlocker:             unlockerSvc,
 			id:                   1,
 			err:                  "problem with parameters: no checker specified",
@@ -162,9 +181,23 @@ func TestNew(t *testing.T) {
 			stores:               stores,
 			endpoints:            endpoints,
 			generationPassphrase: []byte("secret"),
+			fetcher:              fetcherSvc,
 			unlocker:             unlockerSvc,
 			id:                   1,
 			err:                  "problem with parameters: no sender specified",
+		},
+		{
+			name:                 "FetcherSvcMissing",
+			monitor:              monitorSvc,
+			peers:                peersSvc,
+			checker:              checkerSvc,
+			stores:               stores,
+			endpoints:            endpoints,
+			generationPassphrase: []byte("secret"),
+			sender:               senderSvc,
+			unlocker:             unlockerSvc,
+			id:                   1,
+			err:                  "problem with parameters: no fetcher specified",
 		},
 		{
 			name:                 "UnlockerSvcMissing",
@@ -175,6 +208,7 @@ func TestNew(t *testing.T) {
 			endpoints:            endpoints,
 			generationPassphrase: []byte("secret"),
 			sender:               senderSvc,
+			fetcher:              fetcherSvc,
 			id:                   1,
 			err:                  "problem with parameters: no unlocker specified",
 		},
@@ -185,6 +219,7 @@ func TestNew(t *testing.T) {
 			endpoints:            endpoints,
 			generationPassphrase: []byte("secret"),
 			sender:               senderSvc,
+			fetcher:              fetcherSvc,
 			unlocker:             unlockerSvc,
 			id:                   1,
 			err:                  "problem with parameters: no peers specified",
@@ -196,6 +231,7 @@ func TestNew(t *testing.T) {
 			endpoints:            endpoints,
 			generationPassphrase: []byte("secret"),
 			sender:               senderSvc,
+			fetcher:              fetcherSvc,
 			unlocker:             unlockerSvc,
 			id:                   1,
 			err:                  "problem with parameters: no stores specified",
@@ -208,6 +244,7 @@ func TestNew(t *testing.T) {
 			endpoints:            endpoints,
 			generationPassphrase: []byte("secret"),
 			sender:               senderSvc,
+			fetcher:              fetcherSvc,
 			unlocker:             unlockerSvc,
 			err:                  "problem with parameters: no ID specified",
 		},
@@ -219,6 +256,7 @@ func TestNew(t *testing.T) {
 			endpoints:            endpoints,
 			generationPassphrase: []byte("secret"),
 			sender:               senderSvc,
+			fetcher:              fetcherSvc,
 			unlocker:             unlockerSvc,
 			id:                   1,
 		},
@@ -233,6 +271,7 @@ func TestNew(t *testing.T) {
 				standardprocess.WithStores(test.stores),
 				standardprocess.WithGenerationPassphrase(test.generationPassphrase),
 				standardprocess.WithSender(test.sender),
+				standardprocess.WithFetcher(test.fetcher),
 				standardprocess.WithUnlocker(test.unlocker),
 				standardprocess.WithID(test.id),
 			)

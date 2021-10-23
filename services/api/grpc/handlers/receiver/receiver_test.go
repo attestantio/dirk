@@ -24,6 +24,7 @@ import (
 	receiverhandler "github.com/attestantio/dirk/services/api/grpc/handlers/receiver"
 	"github.com/attestantio/dirk/services/api/grpc/interceptors"
 	mockchecker "github.com/attestantio/dirk/services/checker/mock"
+	memfetcher "github.com/attestantio/dirk/services/fetcher/mem"
 	staticpeers "github.com/attestantio/dirk/services/peers/static"
 	standardprocess "github.com/attestantio/dirk/services/process/standard"
 	mocksender "github.com/attestantio/dirk/services/sender/mock"
@@ -34,6 +35,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	pb "github.com/wealdtech/eth2-signer-api/pb/v1"
+	distributed "github.com/wealdtech/go-eth2-wallet-distributed"
+	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
+	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
 
 func TestNonInitiator(t *testing.T) {
@@ -42,15 +46,6 @@ func TestNonInitiator(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, resources.SetupCerts(base))
 	defer os.RemoveAll(base)
-
-	stores, err := core.InitStores(ctx, []*core.Store{
-		{
-			Name:     "Local",
-			Type:     "filesystem",
-			Location: filepath.Join(base, "wallets"),
-		},
-	})
-	require.NoError(t, err)
 
 	peers, err := staticpeers.New(ctx,
 		staticpeers.WithPeers(map[uint64]string{
@@ -68,13 +63,28 @@ func TestNonInitiator(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create receiver 1.
+	stores1, err := core.InitStores(ctx, []*core.Store{
+		{
+			Name:     "Local",
+			Type:     "filesystem",
+			Location: filepath.Join(base, "wallets1"),
+		},
+	})
+	require.NoError(t, err)
+	_, err = distributed.CreateWallet(ctx, "Test", stores1[0], keystorev4.New())
+	require.NoError(t, err)
+	fetcher1, err := memfetcher.New(ctx,
+		memfetcher.WithStores(stores1),
+	)
+	require.NoError(t, err)
 	process1, err := standardprocess.New(ctx,
 		standardprocess.WithChecker(checker),
 		standardprocess.WithGenerationPassphrase([]byte("secret")),
 		standardprocess.WithID(1),
 		standardprocess.WithPeers(peers),
 		standardprocess.WithSender(mocksender.New(1)),
-		standardprocess.WithStores(stores),
+		standardprocess.WithFetcher(fetcher1),
+		standardprocess.WithStores(stores1),
 		standardprocess.WithUnlocker(unlocker),
 		standardprocess.WithGenerationPassphrase([]byte("test")),
 	)
@@ -89,13 +99,28 @@ func TestNonInitiator(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create receiver 2.
+	stores2, err := core.InitStores(ctx, []*core.Store{
+		{
+			Name:     "Local",
+			Type:     "filesystem",
+			Location: filepath.Join(base, "wallets2"),
+		},
+	})
+	require.NoError(t, err)
+	_, err = distributed.CreateWallet(ctx, "Test", stores2[0], keystorev4.New())
+	require.NoError(t, err)
+	fetcher2, err := memfetcher.New(ctx,
+		memfetcher.WithStores(stores2),
+	)
+	require.NoError(t, err)
 	process2, err := standardprocess.New(ctx,
 		standardprocess.WithChecker(checker),
 		standardprocess.WithGenerationPassphrase([]byte("secret")),
 		standardprocess.WithID(2),
 		standardprocess.WithPeers(peers),
 		standardprocess.WithSender(mocksender.New(2)),
-		standardprocess.WithStores(stores),
+		standardprocess.WithFetcher(fetcher2),
+		standardprocess.WithStores(stores2),
 		standardprocess.WithUnlocker(unlocker),
 		standardprocess.WithGenerationPassphrase([]byte("test")),
 	)
@@ -110,13 +135,28 @@ func TestNonInitiator(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create receiver 3.
+	stores3, err := core.InitStores(ctx, []*core.Store{
+		{
+			Name:     "Local",
+			Type:     "filesystem",
+			Location: filepath.Join(base, "wallets3"),
+		},
+	})
+	require.NoError(t, err)
+	_, err = distributed.CreateWallet(ctx, "Test", stores3[0], keystorev4.New())
+	require.NoError(t, err)
+	fetcher3, err := memfetcher.New(ctx,
+		memfetcher.WithStores(stores3),
+	)
+	require.NoError(t, err)
 	process3, err := standardprocess.New(ctx,
 		standardprocess.WithChecker(checker),
 		standardprocess.WithGenerationPassphrase([]byte("secret")),
 		standardprocess.WithID(3),
 		standardprocess.WithPeers(peers),
 		standardprocess.WithSender(mocksender.New(3)),
-		standardprocess.WithStores(stores),
+		standardprocess.WithFetcher(fetcher3),
+		standardprocess.WithStores(stores3),
 		standardprocess.WithUnlocker(unlocker),
 		standardprocess.WithGenerationPassphrase([]byte("test")),
 	)
@@ -169,4 +209,9 @@ func TestNonInitiator(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, commit1Resp.PublicKey, commit2Resp.PublicKey)
 	assert.Equal(t, commit2Resp.PublicKey, commit3Resp.PublicKey)
+
+	// Ensure the account has been created.
+	_, createdAccount1, err := fetcher1.FetchAccount(ctx, "Test/Test")
+	require.NoError(t, err)
+	require.Equal(t, commit1Resp.PublicKey, createdAccount1.(e2wtypes.DistributedAccount).CompositePublicKey().Marshal())
 }

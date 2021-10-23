@@ -33,6 +33,7 @@ func (h *Handler) Commit(ctx context.Context, req *pb.CommitRequest) (*pb.Commit
 	pubKey, confirmationSig, err := h.process.OnCommit(ctx, senderID, req.Account, req.ConfirmationData)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to commit distributed key generation")
+		return nil, errors.Wrap(err, "failed to commit created key")
 	}
 
 	res := &pb.CommitResponse{

@@ -21,6 +21,7 @@ import (
 
 	"github.com/attestantio/dirk/core"
 	"github.com/attestantio/dirk/services/checker"
+	"github.com/attestantio/dirk/services/fetcher"
 	"github.com/attestantio/dirk/services/peers"
 	"github.com/attestantio/dirk/services/sender"
 	"github.com/attestantio/dirk/services/unlocker"
@@ -37,6 +38,7 @@ import (
 // Service is used to manage the process of distributed key generation operations.
 type Service struct {
 	checkerSvc           checker.Service
+	fetcherSvc           fetcher.Service
 	senderSvc            sender.Service
 	peersSvc             peers.Service
 	unlockerSvc          unlocker.Service
@@ -67,6 +69,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 
 	s := &Service{
 		checkerSvc:           parameters.checker,
+		fetcherSvc:           parameters.fetcher,
 		unlockerSvc:          parameters.unlocker,
 		senderSvc:            parameters.sender,
 		peersSvc:             parameters.peers,
@@ -211,7 +214,7 @@ func (s *Service) OnCommit(ctx context.Context, sender uint64, account string, c
 	err = s.storeDistributedKey(ctx, generation.account, passphrase, privateKey, generation.threshold, aggregateVVec, generation.participants)
 	if err != nil {
 		log.Warn().Err(err).Msg("Failed to create key")
-		return nil, nil, ErrNotCreated
+		return nil, nil, errors.Wrap(err, ErrNotCreated.Error())
 	}
 
 	// Attempt to retrieve the key to ensure it has been stored properly.
@@ -327,9 +330,13 @@ func (s *Service) storeDistributedKey(ctx context.Context,
 	for i := range participants {
 		walletParticipants[participants[i].ID] = participants[i].ConnectAddress()
 	}
-	_, err = wallet.(e2wtypes.WalletDistributedAccountImporter).ImportDistributedAccount(ctx, accountName, privateKey.Serialize(), threshold, vVec, walletParticipants, passphrase)
+	generatedAccount, err := wallet.(e2wtypes.WalletDistributedAccountImporter).ImportDistributedAccount(ctx, accountName, privateKey.Serialize(), threshold, vVec, walletParticipants, passphrase)
 	if err != nil {
 		return errors.Wrap(err, "failed to import account")
+	}
+	if err := s.fetcherSvc.AddAccount(ctx, wallet, generatedAccount); err != nil {
+		// Warn but do not propagate this error.
+		log.Warn().Err(err).Msg("Failed to add account to internal cache, will be unavailable until restart")
 	}
 
 	return nil

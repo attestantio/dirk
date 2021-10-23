@@ -24,4 +24,6 @@ type Service interface {
 	FetchWallet(ctx context.Context, path string) (types.Wallet, error)
 	FetchAccount(ctx context.Context, path string) (types.Wallet, types.Account, error)
 	FetchAccountByKey(ctx context.Context, pubKey []byte) (types.Wallet, types.Account, error)
+	FetchAccounts(ctx context.Context, path string) (map[string]types.Account, error)
+	AddAccount(ctx context.Context, wallet types.Wallet, account types.Account) error
 }

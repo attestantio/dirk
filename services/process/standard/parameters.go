@@ -15,6 +15,7 @@ package standard
 
 import (
 	"github.com/attestantio/dirk/services/checker"
+	"github.com/attestantio/dirk/services/fetcher"
 	"github.com/attestantio/dirk/services/metrics"
 	"github.com/attestantio/dirk/services/peers"
 	"github.com/attestantio/dirk/services/sender"
@@ -29,6 +30,7 @@ type parameters struct {
 	logLevel             zerolog.Level
 	monitor              metrics.ProcessMonitor
 	checker              checker.Service
+	fetcher              fetcher.Service
 	sender               sender.Service
 	unlocker             unlocker.Service
 	encryptor            e2wtypes.Encryptor
@@ -67,6 +69,13 @@ func WithMonitor(monitor metrics.ProcessMonitor) Parameter {
 func WithChecker(checker checker.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
 		p.checker = checker
+	})
+}
+
+// WithFetcher sets the account fetcher for this module.
+func WithFetcher(fetcher fetcher.Service) Parameter {
+	return parameterFunc(func(p *parameters) {
+		p.fetcher = fetcher
 	})
 }
 
@@ -137,6 +146,9 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	}
 	if parameters.checker == nil {
 		return nil, errors.New("no checker specified")
+	}
+	if parameters.fetcher == nil {
+		return nil, errors.New("no fetcher specified")
 	}
 	if parameters.sender == nil {
 		return nil, errors.New("no sender specified")

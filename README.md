@@ -6,7 +6,7 @@
 ![Lint](https://github.com/attestantio/dirk/workflows/golangci-lint/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/attestantio/dirk)](https://goreportcard.com/report/github.com/attestantio/dirk)
 
-An Ethereum 2 distributed remote keymanager.
+An Ethereum 2 distributed remote keymanager, focused on security and long-term performance of signing operations.
 
 ## Table of Contents
 
@@ -43,6 +43,10 @@ go get github.com/attestantio/dirk
 
 ## Usage
 `dirk` provides an interface to wallet operations such as listing accounts and signing requests.  The daemon provides a number of security measures to avoid unauthorised uses of the private keys, and protection against invalid actions (_e.g._ slashing events).
+
+Although `dirk` can work with a single instance, it is best used with multiple instances and distributed keys.  Multiple instances allow high levels of resiliency and maintainability, providing a safer operating environment.
+
+`dirk` is designed to "front load" expensive operations, providing an initial period on startup where signing operations may be slower whilst it caches information such as the presence (or not) of particular accounts.  One consequence of this is that `dirk` does not attempt to rescan its wallets for new keys created externally (although new distributed accounts are acknowledged as they are created by `dirk` itself).
 
 ## Documentation
 The following documentation is available:
