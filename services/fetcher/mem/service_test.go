@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2021 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -166,12 +166,12 @@ func TestFetchAccount(t *testing.T) {
 		{
 			name: "UnknownWallet",
 			path: "unknown wallet",
-			err:  "wallet not found",
+			err:  "failed to find wallet",
 		},
 		{
 			name: "UnknownAccount",
 			path: "Test wallet/unknown account",
-			err:  "failed to obtain account by name: no account with name \"unknown account\"",
+			err:  "failed to find account",
 		},
 		{
 			name: "Good",
@@ -230,17 +230,17 @@ func TestFetchAccountByKey(t *testing.T) {
 	}{
 		{
 			name: "Nil",
-			err:  "account not found",
+			err:  "public key not known",
 		},
 		{
 			name: "Empty",
 			key:  []byte{},
-			err:  "account not found",
+			err:  "public key not known",
 		},
 		{
 			name: "UnknownAccount",
 			key:  []byte{0x00},
-			err:  "account not found",
+			err:  "public key not known",
 		},
 		{
 			name: "Good",
@@ -314,6 +314,40 @@ func TestAccountLocking(t *testing.T) {
 			}
 		}()
 	}
+}
+
+func TestAdd(t *testing.T) {
+	ctx := context.Background()
+
+	stores, err := createTestStores()
+	require.Nil(t, err)
+	fetcher, err := mem.New(context.Background(),
+		mem.WithStores(stores))
+	require.Nil(t, err)
+
+	accounts, err := fetcher.FetchAccounts(ctx, "Test wallet")
+	require.NoError(t, err)
+
+	wallet, err := fetcher.FetchWallet(ctx, "Test wallet")
+	require.NoError(t, err)
+	require.NoError(t, wallet.(e2wtypes.WalletLocker).Unlock(ctx, nil))
+
+	// Add an account
+	account, err := wallet.(e2wtypes.WalletAccountCreator).CreateAccount(ctx, "Add test", []byte("password"))
+	require.NoError(t, err)
+
+	require.NoError(t, fetcher.AddAccount(ctx, wallet, account))
+
+	newAccounts, err := fetcher.FetchAccounts(ctx, "Test wallet")
+	require.NoError(t, err)
+
+	require.True(t, len(newAccounts) == len(accounts)+1)
+
+	// Fetch the account by path.
+	wallet, byPathAccount, err := fetcher.FetchAccount(ctx, "Test wallet/Add test")
+	require.NoError(t, err)
+	require.Equal(t, "Test wallet", wallet.Name())
+	require.Equal(t, "Add test", byPathAccount.Name())
 }
 
 // createTestStores is a helper to create and populate some stores for testing.

@@ -75,7 +75,7 @@ import (
 )
 
 // ReleaseVersion is the release version for the code.
-var ReleaseVersion = "1.0.4"
+var ReleaseVersion = "1.1.0-pre"
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -421,6 +421,7 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 		standardprocess.WithLogLevel(logLevel(viper.GetString("log-levels.process"))),
 		standardprocess.WithMonitor(processMonitor),
 		standardprocess.WithChecker(checker),
+		standardprocess.WithFetcher(fetcher),
 		standardprocess.WithUnlocker(unlocker),
 		standardprocess.WithSender(sender),
 		standardprocess.WithPeers(peers),

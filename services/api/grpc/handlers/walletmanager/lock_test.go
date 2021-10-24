@@ -180,6 +180,7 @@ func Setup() (*walletmanager.Handler, error) {
 		standardprocess.WithID(1),
 		standardprocess.WithPeers(peers),
 		standardprocess.WithSender(mocksender.New(1)),
+		standardprocess.WithFetcher(fetcher),
 		standardprocess.WithStores(stores),
 		standardprocess.WithUnlocker(unlocker),
 	)

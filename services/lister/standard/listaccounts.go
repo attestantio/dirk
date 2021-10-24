@@ -57,19 +57,19 @@ func (s *Service) ListAccounts(ctx context.Context, credentials *checker.Credent
 			continue
 		}
 
-		if accountPath == "" {
-			accountPath = "^.*$"
-		}
-		if !strings.HasPrefix(accountPath, "^") {
-			accountPath = fmt.Sprintf("^%s", accountPath)
-		}
-		if !strings.HasSuffix(accountPath, "$") {
-			accountPath = fmt.Sprintf("%s$", accountPath)
-		}
-		accountRegex, err := regexp.Compile(accountPath)
-		if err != nil {
-			log.Warn().Err(err).Msg("Invalid account regular expression")
-			continue
+		var accountRegex *regexp.Regexp
+		if accountPath != "" {
+			if !strings.HasPrefix(accountPath, "^") {
+				accountPath = fmt.Sprintf("^%s", accountPath)
+			}
+			if !strings.HasSuffix(accountPath, "$") {
+				accountPath = fmt.Sprintf("%s$", accountPath)
+			}
+			accountRegex, err = regexp.Compile(accountPath)
+			if err != nil {
+				log.Warn().Err(err).Msg("Invalid account regular expression")
+				continue
+			}
 		}
 
 		wallet, err := s.fetcher.FetchWallet(ctx, path)
@@ -78,9 +78,15 @@ func (s *Service) ListAccounts(ctx context.Context, credentials *checker.Credent
 			continue
 		}
 
-		for account := range wallet.Accounts(ctx) {
-			if accountRegex.Match([]byte(account.Name())) {
-				accountName := fmt.Sprintf("%s/%s", wallet.Name(), account.Name())
+		walletAccounts, err := s.fetcher.FetchAccounts(ctx, wallet.Name())
+		if err != nil {
+			log.Debug().Err(err).Msg("Failed to obtain accounts")
+			continue
+		}
+
+		for _, walletAccount := range walletAccounts {
+			if accountRegex == nil || accountRegex.Match([]byte(walletAccount.Name())) {
+				accountName := fmt.Sprintf("%s/%s", wallet.Name(), walletAccount.Name())
 				log := log.With().Str("account", accountName).Logger()
 				checkRes := s.checkAccess(ctx, credentials, accountName, ruler.ActionAccessAccount)
 				if checkRes != core.ResultSucceeded {
@@ -91,14 +97,14 @@ func (s *Service) ListAccounts(ctx context.Context, credentials *checker.Credent
 
 				// Confirm listing of the key.
 				var pubKey []byte
-				pubKeyProvider, isProvider := account.(e2wtypes.AccountPublicKeyProvider)
+				pubKeyProvider, isProvider := walletAccount.(e2wtypes.AccountPublicKeyProvider)
 				if !isProvider {
 					log.Warn().Msg("No public key available")
 					continue
 				}
 				pubKey = pubKeyProvider.PublicKey().Marshal()
 
-				if compositePubKeyProvider, isProvider := account.(e2wtypes.AccountCompositePublicKeyProvider); isProvider {
+				if compositePubKeyProvider, isProvider := walletAccount.(e2wtypes.AccountCompositePublicKeyProvider); isProvider {
 					pubKey = compositePubKeyProvider.CompositePublicKey().Marshal()
 				}
 				data := &rules.AccessAccountData{
@@ -108,20 +114,20 @@ func (s *Service) ListAccounts(ctx context.Context, credentials *checker.Credent
 				rulesData := []*ruler.RulesData{
 					{
 						WalletName:  wallet.Name(),
-						AccountName: account.Name(),
+						AccountName: walletAccount.Name(),
 						PubKey:      pubKey,
 						Data:        data,
 					},
 				}
 				results := s.ruler.RunRules(ctx, credentials, ruler.ActionAccessAccount, rulesData)
 				if results[0] == rules.APPROVED {
-					accounts = append(accounts, account)
+					accounts = append(accounts, walletAccount)
 				}
 			}
 		}
 	}
 
-	log.Trace().Str("result", "succeeded").Int("accounts", len(accounts)).Msg("Success")
+	log.Trace().Str("result", "succeeded").Dur("elapsed", time.Since(started)).Int("accounts", len(accounts)).Msg("Success")
 	s.monitor.ListAccountsCompleted(started)
 	return core.ResultSucceeded, accounts
 }

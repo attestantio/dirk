@@ -271,6 +271,7 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 		standardprocess.WithID(id),
 		standardprocess.WithPeers(peers),
 		standardprocess.WithSender(mocksender.New(id)),
+		standardprocess.WithFetcher(fetcher),
 		standardprocess.WithStores(stores),
 		standardprocess.WithUnlocker(unlocker),
 	)

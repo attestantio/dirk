@@ -123,6 +123,12 @@ func (s *Service) generate(ctx context.Context, credentials *checker.Credentials
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create account")
 	}
+
+	if err := s.fetcherSvc.AddAccount(ctx, wallet, createdAccount); err != nil {
+		// Warn but do not propagate this error.
+		log.Warn().Err(err).Msg("Failed to add account to internal cache, will be unavailable until restart")
+	}
+
 	return createdAccount.PublicKey().Marshal(), nil
 }
 
