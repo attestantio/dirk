@@ -42,7 +42,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 	}
 
 	// Set logging.
-	log = zerologger.With().Str("service", "fetcher").Str("impl", "mem").Logger()
+	log = zerologger.With().Str("service", "ruler").Str("impl", "golang").Logger()
 	if parameters.logLevel != log.GetLevel() {
 		log = log.Level(parameters.logLevel)
 	}
