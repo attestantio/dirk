@@ -15,11 +15,6 @@ A sample configuration file in YAML with all current options is shown below:
 log-file: /home/me/dirk.log
 # log-level is the global log level for Dirk logging.
 log-level: Debug
-# log-levels contain override log levels for individual modules.  A full list of modules is supplied later
-# in this document.
-log-levels:
-  signer: Trace
-  accountmanager: None
 server:
   # id should be randomly chosen 8-digit numeric ID; it must be unique across all of your Dirk instances.
   id: 75843236
@@ -115,4 +110,4 @@ Modules levels are used for each module, overriding the global log level.  The a
   - **unlocker** unlocks locked accounts using supplied passphrases
   - **walletmanager** operations on accounts such as locking and unlocking existing wallets
 
-This can be configured using the environment variables `DIRK_LOG_LEVELS_<MODULE>` or the configuration option `log-levels.<module>`.  For example, the peers module logging could be configured using the environment variable `DIRK_LOG_LEVELS_PEERS` or the configuration option `log-levels.peers`.
+This can be configured using the environment variables `DIRK_<MODULE>_LOG_LEVEL` or the configuration option `<module>.log-level`.  For example, the peers module logging could be configured using the environment variable `DIRK_PEERS_LOG_LEVEL` or the configuration option `peers.log-level`.  Log levels are hierarchical, allowing for fine-grained control of logging.
