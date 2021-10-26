@@ -75,7 +75,7 @@ import (
 )
 
 // ReleaseVersion is the release version for the code.
-var ReleaseVersion = "1.1.0-pre"
+var ReleaseVersion = "1.1.0-pre-1"
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
