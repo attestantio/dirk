@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2021 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,10 +16,12 @@ package golang
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/attestantio/dirk/rules"
 	"github.com/attestantio/dirk/services/checker"
 	"github.com/attestantio/dirk/services/ruler"
+	"github.com/attestantio/dirk/util"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 )
@@ -102,7 +104,6 @@ func (s *Service) runRules(ctx context.Context,
 	action string,
 	rulesData []*ruler.RulesData,
 ) []rules.Result {
-
 	if len(rulesData) > 1 && action == ruler.ActionSignBeaconAttestation {
 		return s.runRulesForMultipleBeaconAttestations(ctx, credentials, action, rulesData)
 	}
@@ -111,105 +112,111 @@ func (s *Service) runRules(ctx context.Context,
 	for i := range rulesData {
 		results[i] = rules.UNKNOWN
 	}
-	for i := range rulesData {
-		if rulesData[i] == nil {
-			continue
-		}
-		var name string
-		if rulesData[i].AccountName == "" {
-			name = rulesData[i].WalletName
-		} else {
-			name = fmt.Sprintf("%s/%s", rulesData[i].WalletName, rulesData[i].AccountName)
-		}
-		log := log.With().Str("account", name).Logger()
+	_, err := util.Scatter(len(rulesData), func(offset int, entries int, _ *sync.RWMutex) (interface{}, error) {
+		for i := offset; i < offset+entries; i++ {
+			if rulesData[i] == nil {
+				continue
+			}
+			var name string
+			if rulesData[i].AccountName == "" {
+				name = rulesData[i].WalletName
+			} else {
+				name = fmt.Sprintf("%s/%s", rulesData[i].WalletName, rulesData[i].AccountName)
+			}
+			log := log.With().Str("account", name).Logger()
 
-		metadata, err := s.assembleMetadata(ctx, credentials, rulesData[i].AccountName, rulesData[i].PubKey)
-		if err != nil {
-			log.Warn().Err(err).Msg("Failed to assemble metadata")
-			results[i] = rules.FAILED
-			continue
+			metadata, err := s.assembleMetadata(ctx, credentials, rulesData[i].AccountName, rulesData[i].PubKey)
+			if err != nil {
+				log.Warn().Err(err).Msg("Failed to assemble metadata")
+				results[i] = rules.FAILED
+				continue
+			}
+			switch action {
+			case ruler.ActionSign:
+				rulesData, isExpectedType := rulesData[i].Data.(*rules.SignData)
+				if !isExpectedType {
+					log.Warn().Msg("Data not of expected type")
+					results[i] = rules.FAILED
+					continue
+				}
+				results[i] = s.rules.OnSign(ctx, metadata, rulesData)
+			case ruler.ActionSignBeaconProposal:
+				reqData, isExpectedType := rulesData[i].Data.(*rules.SignBeaconProposalData)
+				if !isExpectedType {
+					log.Warn().Msg("Data not of expected type")
+					results[i] = rules.FAILED
+					continue
+				}
+				results[i] = s.rules.OnSignBeaconProposal(ctx, metadata, reqData)
+			case ruler.ActionSignBeaconAttestation:
+				reqData, isExpectedType := rulesData[i].Data.(*rules.SignBeaconAttestationData)
+				if !isExpectedType {
+					log.Warn().Msg("Data not of expected type")
+					results[i] = rules.FAILED
+					continue
+				}
+				results[i] = s.rules.OnSignBeaconAttestation(ctx, metadata, reqData)
+			case ruler.ActionAccessAccount:
+				reqData, isExpectedType := rulesData[i].Data.(*rules.AccessAccountData)
+				if !isExpectedType {
+					log.Warn().Msg("Data not of expected type")
+					results[i] = rules.FAILED
+					continue
+				}
+				results[i] = s.rules.OnListAccounts(ctx, metadata, reqData)
+			case ruler.ActionLockWallet:
+				reqData, isExpectedType := rulesData[i].Data.(*rules.LockWalletData)
+				if !isExpectedType {
+					log.Warn().Msg("Data not of expected type")
+					results[i] = rules.FAILED
+					continue
+				}
+				results[i] = s.rules.OnLockWallet(ctx, metadata, reqData)
+			case ruler.ActionUnlockWallet:
+				reqData, isExpectedType := rulesData[i].Data.(*rules.UnlockWalletData)
+				if !isExpectedType {
+					log.Warn().Msg("Data not of expected type")
+					results[i] = rules.FAILED
+					continue
+				}
+				results[i] = s.rules.OnUnlockWallet(ctx, metadata, reqData)
+			case ruler.ActionLockAccount:
+				reqData, isExpectedType := rulesData[i].Data.(*rules.LockAccountData)
+				if !isExpectedType {
+					log.Warn().Msg("Data not of expected type")
+					results[i] = rules.FAILED
+					continue
+				}
+				results[i] = s.rules.OnLockAccount(ctx, metadata, reqData)
+			case ruler.ActionUnlockAccount:
+				reqData, isExpectedType := rulesData[i].Data.(*rules.UnlockAccountData)
+				if !isExpectedType {
+					log.Warn().Msg("Data not of expected type")
+					results[i] = rules.FAILED
+					continue
+				}
+				results[i] = s.rules.OnUnlockAccount(ctx, metadata, reqData)
+			case ruler.ActionCreateAccount:
+				reqData, isExpectedType := rulesData[i].Data.(*rules.CreateAccountData)
+				if !isExpectedType {
+					log.Warn().Msg("Data not of expected type")
+					results[i] = rules.FAILED
+					continue
+				}
+				results[i] = s.rules.OnCreateAccount(ctx, metadata, reqData)
+			default:
+				log.Warn().Str("action", action).Msg("Unknown action")
+				results[i] = rules.FAILED
+			}
+			if results[i] == rules.UNKNOWN {
+				log.Error().Msg("Unknown result from rule")
+				results[i] = rules.FAILED
+			}
 		}
-		switch action {
-		case ruler.ActionSign:
-			rulesData, isExpectedType := rulesData[i].Data.(*rules.SignData)
-			if !isExpectedType {
-				log.Warn().Msg("Data not of expected type")
-				results[i] = rules.FAILED
-				continue
-			}
-			results[i] = s.rules.OnSign(ctx, metadata, rulesData)
-		case ruler.ActionSignBeaconProposal:
-			reqData, isExpectedType := rulesData[i].Data.(*rules.SignBeaconProposalData)
-			if !isExpectedType {
-				log.Warn().Msg("Data not of expected type")
-				results[i] = rules.FAILED
-				continue
-			}
-			results[i] = s.rules.OnSignBeaconProposal(ctx, metadata, reqData)
-		case ruler.ActionSignBeaconAttestation:
-			reqData, isExpectedType := rulesData[i].Data.(*rules.SignBeaconAttestationData)
-			if !isExpectedType {
-				log.Warn().Msg("Data not of expected type")
-				results[i] = rules.FAILED
-				continue
-			}
-			results[i] = s.rules.OnSignBeaconAttestation(ctx, metadata, reqData)
-		case ruler.ActionAccessAccount:
-			reqData, isExpectedType := rulesData[i].Data.(*rules.AccessAccountData)
-			if !isExpectedType {
-				log.Warn().Msg("Data not of expected type")
-				results[i] = rules.FAILED
-				continue
-			}
-			results[i] = s.rules.OnListAccounts(ctx, metadata, reqData)
-		case ruler.ActionLockWallet:
-			reqData, isExpectedType := rulesData[i].Data.(*rules.LockWalletData)
-			if !isExpectedType {
-				log.Warn().Msg("Data not of expected type")
-				results[i] = rules.FAILED
-				continue
-			}
-			results[i] = s.rules.OnLockWallet(ctx, metadata, reqData)
-		case ruler.ActionUnlockWallet:
-			reqData, isExpectedType := rulesData[i].Data.(*rules.UnlockWalletData)
-			if !isExpectedType {
-				log.Warn().Msg("Data not of expected type")
-				results[i] = rules.FAILED
-				continue
-			}
-			results[i] = s.rules.OnUnlockWallet(ctx, metadata, reqData)
-		case ruler.ActionLockAccount:
-			reqData, isExpectedType := rulesData[i].Data.(*rules.LockAccountData)
-			if !isExpectedType {
-				log.Warn().Msg("Data not of expected type")
-				results[i] = rules.FAILED
-				continue
-			}
-			results[i] = s.rules.OnLockAccount(ctx, metadata, reqData)
-		case ruler.ActionUnlockAccount:
-			reqData, isExpectedType := rulesData[i].Data.(*rules.UnlockAccountData)
-			if !isExpectedType {
-				log.Warn().Msg("Data not of expected type")
-				results[i] = rules.FAILED
-				continue
-			}
-			results[i] = s.rules.OnUnlockAccount(ctx, metadata, reqData)
-		case ruler.ActionCreateAccount:
-			reqData, isExpectedType := rulesData[i].Data.(*rules.CreateAccountData)
-			if !isExpectedType {
-				log.Warn().Msg("Data not of expected type")
-				results[i] = rules.FAILED
-				continue
-			}
-			results[i] = s.rules.OnCreateAccount(ctx, metadata, reqData)
-		default:
-			log.Warn().Str("action", action).Msg("Unknown action")
-			results[i] = rules.FAILED
-		}
-		if results[i] == rules.UNKNOWN {
-			log.Error().Msg("Unknown result from rule")
-			results[i] = rules.FAILED
-		}
+		return nil, nil
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to scatter rules")
 	}
 
 	return results
@@ -228,31 +235,44 @@ func (s *Service) runRulesForMultipleBeaconAttestations(ctx context.Context,
 
 	metadatas := make([]*rules.ReqMetadata, len(rulesData))
 	reqData := make([]*rules.SignBeaconAttestationData, len(rulesData))
-	var err error
-	for i := range rulesData {
-		var name string
-		if rulesData[i].AccountName == "" {
-			name = rulesData[i].WalletName
-		} else {
-			name = fmt.Sprintf("%s/%s", rulesData[i].WalletName, rulesData[i].AccountName)
-		}
-		log := log.With().Str("account", name).Logger()
 
-		// We are strict here; any failure in metadata or data will result in an immediate return.
-		// This ensures that the later code is simplified, and user errors are picked up quickly.
-		metadatas[i], err = s.assembleMetadata(ctx, credentials, rulesData[i].AccountName, rulesData[i].PubKey)
-		if err != nil {
-			log.Warn().Err(err).Msg("Failed to assemble metadata")
-			results[i] = rules.FAILED
+	_, err := util.Scatter(len(rulesData), func(offset int, entries int, _ *sync.RWMutex) (interface{}, error) {
+		for i := offset; i < offset+entries; i++ {
+			if rulesData[i].AccountName == "" {
+				log.Warn().Msg("Missing account")
+				results[i] = rules.FAILED
+				break
+			}
+			name := fmt.Sprintf("%s/%s", rulesData[i].WalletName, rulesData[i].AccountName)
+			log := log.With().Str("account", name).Logger()
+
+			// We are strict here; any failure in metadata or data will result in an immediate return.
+			// This ensures that the later code is simplified, and user errors are picked up quickly.
+			var err error
+			metadatas[i], err = s.assembleMetadata(ctx, credentials, rulesData[i].AccountName, rulesData[i].PubKey)
+			if err != nil {
+				log.Warn().Err(err).Msg("Failed to assemble metadata")
+				results[i] = rules.FAILED
+				break
+			}
+			data, isBeaconAttestationData := rulesData[i].Data.(*rules.SignBeaconAttestationData)
+			if !isBeaconAttestationData {
+				log.Warn().Msg("Data is not for signing beacon attestation")
+				results[i] = rules.FAILED
+				break
+			}
+			reqData[i] = data
+		}
+		return nil, nil
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to scatter signing preparation")
+	}
+
+	for i := range results {
+		if results[i] == rules.FAILED {
 			return results
 		}
-		data, isBeaconAttestationData := rulesData[i].Data.(*rules.SignBeaconAttestationData)
-		if !isBeaconAttestationData {
-			log.Warn().Msg("Data is not for signing beacon attestation")
-			results[i] = rules.FAILED
-			return results
-		}
-		reqData[i] = data
 	}
 
 	return s.rules.OnSignBeaconAttestations(ctx, metadatas, reqData)

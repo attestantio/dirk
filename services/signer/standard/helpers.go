@@ -64,7 +64,14 @@ func (s *Service) fetchAccount(ctx context.Context, credentials *checker.Credent
 	}
 
 	if err != nil {
-		log.Warn().Err(err).Str("result", "denied").Msg("Did not obtain account; denied")
+		llog := log.Warn().Str("result", "denied")
+		if name != "" {
+			llog = llog.Str("name", name)
+		}
+		if pubKey != nil {
+			llog = llog.Str("pubkey", fmt.Sprintf("#%x", pubKey))
+		}
+		llog.Msg("Did not obtain account; denied")
 		return nil, nil, core.ResultDenied
 	}
 
