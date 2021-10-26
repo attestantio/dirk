@@ -2,6 +2,7 @@
   - garbage collect the slashing database on startup to reduce on-disk size
   - provide release metric in `dirk_release`
   - use internal account cache for both positive and negative caching
+  - run signing rules in parallel, increasing responsiveness for large requests
 
 # Version 1.0.4
   - Update dependencies
