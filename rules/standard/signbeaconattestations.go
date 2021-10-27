@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2021 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,9 +17,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"time"
 
 	"github.com/attestantio/dirk/rules"
-	"github.com/opentracing/opentracing-go"
 	e2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
@@ -28,8 +28,7 @@ func (s *Service) OnSignBeaconAttestations(ctx context.Context,
 	metadata []*rules.ReqMetadata,
 	req []*rules.SignBeaconAttestationData,
 ) []rules.Result {
-	span, _ := opentracing.StartSpanFromContext(ctx, "rules.OnSignBeaconAttestations")
-	defer span.Finish()
+	started := time.Now()
 
 	res := make([]rules.Result, len(req))
 	for i := range res {
@@ -74,11 +73,13 @@ func (s *Service) OnSignBeaconAttestations(ctx context.Context,
 		}
 		return res
 	}
+	log.Trace().Dur("elapsed", time.Since(started)).Msg("Fetched states")
 
 	// Run the rules.
 	for i := range req {
 		res[i] = s.runSignBeaconAttestationChecks(ctx, req[i], states[i])
 	}
+	log.Trace().Dur("elapsed", time.Since(started)).Msg("Checked rules")
 
 	// Update the state
 	if err = s.storeSignBeaconAttestationStates(ctx, pubKeys, states); err != nil {
@@ -88,6 +89,7 @@ func (s *Service) OnSignBeaconAttestations(ctx context.Context,
 		}
 		return res
 	}
+	log.Trace().Dur("elapsed", time.Since(started)).Msg("Stored states")
 
 	return res
 }

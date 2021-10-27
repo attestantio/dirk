@@ -192,6 +192,16 @@ func TestPreCheck(t *testing.T) {
 			res:         core.ResultDenied,
 		},
 		{
+			name:        "UnknownWallet",
+			accountName: "Unknown/Unknown",
+			res:         core.ResultDenied,
+		},
+		{
+			name:        "UnknownAccount",
+			accountName: fmt.Sprintf("%s/Unknown", wallet.Name()),
+			res:         core.ResultDenied,
+		},
+		{
 			name:        "Unlockable",
 			credentials: &checker.Credentials{Client: "client1"},
 			accountName: fmt.Sprintf("%s/%s", wallet.Name(), accounts[1].Name()),
