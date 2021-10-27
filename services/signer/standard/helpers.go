@@ -62,7 +62,6 @@ func (s *Service) fetchAccount(ctx context.Context, credentials *checker.Credent
 	} else {
 		wallet, account, err = s.fetcher.FetchAccountByKey(ctx, pubKey)
 	}
-
 	if err != nil {
 		llog := log.Warn().Str("result", "denied")
 		if name != "" {
@@ -105,6 +104,7 @@ func (s *Service) unlockAccount(ctx context.Context, wallet e2wtypes.Wallet, acc
 		return core.ResultSucceeded
 	}
 
+	log := log.With().Str("wallet", wallet.Name()).Str("account", account.Name()).Logger()
 	unlocked, err := locker.IsUnlocked(ctx)
 	if err != nil {
 		log.Error().Str("result", "failed").Msg("Failed to establish if account is unlocked")
@@ -115,6 +115,7 @@ func (s *Service) unlockAccount(ctx context.Context, wallet e2wtypes.Wallet, acc
 		return core.ResultSucceeded
 	}
 
+	log.Trace().Msg("Unlocking")
 	unlocked, err = s.unlocker.UnlockAccount(ctx, wallet, account)
 	if err != nil {
 		log.Error().Str("result", "failed").Msg("Failed during attempt to unlock account")
