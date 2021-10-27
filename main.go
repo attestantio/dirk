@@ -57,6 +57,7 @@ import (
 	"github.com/attestantio/dirk/services/unlocker"
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
 	standardwalletmanager "github.com/attestantio/dirk/services/walletmanager/standard"
+	"github.com/attestantio/dirk/util"
 	"github.com/attestantio/dirk/util/loggers"
 	"github.com/mitchellh/go-homedir"
 	"github.com/opentracing/opentracing-go"
@@ -75,7 +76,7 @@ import (
 )
 
 // ReleaseVersion is the release version for the code.
-var ReleaseVersion = "1.1.0-pre-1"
+var ReleaseVersion = "1.1.0-pre-2"
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -344,7 +345,7 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 		signerMonitor = monitor
 	}
 	signer, err := standardsigner.New(ctx,
-		standardsigner.WithLogLevel(logLevel(viper.GetString("log-levels.signer"))),
+		standardsigner.WithLogLevel(util.LogLevel("signer")),
 		standardsigner.WithMonitor(signerMonitor),
 		standardsigner.WithUnlocker(unlocker),
 		standardsigner.WithChecker(checker),
@@ -380,7 +381,7 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 		}
 	}
 	sender, err := sendergrpc.New(ctx,
-		sendergrpc.WithLogLevel(logLevel(viper.GetString("log-levels.sender"))),
+		sendergrpc.WithLogLevel(util.LogLevel("sender")),
 		sendergrpc.WithMonitor(senderMonitor),
 		sendergrpc.WithName(viper.GetString("server.name")),
 		sendergrpc.WithServerCert(certPEMBlock),
@@ -418,7 +419,7 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 		}
 	}
 	process, err := standardprocess.New(ctx,
-		standardprocess.WithLogLevel(logLevel(viper.GetString("log-levels.process"))),
+		standardprocess.WithLogLevel(util.LogLevel("process")),
 		standardprocess.WithMonitor(processMonitor),
 		standardprocess.WithChecker(checker),
 		standardprocess.WithFetcher(fetcher),
@@ -438,7 +439,7 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 		accountManagerMonitor = monitor
 	}
 	accountManager, err := standardaccountmanager.New(ctx,
-		standardaccountmanager.WithLogLevel(logLevel(viper.GetString("log-levels.accountmanager"))),
+		standardaccountmanager.WithLogLevel(util.LogLevel("accountmanager")),
 		standardaccountmanager.WithMonitor(accountManagerMonitor),
 		standardaccountmanager.WithUnlocker(unlocker),
 		standardaccountmanager.WithChecker(checker),
@@ -455,7 +456,7 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 		walletManagerMonitor = monitor
 	}
 	walletManager, err := standardwalletmanager.New(ctx,
-		standardwalletmanager.WithLogLevel(logLevel(viper.GetString("log-levels.walletmanager"))),
+		standardwalletmanager.WithLogLevel(util.LogLevel("walletmanager")),
 		standardwalletmanager.WithMonitor(walletManagerMonitor),
 		standardwalletmanager.WithUnlocker(unlocker),
 		standardwalletmanager.WithChecker(checker),
@@ -472,7 +473,7 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 		apiMonitor = monitor
 	}
 	_, err = grpcapi.New(ctx,
-		grpcapi.WithLogLevel(logLevel(viper.GetString("log-levels.api"))),
+		grpcapi.WithLogLevel(util.LogLevel("api")),
 		grpcapi.WithMonitor(apiMonitor),
 		grpcapi.WithSigner(signer),
 		grpcapi.WithLister(lister),
@@ -496,14 +497,14 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 
 func initMajordomo(ctx context.Context) (majordomo.Service, error) {
 	majordomo, err := standardmajordomo.New(ctx,
-		standardmajordomo.WithLogLevel(logLevel(viper.GetString("log-levels.majordomo"))),
+		standardmajordomo.WithLogLevel(util.LogLevel("majordomo")),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create majordomo service")
 	}
 
 	directConfidant, err := directconfidant.New(ctx,
-		directconfidant.WithLogLevel(logLevel(viper.GetString("log-levels.confidants.direct"))),
+		directconfidant.WithLogLevel(util.LogLevel("majordomo.confidants.direct")),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create direct confidant")
@@ -513,7 +514,7 @@ func initMajordomo(ctx context.Context) (majordomo.Service, error) {
 	}
 
 	fileConfidant, err := fileconfidant.New(ctx,
-		fileconfidant.WithLogLevel(logLevel(viper.GetString("log-levels.confidants.file"))),
+		fileconfidant.WithLogLevel(util.LogLevel("majordomo.confidants.file")),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create file confidant")
@@ -524,7 +525,7 @@ func initMajordomo(ctx context.Context) (majordomo.Service, error) {
 
 	if viper.GetString("majordomo.gsm.credentials") != "" {
 		gsmConfidant, err := gsmconfidant.New(ctx,
-			gsmconfidant.WithLogLevel(logLevel(viper.GetString("log-levels.confidants.gsm"))),
+			gsmconfidant.WithLogLevel(util.LogLevel("majordomo.confidants.gsm")),
 			gsmconfidant.WithCredentialsPath(resolvePath(viper.GetString("majordomo.gsm.credentials"))),
 			gsmconfidant.WithProject(viper.GetString("majordomo.gsm.project")),
 		)
@@ -548,7 +549,7 @@ func startMonitor(ctx context.Context) (metrics.Service, error) {
 		return nil, nil
 	}
 	monitor, err = prometheusmetrics.New(ctx,
-		prometheusmetrics.WithLogLevel(logLevel(viper.GetString("log-levels.metrics"))),
+		prometheusmetrics.WithLogLevel(util.LogLevel("metrics")),
 		prometheusmetrics.WithAddress(viper.GetString("metrics.listen-address")),
 	)
 	if err != nil {
@@ -576,7 +577,7 @@ func logModules() {
 // initRules initialises a rules service.
 func initRules(ctx context.Context) (rules.Service, error) {
 	return standardrules.New(ctx,
-		standardrules.WithLogLevel(logLevel(viper.GetString("log-levels.rules"))),
+		standardrules.WithLogLevel(util.LogLevel("rules")),
 		standardrules.WithStoragePath(resolvePath(viper.GetString("storage-path"))),
 		standardrules.WithAdminIPs(viper.GetStringSlice("server.rules.admin-ips")),
 	)
@@ -620,7 +621,7 @@ func startUnlocker(ctx context.Context, majordomo majordomo.Service, monitor met
 		unlockerMonitor = monitor
 	}
 	return localunlocker.New(ctx,
-		localunlocker.WithLogLevel(logLevel(viper.GetString("log-levels.unlocker"))),
+		localunlocker.WithLogLevel(util.LogLevel("unlocker")),
 		localunlocker.WithMonitor(unlockerMonitor),
 		localunlocker.WithWalletPassphrases(walletPassphrases),
 		localunlocker.WithAccountPassphrases(accountPassphrases),
@@ -646,7 +647,7 @@ func startChecker(ctx context.Context, monitor metrics.Service) (checker.Service
 		checkerMonitor = monitor
 	}
 	return staticchecker.New(ctx,
-		staticchecker.WithLogLevel(logLevel(viper.GetString("log-levels.checker"))),
+		staticchecker.WithLogLevel(util.LogLevel("checker")),
 		staticchecker.WithMonitor(checkerMonitor),
 		staticchecker.WithPermissions(permissions),
 	)
@@ -658,7 +659,7 @@ func startFetcher(ctx context.Context, stores []e2wtypes.Store, monitor metrics.
 		fetcherMonitor = monitor
 	}
 	return memfetcher.New(ctx,
-		memfetcher.WithLogLevel(logLevel(viper.GetString("log-levels.fetcher"))),
+		memfetcher.WithLogLevel(util.LogLevel("fetcher")),
 		memfetcher.WithMonitor(fetcherMonitor),
 		memfetcher.WithStores(stores),
 	)
@@ -670,7 +671,7 @@ func startLocker(ctx context.Context, monitor metrics.Service) (locker.Service, 
 		lockerMonitor = monitor
 	}
 	return syncmaplocker.New(ctx,
-		syncmaplocker.WithLogLevel(logLevel(viper.GetString("log-levels.locker"))),
+		syncmaplocker.WithLogLevel(util.LogLevel("locker")),
 		syncmaplocker.WithMonitor(lockerMonitor),
 	)
 }
@@ -685,7 +686,7 @@ func startRuler(ctx context.Context, locker locker.Service, monitor metrics.Serv
 		rulerMonitor = monitor
 	}
 	return goruler.New(ctx,
-		goruler.WithLogLevel(logLevel(viper.GetString("log-levels.ruler"))),
+		goruler.WithLogLevel(util.LogLevel("ruler")),
 		goruler.WithMonitor(rulerMonitor),
 		goruler.WithLocker(locker),
 		goruler.WithRules(rules),
@@ -708,7 +709,7 @@ func startPeers(ctx context.Context, monitor metrics.Service) (peers.Service, er
 		peersMonitor = monitor
 	}
 	return staticpeers.New(ctx,
-		staticpeers.WithLogLevel(logLevel(viper.GetString("log-levels.peers"))),
+		staticpeers.WithLogLevel(util.LogLevel("peers")),
 		staticpeers.WithMonitor(peersMonitor),
 		staticpeers.WithPeers(peersMap),
 	)
@@ -720,7 +721,7 @@ func startLister(ctx context.Context, monitor metrics.Service, fetcher fetcher.S
 		listerMonitor = monitor
 	}
 	return standardlister.New(ctx,
-		standardlister.WithLogLevel(logLevel(viper.GetString("log-levels.lister"))),
+		standardlister.WithLogLevel(util.LogLevel("lister")),
 		standardlister.WithMonitor(listerMonitor),
 		standardlister.WithFetcher(fetcher),
 		standardlister.WithChecker(checker),
