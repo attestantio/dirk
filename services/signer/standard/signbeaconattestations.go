@@ -66,7 +66,7 @@ func (s *Service) SignBeaconAttestations(
 		Str("client", credentials.Client).
 		Str("action", "SignBeaconAttestations").
 		Logger()
-	log.Trace().Msg("Signing")
+	log.Trace().Dur("elapsed", time.Since(started)).Msg("Starting signing process")
 	signatures := make([][]byte, len(data))
 
 	// Check input.
@@ -114,6 +114,7 @@ func (s *Service) SignBeaconAttestations(
 			return results, nil
 		}
 	}
+	log.Trace().Dur("elapsed", time.Since(started)).Msg("Data checked")
 
 	// We could have either or both of account names and/or entries, so take the longer
 	entries := len(pubKeys)
@@ -122,37 +123,51 @@ func (s *Service) SignBeaconAttestations(
 	}
 	rulesData := make([]*ruler.RulesData, entries)
 	accounts := make([]e2wtypes.Account, entries)
-	for i := 0; i < entries; i++ {
-		var pubKey []byte
-		if len(pubKeys) > i {
-			pubKey = pubKeys[i]
-		}
+	_, err := util.Scatter(entries, func(offset int, entries int, _ *sync.RWMutex) (interface{}, error) {
+		for i := offset; i < offset+entries; i++ {
+			var pubKey []byte
+			if len(pubKeys) > i {
+				pubKey = pubKeys[i]
+			}
 
-		var accountName string
-		if len(accountNames) > i {
-			accountName = accountNames[i]
-		}
+			var accountName string
+			if len(accountNames) > i {
+				accountName = accountNames[i]
+			}
 
-		wallet, account, checkRes := s.preCheck(ctx, credentials, accountName, pubKey, ruler.ActionSignBeaconAttestation)
-		if checkRes != core.ResultSucceeded {
-			s.monitor.SignCompleted(started, "attestation", checkRes)
-			results[i] = checkRes
+			wallet, account, checkRes := s.preCheck(ctx, credentials, accountName, pubKey, ruler.ActionSignBeaconAttestation)
+			if checkRes != core.ResultSucceeded {
+				s.monitor.SignCompleted(started, "attestation", checkRes)
+				results[i] = checkRes
+				continue
+			}
+			rulesData[i] = &ruler.RulesData{
+				WalletName:  wallet.Name(),
+				AccountName: account.Name(),
+				PubKey:      account.PublicKey().Marshal(),
+				Data:        data[i],
+			}
+			accounts[i] = account
+		}
+		return nil, nil
+	})
+	if err != nil {
+		log.Error().Err(err).Str("result", "failed").Msg("Failed to scatter check")
+	}
+	for i := range results {
+		if results[i] != core.ResultUnknown && results[i] != core.ResultSucceeded {
+			s.monitor.SignCompleted(started, "generic", results[i])
 			return results, nil
 		}
-		rulesData[i] = &ruler.RulesData{
-			WalletName:  wallet.Name(),
-			AccountName: account.Name(),
-			PubKey:      account.PublicKey().Marshal(),
-			Data:        data[i],
-		}
-		accounts[i] = account
 	}
+	log.Trace().Dur("elapsed", time.Since(started)).Msg("Completed precheck")
 
 	// Confirm approval via rules.
 	rulesResults := s.ruler.RunRules(ctx, credentials, ruler.ActionSignBeaconAttestation, rulesData)
+	log.Trace().Dur("elapsed", time.Since(started)).Msg("Completed rules")
 
 	// Carry out the signing.
-	_, err := util.Scatter(len(rulesResults), func(offset int, entries int, _ *sync.RWMutex) (interface{}, error) {
+	_, err = util.Scatter(len(rulesResults), func(offset int, entries int, _ *sync.RWMutex) (interface{}, error) {
 		for i := offset; i < offset+entries; i++ {
 			switch rulesResults[i] {
 			case rules.UNKNOWN:
@@ -220,6 +235,7 @@ func (s *Service) SignBeaconAttestations(
 	if err != nil {
 		log.Error().Err(err).Str("result", "failed").Msg("Failed to scatter sign")
 	}
+	log.Trace().Dur("elapsed", time.Since(started)).Msg("Completed signing")
 
 	return results, signatures
 }
