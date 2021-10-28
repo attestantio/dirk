@@ -20,10 +20,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	zerologger "github.com/rs/zerolog/log"
+	pb "github.com/wealdtech/eth2-signer-api/pb/v1"
 )
 
 // Handler is the handler for GRPC requests to the wallet manager.
 type Handler struct {
+	pb.UnimplementedWalletManagerServer
 	walletManager walletmanager.Service
 }
 

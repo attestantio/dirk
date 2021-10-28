@@ -21,10 +21,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	zerologger "github.com/rs/zerolog/log"
+	pb "github.com/wealdtech/eth2-signer-api/pb/v1"
 )
 
 // Handler is the receiver handler, receiving requests in the distributed key generation process.
 type Handler struct {
+	pb.UnimplementedDKGServer
 	process process.Service
 	peers   peers.Service
 }
