@@ -21,10 +21,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	zerologger "github.com/rs/zerolog/log"
+	pb "github.com/wealdtech/eth2-signer-api/pb/v1"
 )
 
 // Handler is the account manager handler.
 type Handler struct {
+	pb.UnimplementedAccountManagerServer
 	accountManager accountmanager.Service
 	process        process.Service
 }

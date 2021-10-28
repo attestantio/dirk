@@ -39,7 +39,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/uber/jaeger-client-go v2.29.1+incompatible
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
-	github.com/wealdtech/eth2-signer-api v1.6.0
+	github.com/wealdtech/eth2-signer-api v1.7.1
 	github.com/wealdtech/go-bytesutil v1.1.1
 	github.com/wealdtech/go-eth2-types/v2 v2.6.0
 	github.com/wealdtech/go-eth2-wallet v1.15.0
@@ -53,10 +53,7 @@ require (
 	github.com/wealdtech/go-eth2-wallet-types/v2 v2.9.0
 	github.com/wealdtech/go-majordomo v1.0.1
 	go.uber.org/atomic v1.9.0 // indirect
-	golang.org/x/net v0.0.0-20211011170408-caeb26a5c8c0 // indirect
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1 // indirect
-	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac // indirect
 	google.golang.org/api v0.58.0 // indirect
-	google.golang.org/genproto v0.0.0-20211012143446-e1d23e1da178 // indirect
-	google.golang.org/grpc v1.40.0
+	google.golang.org/grpc v1.41.0
 )

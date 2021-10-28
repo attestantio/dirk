@@ -20,10 +20,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	zerologger "github.com/rs/zerolog/log"
+	pb "github.com/wealdtech/eth2-signer-api/pb/v1"
 )
 
 // Handler is the signer handler, allowing access to signer functions through grpc.
 type Handler struct {
+	pb.UnimplementedSignerServer
 	signer signer.Service
 }
 
