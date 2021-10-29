@@ -25,7 +25,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	zerolog.SetGlobalLevel(zerolog.Disabled)
 	os.Exit(m.Run())
 }
 

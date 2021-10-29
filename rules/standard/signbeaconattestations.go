@@ -45,7 +45,7 @@ func (s *Service) OnSignBeaconAttestations(ctx context.Context,
 
 	for i := range metadata {
 		if metadata[i] == nil {
-			log.Error().Int("index", i).Msg("Nil metdata entry")
+			log.Error().Int("index", i).Msg("Nil metadata entry")
 			res[i] = rules.FAILED
 			return res
 		}
@@ -54,6 +54,16 @@ func (s *Service) OnSignBeaconAttestations(ctx context.Context,
 	for i := range req {
 		if req[i] == nil {
 			log.Error().Int("index", i).Msg("Nil req entry")
+			res[i] = rules.FAILED
+			return res
+		}
+		if req[i].Source == nil {
+			log.Error().Int("index", i).Msg("Nil req source")
+			res[i] = rules.FAILED
+			return res
+		}
+		if req[i].Target == nil {
+			log.Error().Int("index", i).Msg("Nil req target")
 			res[i] = rules.FAILED
 			return res
 		}
@@ -77,7 +87,7 @@ func (s *Service) OnSignBeaconAttestations(ctx context.Context,
 
 	// Run the rules.
 	for i := range req {
-		res[i] = s.runSignBeaconAttestationChecks(ctx, req[i], states[i])
+		res[i] = s.runSignBeaconAttestationChecks(ctx, metadata[i], req[i], states[i])
 	}
 	log.Trace().Dur("elapsed", time.Since(started)).Msg("Checked rules")
 
@@ -107,7 +117,9 @@ func (s *Service) fetchSignBeaconAttestationStates(ctx context.Context, pubKeys 
 	return states, nil
 }
 
-func (s *Service) runSignBeaconAttestationChecks(ctx context.Context, req *rules.SignBeaconAttestationData, state *signBeaconAttestationState) rules.Result {
+func (s *Service) runSignBeaconAttestationChecks(ctx context.Context, metadata *rules.ReqMetadata, req *rules.SignBeaconAttestationData, state *signBeaconAttestationState) rules.Result {
+	log := log.With().Str("client", metadata.Client).Str("account", metadata.Account).Str("rule", "sign beacon attestation").Logger()
+
 	// The request must have the appropriate domain.
 	if !bytes.Equal(req.Domain[0:4], e2types.DomainBeaconAttester[:]) {
 		log.Warn().Msg("Not approving non-beacon attestation due to incorrect domain")

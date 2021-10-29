@@ -77,7 +77,7 @@ func (s *Service) OnSignBeaconAttestation(ctx context.Context, metadata *rules.R
 		return rules.FAILED
 	}
 
-	res := s.runSignBeaconAttestationChecks(ctx, req, state)
+	res := s.runSignBeaconAttestationChecks(ctx, metadata, req, state)
 	if res != rules.APPROVED {
 		return res
 	}
