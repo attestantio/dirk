@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2021 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,10 +23,14 @@ import (
 	mockrules "github.com/attestantio/dirk/rules/mock"
 	"github.com/attestantio/dirk/services/checker"
 	mockchecker "github.com/attestantio/dirk/services/checker/mock"
+	"github.com/attestantio/dirk/services/fetcher"
 	memfetcher "github.com/attestantio/dirk/services/fetcher/mem"
 	syncmaplocker "github.com/attestantio/dirk/services/locker/syncmap"
+	"github.com/attestantio/dirk/services/ruler"
 	"github.com/attestantio/dirk/services/ruler/golang"
+	"github.com/attestantio/dirk/services/signer"
 	standardsigner "github.com/attestantio/dirk/services/signer/standard"
+	"github.com/attestantio/dirk/services/unlocker"
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,6 +39,23 @@ import (
 	scratch "github.com/wealdtech/go-eth2-wallet-store-scratch"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
+
+func _signerSvc(ctx context.Context,
+	checker checker.Service,
+	fetcher fetcher.Service,
+	ruler ruler.Service,
+	unlocker unlocker.Service,
+) signer.Service {
+	signerSvc, err := standardsigner.New(ctx,
+		standardsigner.WithChecker(checker),
+		standardsigner.WithFetcher(fetcher),
+		standardsigner.WithRuler(ruler),
+		standardsigner.WithUnlocker(unlocker))
+	if err != nil {
+		panic(err)
+	}
+	return signerSvc
+}
 
 func TestSignGeneric(t *testing.T) {
 	ctx := context.Background()
@@ -56,10 +77,12 @@ func TestSignGeneric(t *testing.T) {
 		"Test account 1",
 		"Test account 2",
 	}
+	pubKeys := make(map[string][]byte)
 	for _, accountName := range accountNames {
 		passphrase := []byte(fmt.Sprintf("%s passphrase", accountName))
 		account, err := wallet.(e2wtypes.WalletAccountCreator).CreateAccount(ctx, accountName, passphrase)
 		require.NoError(t, err)
+		pubKeys[accountName] = account.PublicKey().Marshal()
 		require.NoError(t, account.(e2wtypes.AccountLocker).Unlock(context.Background(), passphrase))
 	}
 	require.NoError(t, wallet.(e2wtypes.WalletLocker).Lock(ctx))
@@ -76,6 +99,16 @@ func TestSignGeneric(t *testing.T) {
 		golang.WithRules(mockrules.New()))
 	require.NoError(t, err)
 
+	denyingRulerSvc, err := golang.New(ctx,
+		golang.WithLocker(lockerSvc),
+		golang.WithRules(mockrules.NewDenying()))
+	require.NoError(t, err)
+
+	failingRulerSvc, err := golang.New(ctx,
+		golang.WithLocker(lockerSvc),
+		golang.WithRules(mockrules.NewFailing()))
+	require.NoError(t, err)
+
 	unlockerSvc, err := localunlocker.New(context.Background(),
 		localunlocker.WithAccountPassphrases([]string{"Test account 1 passphrase"}))
 	require.NoError(t, err)
@@ -83,15 +116,9 @@ func TestSignGeneric(t *testing.T) {
 	checkerSvc, err := mockchecker.New()
 	require.NoError(t, err)
 
-	signerSvc, err := standardsigner.New(ctx,
-		standardsigner.WithChecker(checkerSvc),
-		standardsigner.WithFetcher(fetcherSvc),
-		standardsigner.WithRuler(rulerSvc),
-		standardsigner.WithUnlocker(unlockerSvc))
-	require.NoError(t, err)
-
 	tests := []struct {
 		name        string
+		signer      signer.Service
 		credentials *checker.Credentials
 		accountName string
 		pubKey      []byte
@@ -99,22 +126,26 @@ func TestSignGeneric(t *testing.T) {
 		res         core.Result
 	}{
 		{
-			name: "Nil",
-			res:  core.ResultFailed,
+			name:   "Nil",
+			signer: _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
+			res:    core.ResultFailed,
 		},
 		{
 			name:        "NoData",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
 			credentials: &checker.Credentials{Client: "client1"},
 			res:         core.ResultDenied,
 		},
 		{
 			name:        "FailPreCheck",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
 			credentials: &checker.Credentials{Client: "client1"},
 			data:        &rules.SignData{},
 			res:         core.ResultDenied,
 		},
 		{
 			name:        "DataMissing",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
 			credentials: &checker.Credentials{Client: "client1"},
 			data: &rules.SignData{
 				Domain: []byte{
@@ -129,6 +160,7 @@ func TestSignGeneric(t *testing.T) {
 		},
 		{
 			name:        "DomainMissing",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
 			credentials: &checker.Credentials{Client: "client1"},
 			data: &rules.SignData{
 				Data: []byte{
@@ -142,7 +174,50 @@ func TestSignGeneric(t *testing.T) {
 			res:         core.ResultDenied,
 		},
 		{
-			name:        "Good",
+			name:        "DeniedByRules",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, denyingRulerSvc, unlockerSvc),
+			credentials: &checker.Credentials{Client: "client1"},
+			data: &rules.SignData{
+				Data: []byte{
+					0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+					0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+					0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+					0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+				},
+				Domain: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+			},
+			accountName: "Test wallet/Test account 1",
+			res:         core.ResultDenied,
+		},
+		{
+			name:        "FailedInRules",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, failingRulerSvc, unlockerSvc),
+			credentials: &checker.Credentials{Client: "client1"},
+			data: &rules.SignData{
+				Data: []byte{
+					0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+					0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+					0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+					0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+				},
+				Domain: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+			},
+			accountName: "Test wallet/Test account 1",
+			res:         core.ResultFailed,
+		},
+		{
+			name:        "GoodName",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
 			credentials: &checker.Credentials{Client: "client1"},
 			data: &rules.SignData{
 				Data: []byte{
@@ -161,11 +236,54 @@ func TestSignGeneric(t *testing.T) {
 			accountName: "Test wallet/Test account 1",
 			res:         core.ResultSucceeded,
 		},
+		{
+			name:        "GoodPubKey",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
+			credentials: &checker.Credentials{Client: "client1"},
+			data: &rules.SignData{
+				Data: []byte{
+					0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+					0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+					0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+					0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+				},
+				Domain: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+			},
+			pubKey: pubKeys["Test account 1"],
+			res:    core.ResultSucceeded,
+		},
+		{
+			name:        "GoodBoth",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
+			credentials: &checker.Credentials{Client: "client1"},
+			data: &rules.SignData{
+				Data: []byte{
+					0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+					0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+					0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+					0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+				},
+				Domain: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+			},
+			accountName: "Test wallet/Test account 1",
+			pubKey:      pubKeys["Test account 1"],
+			res:         core.ResultSucceeded,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			res, _ := signerSvc.SignGeneric(context.Background(), test.credentials, test.accountName, test.pubKey, test.data)
+			res, _ := test.signer.SignGeneric(context.Background(), test.credentials, test.accountName, test.pubKey, test.data)
 			assert.Equal(t, test.res, res)
 		})
 	}
