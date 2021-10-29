@@ -30,6 +30,13 @@ type Service interface {
 		pubKey []byte,
 		data *rules.SignData) (core.Result, []byte)
 
+	// Multisign signs multiple generic data.
+	Multisign(ctx context.Context,
+		credentials *checker.Credentials,
+		accountNames []string,
+		pubKeys [][]byte,
+		data []*rules.SignData) ([]core.Result, [][]byte)
+
 	// SignBeaconAttestation signs a beacon attestation.
 	SignBeaconAttestation(ctx context.Context,
 		credentials *checker.Credentials,
@@ -40,8 +47,8 @@ type Service interface {
 	// SignBeaconAttestations signs multiple beacon attestations.
 	SignBeaconAttestations(ctx context.Context,
 		credentials *checker.Credentials,
-		accountName []string,
-		pubKey [][]byte,
+		accountNames []string,
+		pubKeys [][]byte,
 		data []*rules.SignBeaconAttestationData) ([]core.Result, [][]byte)
 
 	// SignBeaconProposal signs a proposal for a beacon block.

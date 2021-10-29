@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2021 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,7 +26,7 @@ import (
 	memfetcher "github.com/attestantio/dirk/services/fetcher/mem"
 	syncmaplocker "github.com/attestantio/dirk/services/locker/syncmap"
 	"github.com/attestantio/dirk/services/ruler/golang"
-	standardsigner "github.com/attestantio/dirk/services/signer/standard"
+	"github.com/attestantio/dirk/services/signer"
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -56,10 +56,12 @@ func TestSignBeaconProposal(t *testing.T) {
 		"Test account 1",
 		"Test account 2",
 	}
+	pubKeys := make(map[string][]byte)
 	for _, accountName := range accountNames {
 		passphrase := []byte(fmt.Sprintf("%s passphrase", accountName))
 		account, err := wallet.(e2wtypes.WalletAccountCreator).CreateAccount(ctx, accountName, passphrase)
 		require.NoError(t, err)
+		pubKeys[accountName] = account.PublicKey().Marshal()
 		require.NoError(t, account.(e2wtypes.AccountLocker).Unlock(context.Background(), passphrase))
 	}
 	require.NoError(t, wallet.(e2wtypes.WalletLocker).Lock(ctx))
@@ -76,6 +78,16 @@ func TestSignBeaconProposal(t *testing.T) {
 		golang.WithRules(mockrules.New()))
 	require.NoError(t, err)
 
+	denyingRulerSvc, err := golang.New(ctx,
+		golang.WithLocker(lockerSvc),
+		golang.WithRules(mockrules.NewDenying()))
+	require.NoError(t, err)
+
+	failingRulerSvc, err := golang.New(ctx,
+		golang.WithLocker(lockerSvc),
+		golang.WithRules(mockrules.NewFailing()))
+	require.NoError(t, err)
+
 	unlockerSvc, err := localunlocker.New(context.Background(),
 		localunlocker.WithAccountPassphrases([]string{"Test account 1 passphrase"}))
 	require.NoError(t, err)
@@ -83,15 +95,9 @@ func TestSignBeaconProposal(t *testing.T) {
 	checkerSvc, err := mockchecker.New()
 	require.NoError(t, err)
 
-	signerSvc, err := standardsigner.New(ctx,
-		standardsigner.WithChecker(checkerSvc),
-		standardsigner.WithFetcher(fetcherSvc),
-		standardsigner.WithRuler(rulerSvc),
-		standardsigner.WithUnlocker(unlockerSvc))
-	require.NoError(t, err)
-
 	tests := []struct {
 		name        string
+		signer      signer.Service
 		credentials *checker.Credentials
 		accountName string
 		pubKey      []byte
@@ -99,22 +105,26 @@ func TestSignBeaconProposal(t *testing.T) {
 		res         core.Result
 	}{
 		{
-			name: "Nil",
-			res:  core.ResultFailed,
+			name:   "Nil",
+			signer: _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
+			res:    core.ResultFailed,
 		},
 		{
 			name:        "NoData",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
 			credentials: &checker.Credentials{Client: "client1"},
 			res:         core.ResultDenied,
 		},
 		{
 			name:        "FailPreCheck",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
 			credentials: &checker.Credentials{Client: "client1"},
 			data:        &rules.SignBeaconProposalData{},
 			res:         core.ResultDenied,
 		},
 		{
 			name:        "DomainMissing",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
 			credentials: &checker.Credentials{Client: "client1"},
 			data: &rules.SignBeaconProposalData{
 				ParentRoot: []byte{
@@ -141,6 +151,7 @@ func TestSignBeaconProposal(t *testing.T) {
 		},
 		{
 			name:        "ParentRootMissing",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
 			credentials: &checker.Credentials{Client: "client1"},
 			data: &rules.SignBeaconProposalData{
 				Domain: []byte{
@@ -167,6 +178,7 @@ func TestSignBeaconProposal(t *testing.T) {
 		},
 		{
 			name:        "StateRootMissing",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
 			credentials: &checker.Credentials{Client: "client1"},
 			data: &rules.SignBeaconProposalData{
 				Domain: []byte{
@@ -193,6 +205,7 @@ func TestSignBeaconProposal(t *testing.T) {
 		},
 		{
 			name:        "BodyRootMissing",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
 			credentials: &checker.Credentials{Client: "client1"},
 			data: &rules.SignBeaconProposalData{
 				Domain: []byte{
@@ -218,7 +231,74 @@ func TestSignBeaconProposal(t *testing.T) {
 			res:         core.ResultDenied,
 		},
 		{
-			name:        "Good",
+			name:        "DeniedByRules",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, denyingRulerSvc, unlockerSvc),
+			credentials: &checker.Credentials{Client: "client1"},
+			data: &rules.SignBeaconProposalData{
+				Domain: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+				ParentRoot: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+				StateRoot: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+				BodyRoot: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+			},
+			accountName: "Test wallet/Test account 1",
+			res:         core.ResultDenied,
+		},
+		{
+			name:        "FailedInRules",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, failingRulerSvc, unlockerSvc),
+			credentials: &checker.Credentials{Client: "client1"},
+			data: &rules.SignBeaconProposalData{
+				Domain: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+				ParentRoot: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+				StateRoot: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+				BodyRoot: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+			},
+			accountName: "Test wallet/Test account 1",
+			res:         core.ResultFailed,
+		},
+		{
+			name:        "GoodName",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
 			credentials: &checker.Credentials{Client: "client1"},
 			data: &rules.SignBeaconProposalData{
 				Domain: []byte{
@@ -250,7 +330,75 @@ func TestSignBeaconProposal(t *testing.T) {
 			res:         core.ResultSucceeded,
 		},
 		{
-			name: "ClientDenied",
+			name:        "GoodPubKey",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
+			credentials: &checker.Credentials{Client: "client1"},
+			data: &rules.SignBeaconProposalData{
+				Domain: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+				ParentRoot: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+				StateRoot: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+				BodyRoot: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+			},
+			pubKey: pubKeys["Test account 1"],
+			res:    core.ResultSucceeded,
+		},
+		{
+			name:        "GoodBoth",
+			signer:      _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
+			credentials: &checker.Credentials{Client: "client1"},
+			data: &rules.SignBeaconProposalData{
+				Domain: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+				ParentRoot: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+				StateRoot: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+				BodyRoot: []byte{
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+			},
+			accountName: "Test wallet/Test account 1",
+			pubKey:      pubKeys["Test account 1"],
+			res:         core.ResultSucceeded,
+		},
+		{
+			name:   "ClientDenied",
+			signer: _signerSvc(ctx, checkerSvc, fetcherSvc, rulerSvc, unlockerSvc),
 			data: &rules.SignBeaconProposalData{
 				Domain: []byte{
 					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -285,7 +433,7 @@ func TestSignBeaconProposal(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			res, _ := signerSvc.SignBeaconProposal(context.Background(), test.credentials, test.accountName, test.pubKey, test.data)
+			res, _ := test.signer.SignBeaconProposal(context.Background(), test.credentials, test.accountName, test.pubKey, test.data)
 			assert.Equal(t, test.res, res)
 		})
 	}

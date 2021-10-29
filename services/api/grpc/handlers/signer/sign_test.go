@@ -145,7 +145,7 @@ func Setup() (*signer.Handler, error) {
 	}
 
 	unlocker, err := localunlocker.New(context.Background(),
-		localunlocker.WithAccountPassphrases([]string{"Account 1 passphrase"}))
+		localunlocker.WithAccountPassphrases([]string{"Account 1 passphrase", "Account 2 passphrase"}))
 	if err != nil {
 		return nil, err
 	}
