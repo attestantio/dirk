@@ -64,3 +64,8 @@ func (c *LogCapture) AssertHasEntry(t *testing.T, msg string) {
 func (c *LogCapture) Entries() []string {
 	return c.entries
 }
+
+// ClearEntries removes all log entries.
+func (c *LogCapture) ClearEntries() {
+	c.entries = make([]string, 0)
+}
