@@ -1,4 +1,4 @@
-# Development
+# Version 1.1.0
   - garbage collect the slashing database on startup to reduce on-disk size
   - provide release metric in `dirk_release`
   - use internal account cache for both positive and negative caching
