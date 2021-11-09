@@ -63,20 +63,20 @@ jobs:
     - name: Create windows zip file
       run: |
        mv dirk-windows-4.0-amd64.exe dirk.exe
-       sha256sum dirk.exe >dirk-${RELEASE_VERSION}-windows.sha256
        zip --junk-paths dirk-${RELEASE_VERSION}-windows-exe.zip dirk.exe
+       sha256sum dirk-${RELEASE_VERSION}-windows-exe.zip >dirk-${RELEASE_VERSION}-windows-exe.zip.sha256
 
     - name: Create linux AMD64 tgz file
       run: |
        mv dirk-linux-amd64 dirk
-       sha256sum dirk >dirk-${RELEASE_VERSION}-linux-amd64.sha256
        tar zcf dirk-${RELEASE_VERSION}-linux-amd64.tar.gz dirk
+       sha256sum dirk-${RELEASE_VERSION}-linux-amd64.tar.gz >dirk-${RELEASE_VERSION}-linux-amd64.tar.gz.sha256
 
     - name: Create linux ARM64 tgz file
       run: |
        mv dirk-linux-arm64 dirk
-       sha256sum dirk >dirk-${RELEASE_VERSION}-linux-arm64.sha256
        tar zcf dirk-${RELEASE_VERSION}-linux-arm64.tar.gz dirk
+       sha256sum dirk-${RELEASE_VERSION}-linux-arm64.tar.gz >dirk-${RELEASE_VERSION}-linux-arm64.tar.gz.sha256
 
     - name: Create release
       id: create_release
