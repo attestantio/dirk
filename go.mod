@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/secretmanager v1.0.0 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.1.1 // indirect
 	github.com/attestantio/go-eth2-client v0.8.1
-	github.com/aws/aws-sdk-go v1.41.19 // indirect
+	github.com/aws/aws-sdk-go v1.41.19
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.4

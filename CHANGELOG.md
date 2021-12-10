@@ -1,3 +1,6 @@
+# Development
+  - add Amazon Secrets Manager (ASM) confidant
+
 # Version 1.1.0
   - garbage collect the slashing database on startup to reduce on-disk size
   - provide release metric in `dirk_release`
