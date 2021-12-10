@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/attestantio/dirk/util"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
 
@@ -38,7 +37,7 @@ func init() {
 		input[i] = make([]byte, benchmarkElementSize)
 		_, err := rand.Read(input[i])
 		if err != nil {
-			log.WithError(err).Debug("Cannot read from rand")
+			panic(err)
 		}
 	}
 }
