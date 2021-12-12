@@ -59,6 +59,7 @@ import (
 	standardwalletmanager "github.com/attestantio/dirk/services/walletmanager/standard"
 	"github.com/attestantio/dirk/util"
 	"github.com/attestantio/dirk/util/loggers"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/mitchellh/go-homedir"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
@@ -69,6 +70,7 @@ import (
 	e2types "github.com/wealdtech/go-eth2-types/v2"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 	majordomo "github.com/wealdtech/go-majordomo"
+	asmconfidant "github.com/wealdtech/go-majordomo/confidants/asm"
 	directconfidant "github.com/wealdtech/go-majordomo/confidants/direct"
 	fileconfidant "github.com/wealdtech/go-majordomo/confidants/file"
 	gsmconfidant "github.com/wealdtech/go-majordomo/confidants/gsm"
@@ -521,6 +523,24 @@ func initMajordomo(ctx context.Context) (majordomo.Service, error) {
 	}
 	if err := majordomo.RegisterConfidant(ctx, fileConfidant); err != nil {
 		return nil, errors.Wrap(err, "failed to register file confidant")
+	}
+
+	if viper.GetString("majordomo.asm.region") != "" {
+		var asmCredentials *credentials.Credentials
+		if viper.GetString("majordomo.asm.id") != "" {
+			asmCredentials = credentials.NewStaticCredentials(viper.GetString("majordomo.asm.id"), viper.GetString("majordomo.asm.secret"), "")
+		}
+		asmConfidant, err := asmconfidant.New(ctx,
+			asmconfidant.WithLogLevel(util.LogLevel("majordomo.confidants.asm")),
+			asmconfidant.WithCredentials(asmCredentials),
+			asmconfidant.WithRegion(viper.GetString("majordomo.asm.region")),
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create AWS secrets manager confidant")
+		}
+		if err := majordomo.RegisterConfidant(ctx, asmConfidant); err != nil {
+			return nil, errors.Wrap(err, "failed to register AWS secrets manager confidant")
+		}
 	}
 
 	if viper.GetString("majordomo.gsm.credentials") != "" {
