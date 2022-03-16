@@ -60,28 +60,28 @@ type SlashingProtectionAttestation struct {
 }
 
 // exportSlashingProtection is a command to export the slashing protection database.
-func exportSlashingProtection(ctx context.Context) {
+func exportSlashingProtection(ctx context.Context) int {
 	protection, err := fetchSlashingProtection(ctx)
 	if err != nil {
-		fmt.Printf("%v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "Failed to obtain slashing protection information: %v\n", err)
+		return 1
 	}
 
 	data, err := json.Marshal(protection)
 	if err != nil {
-		fmt.Printf("Failed to generate output: %v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "Failed to generate output: %v\n", err)
+		return 1
 	}
 
 	if viper.GetString("slashing-protection-file") != "" {
 		if err := ioutil.WriteFile(viper.GetString("slashing-protection-file"), data, 0600); err != nil {
-			fmt.Printf("Failed to generate output: %v\n", err)
-			os.Exit(1)
+			fmt.Fprintf(os.Stderr, "Failed to write output: %v\n", err)
+			return 1
 		}
 	} else {
 		fmt.Println(string(data))
 	}
-	os.Exit(0)
+	return 0
 }
 
 // fetchSlashingProtection obtains the slashing protection database.
@@ -140,28 +140,28 @@ func fetchSlashingProtection(ctx context.Context) (*SlashingProtection, error) {
 }
 
 // importSlashingProtection is a command to import a slashing protection database.
-func importSlashingProtection(ctx context.Context) {
+func importSlashingProtection(ctx context.Context) int {
 	if viper.GetString("slashing-protection-file") == "" {
-		fmt.Println("Slashing protection file required for import")
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "Slashing protection file required for import\n")
+		return 1
 	}
 	data, err := ioutil.ReadFile(viper.GetString("slashing-protection-file"))
 	if err != nil {
-		fmt.Printf("Failed to read slashing protection file: %v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "Failed to read slashing protection file: %v\n", err)
+		return 1
 	}
 
 	var protection SlashingProtection
 	if err := json.Unmarshal(data, &protection); err != nil {
-		fmt.Printf("Failed to parse slashing protection file: %v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "Failed to parse slashing protection file: %v\n", err)
+		return 1
 	}
 	if err := storeSlashingProtection(ctx, &protection); err != nil {
-		fmt.Printf("Failed to store slashing protection: %v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "Failed to store slashing protection: %v\n", err)
+		return 1
 	}
 
-	os.Exit(0)
+	return 0
 }
 
 // storeSlashingProtection updates the slashing protection database.

@@ -93,7 +93,10 @@ func main() {
 	}
 
 	// runCommands will not return if a command is run.
-	runCommands(ctx, majordomo)
+	exit, exitCode := runCommands(ctx, majordomo)
+	if exit {
+		os.Exit(exitCode)
+	}
 
 	if err := initLogging(); err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialise logging")
@@ -259,18 +262,19 @@ func initTracing() (io.Closer, error) {
 	return closer, nil
 }
 
-func runCommands(ctx context.Context, majordomo majordomo.Service) {
+func runCommands(ctx context.Context, majordomo majordomo.Service) (bool, int) {
 	if viper.GetBool("version") {
 		fmt.Printf("%s\n", ReleaseVersion)
-		os.Exit(0)
+		return true, 0
 	}
 
 	if viper.GetBool("show-certificates") {
 		err := cmd.ShowCertificates(ctx, majordomo)
 		if err != nil {
-			log.Fatal().Err(err).Msg("show-certificates failed")
+			fmt.Fprintf(os.Stderr, "show-certificates failed: %v\n", err)
+			return true, 1
 		}
-		os.Exit(0)
+		return true, 0
 	}
 
 	if viper.GetBool("show-permissions") {
@@ -287,16 +291,19 @@ func runCommands(ctx context.Context, majordomo majordomo.Service) {
 			}
 		}
 		checker.DumpPermissions(permissions)
-		os.Exit(0)
+		return true, 0
 	}
 
 	if viper.GetBool("export-slashing-protection") {
-		exportSlashingProtection(ctx)
+		return true, exportSlashingProtection(ctx)
 	}
 
 	if viper.GetBool("import-slashing-protection") {
-		importSlashingProtection(ctx)
+		return true, importSlashingProtection(ctx)
 	}
+
+	// No command run so no need to exit.
+	return false, 0
 }
 
 func startServices(ctx context.Context, majordomo majordomo.Service, monitor metrics.Service) error {
