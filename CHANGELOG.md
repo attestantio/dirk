@@ -1,5 +1,6 @@
 # Development
   - add Amazon Secrets Manager (ASM) confidant
+  - print command errors to stderr
 
 # Version 1.1.0
   - garbage collect the slashing database on startup to reduce on-disk size

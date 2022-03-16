@@ -268,7 +268,8 @@ func runCommands(ctx context.Context, majordomo majordomo.Service) {
 	if viper.GetBool("show-certificates") {
 		err := cmd.ShowCertificates(ctx, majordomo)
 		if err != nil {
-			log.Fatal().Err(err).Msg("show-certificates failed")
+			fmt.Fprintf(os.Stderr, "show-certificates failed: %v\n", err)
+			os.Exit(1)
 		}
 		os.Exit(0)
 	}

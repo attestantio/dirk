@@ -63,19 +63,19 @@ type SlashingProtectionAttestation struct {
 func exportSlashingProtection(ctx context.Context) {
 	protection, err := fetchSlashingProtection(ctx)
 	if err != nil {
-		fmt.Printf("%v\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to obtain slashing protection information: %v\n", err)
 		os.Exit(1)
 	}
 
 	data, err := json.Marshal(protection)
 	if err != nil {
-		fmt.Printf("Failed to generate output: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to generate output: %v\n", err)
 		os.Exit(1)
 	}
 
 	if viper.GetString("slashing-protection-file") != "" {
 		if err := ioutil.WriteFile(viper.GetString("slashing-protection-file"), data, 0600); err != nil {
-			fmt.Printf("Failed to generate output: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Failed to write output: %v\n", err)
 			os.Exit(1)
 		}
 	} else {
