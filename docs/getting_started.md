@@ -13,13 +13,13 @@ In this architecture we have three validators clients.  Validator clients 1 and 
 #### Creating wallets and accounts
 The first step is to create some wallets and validator keys for said wallets, using [ethdo](https://github.com/wealdtech/ethdo):
 
-```
-$ ethdo wallet create --wallet=wallet1
-$ ethdo account create --account=wallet1/account1 --passphrase=secret
-$ ethdo account create --account=wallet1/account2 --passphrase=secret
-$ ethdo account create --account=wallet1/account3 --passphrase=secret
-$ ethdo wallet create --wallet=wallet2
-$ ethdo account create --account=wallet2/account4 --passphrase=secret
+```sh
+ethdo wallet create --wallet=wallet1
+ethdo account create --account=wallet1/account1 --passphrase=secret
+ethdo account create --account=wallet1/account2 --passphrase=secret
+ethdo account create --account=wallet1/account3 --passphrase=secret
+ethdo wallet create --wallet=wallet2
+ethdo account create --account=wallet2/account4 --passphrase=secret
 ```
 
 Here we have two wallets, one for each set of validator clients.  It is possible for different wallets to have different features, such as level of security and location, but for the purposes of this example they are both standard (non-deterministic) wallets (see ethdo documentation for other options).
@@ -31,13 +31,13 @@ We need a certificate for the wallet daemon.  We could use a certificate from a 
 
 First, we create the certificate authority.  Note the key created in this process is critical to the security of your deposits and should be protected with all reasonable measures; this should include a passphrase when promted.
 
-```
+```sh
 openssl genrsa -des3 -out dirk_authority.key 4096
 ```
 
 Once the key is generated we need to create the certificate itself:
 
-```
+```sh
 openssl req -x509 -new -nodes -key dirk_authority.key -sha256 -days 1825 -out dirk_authority.crt
 ```
 
@@ -45,7 +45,7 @@ The server and each client need their own certificates.  The process for creatin
 
 First, create a key for the server in question:
 
-```
+```sh
 openssl genrsa -out server.example.com.key 4096
 ```
 
@@ -63,19 +63,19 @@ DNS.1 = server.example.com
 
 The above is enough to create the server's certificate signing request:
 
-```
+```sh
 openssl req -out server.example.com.csr -key server.example.com.key -new -subj "/CN=server.example.com" -addext "subjectAltName=DNS:server.example.com"
 ```
 
 And this can then be signed by the certificate authority to generate the final valid certificate:
 
-```
+```sh
 openssl x509 -req -in server.example.com.csr -CA dirk_authority.crt -CAkey dirk_authority.key -CAcreateserial -out server.example.com.crt -days 1825 -sha256 -extfile server.example.com.ext
 ```
 
 The certificate content should be confirmed with:
 
-```
+```sh
 openssl x509 -in server.example.com.crt -text -noout
 ```
 
@@ -140,7 +140,12 @@ Note that you will need to change the "/home/user/" piece to point to your own h
 You can confirm the configuration of the certificates by running the command `dirk --show-certificates` which should return suitable information about the generated certificates:
 
 ```sh
-$ dirk --show-certificates
+dirk --show-certificates
+```
+
+which should give output like:
+
+```
 Server certificate issued by: Dirk authority
 Server certificate expires: 2023-03-24 13:47:19 +0000 UTC
 Server certificate issued to: server.example.com
@@ -152,7 +157,7 @@ Certificate authority certificate expires: 2023-03-24 13:47:20 +0000 UTC
 #### Adding permissions
 The next step is to configure `dirk` to know which clients have access to which accounts, and which operations on those accounts.  To do so, replace the `dirk.json` file above with the following:
 
-```
+```json
 {
   "server": {
     "id": 212483780,
@@ -180,8 +185,14 @@ The next step is to configure `dirk` to know which clients have access to which 
 
 Once this is in place it can be confirmed by running `dirk --show-permissions`:
 
+```sh
+dirk --show-permissions
+
 ```
-$ dirk --show-permissions
+
+which should give output like:
+
+```
 Permissions for "client1":
  - accounts matching the path "wallet1" can carry out all operations
 Permissions for "client2":
@@ -197,7 +208,12 @@ Permissions can be used to restrict the access of clients to wallets, accounts, 
 To start `dirk` type:
 
 ```sh
-$ dirk
+dirk
+```
+
+which should give output like:
+
+```json
 {"level":"info","version":"v0.1.0","time":"2020-07-27T23:20:51+01:00","message":"Starting dirk"}
 {"level":"warn","time":"2020-07-27T23:20:51+01:00","message":"No stores configured; using default"}
 {"level":"info","service":"api","impl":"grpc","address":"localhost:9091","time":"2020-07-27T23:20:51+01:00","message":"Listening"}
@@ -215,7 +231,12 @@ At this point `dirk` is operational on port 9091 and can accept requests for key
 For example, to list accounts accessible in `wallet1` with the `client1` certificate:
 
 ```sh
-$ ethdo --remote=server.example.com:9091 --client-cert=client1.crt --client-key=client1.key --server-ca-cert=dirk_authority.crt wallet accounts --wallet=wallet1
+ethdo --remote=server.example.com:9091 --client-cert=client1.crt --client-key=client1.key --server-ca-cert=dirk_authority.crt wallet accounts --wallet=wallet1
+```
+
+which should give output like:
+
+```
 account1
 account3
 account2
@@ -224,7 +245,7 @@ account2
 As would be expected from the configured permissions, `client3` cannot access the accounts in `wallet1`:
 
 ```sh
-$ ethdo --remote=server.example.com:9091 --client-cert=client3.crt --client-key=client3.key --server-ca-cert=Wallet_daemon_authority.crt wallet accounts --wallet=wallet1
+ethdo --remote=server.example.com:9091 --client-cert=client3.crt --client-key=client3.key --server-ca-cert=Wallet_daemon_authority.crt wallet accounts --wallet=wallet1
 ```
 
 At this point it has been confirmed that the client permissions operate as expected, and that dirk is appropriately configured.  The client certificates can now be used by validators to remotely access their keys.
