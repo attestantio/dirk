@@ -27,6 +27,11 @@ import (
 )
 
 func TestDaemon(t *testing.T) {
+	_, err := net.LookupIP("signer-test01")
+	if err != nil {
+		t.Skip("test signer addresses not configured; skipping test")
+	}
+
 	ctx := context.Background()
 	// #nosec G404
 	port := uint32(12000 + rand.Intn(4000))
@@ -36,6 +41,11 @@ func TestDaemon(t *testing.T) {
 }
 
 func TestCancelDaemon(t *testing.T) {
+	_, err := net.LookupIP("signer-test01")
+	if err != nil {
+		t.Skip("test signer addresses not configured; skipping test")
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	// #nosec G404
 	port := uint32(12000 + rand.Intn(4000))

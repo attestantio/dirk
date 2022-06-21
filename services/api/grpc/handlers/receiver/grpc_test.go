@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -54,6 +55,11 @@ import (
 )
 
 func TestAbort(t *testing.T) {
+	_, err := net.LookupIP("signer-test01")
+	if err != nil {
+		t.Skip("test signer addresses not configured; skipping test")
+	}
+
 	ctx := context.Background()
 	base, endpoints, _, err := createServers(ctx)
 	require.NoError(t, err)
@@ -71,6 +77,11 @@ func TestAbort(t *testing.T) {
 }
 
 func TestAbortUnknownEndpoint(t *testing.T) {
+	_, err := net.LookupIP("signer-test01")
+	if err != nil {
+		t.Skip("test signer addresses not configured; skipping test")
+	}
+
 	ctx := context.Background()
 	base, endpoints, _, err := createServers(ctx)
 	require.NoError(t, err)
@@ -89,6 +100,11 @@ func TestAbortUnknownEndpoint(t *testing.T) {
 }
 
 func TestEndToEnd(t *testing.T) {
+	_, err := net.LookupIP("signer-test01")
+	if err != nil {
+		t.Skip("test signer addresses not configured; skipping test")
+	}
+
 	ctx := context.Background()
 	base, endpoints, _, err := createServers(ctx)
 	require.NoError(t, err)
