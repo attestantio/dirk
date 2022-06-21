@@ -32,7 +32,7 @@ $ ethdo --basedir=${HOME}/dirk-multi/3/wallets wallet create --type=distributed 
 The `security` directory of each instance needs to be populated with certificates.  Although all three instances are running on the same server they _cannot_ have the same name, hence we create three certificates (note that in a real deployment the Dirk instances should be on different servers for both security and availability purposes).  We assume that a certificate authority has already been created as per the [getting started instructions](getting_started.md#creating-certificates), so all that needs to be created is the server certificate:
 
 ```
-$ certstrap --depot-path . request-cert --common-name `hostname`-1
+$ certstrap --depot-path . request-cert --common-name `hostname`-1 --domain `hostname`-1
 Enter passphrase (empty for no passphrase): 
 Enter same passphrase again: 
 Created ./x1-1.key
@@ -46,7 +46,7 @@ Created ./x1-1.crt from ./x1-1.csr signed by ./CA/Attestant.key
 ```
 
 ```
-$ certstrap --depot-path . request-cert --common-name `hostname`-2
+$ certstrap --depot-path . request-cert --common-name `hostname`-2 --domain `hostname`-2
 Enter passphrase (empty for no passphrase): 
 Enter same passphrase again: 
 Created ./x1-2.key
@@ -60,7 +60,7 @@ Created ./x1-2.crt from ./x1-2.csr signed by ./CA/Attestant.key
 ```
 
 ```
-$ certstrap --depot-path . request-cert --common-name `hostname`-3
+$ certstrap --depot-path . request-cert --common-name `hostname`-3 --domain `hostname`-3
 Enter passphrase (empty for no passphrase): 
 Enter same passphrase again: 
 Created ./x1-3.key
