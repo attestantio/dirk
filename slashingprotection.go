@@ -203,8 +203,12 @@ func storeSlashingProtection(ctx context.Context, protection *SlashingProtection
 
 	protectionMap := make(map[[48]byte]*rules.SlashingProtection)
 	for i := range protection.Data {
+		bytes, err := hex.DecodeString(strings.TrimPrefix(protection.Data[i].PublicKey, "0x"))
+		if err != nil {
+			return errors.Wrap(err, "failed to decode public key")
+		}
 		var key [48]byte
-		copy(key[:], protection.Data[i].PublicKey)
+		copy(key[:], bytes)
 		keyProtection := &rules.SlashingProtection{
 			HighestAttestedSourceEpoch: -1,
 			HighestAttestedTargetEpoch: -1,
