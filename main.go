@@ -210,8 +210,24 @@ func fetchConfig() error {
 	viper.SetDefault("storage-path", "storage")
 
 	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return errors.Wrap(err, "failed to read configuration file")
+		switch err.(type) {
+		case viper.ConfigFileNotFoundError:
+			// It is allowable for Dirk to not have a configuration file, but only if
+			// we have the information from elsewhere (e.g. environment variables).  Check
+			// to see if we have a server name configured, as if not we aren't going to
+			// get very far anyway.
+			if viper.GetString("server.name") == "" {
+				// Assume the underlying issue is that the configuration file is missing.
+				return errors.Wrap(err, "could not find the configuration file")
+			}
+		case viper.ConfigParseError:
+			return errors.Wrap(err, "could not parse the configuration file")
+		case viper.RemoteConfigError:
+			return errors.Wrap(err, "could not find the remote configuration file")
+		case viper.UnsupportedConfigError:
+			return errors.Wrap(err, "unsupported configuration file format")
+		case viper.UnsupportedRemoteProviderError:
+			return errors.Wrap(err, "unsupported remote configuration provider")
 		}
 	}
 
@@ -376,17 +392,17 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 	}
 	certPEMBlock, err := majordomo.Fetch(ctx, viper.GetString("certificates.server-cert"))
 	if err != nil {
-		return errors.Wrap(err, "failed to obtain server certificate")
+		return errors.Wrap(err, fmt.Sprintf("failed to obtain server certificate from %s", viper.GetString("certificates.server-cert")))
 	}
 	keyPEMBlock, err := majordomo.Fetch(ctx, viper.GetString("certificates.server-key"))
 	if err != nil {
-		return errors.Wrap(err, "failed to obtain server key")
+		return errors.Wrap(err, fmt.Sprintf("failed to obtain server key from %s", viper.GetString("certificates.server-key")))
 	}
 	var caPEMBlock []byte
 	if viper.GetString("certificates.ca-cert") != "" {
 		caPEMBlock, err = majordomo.Fetch(ctx, viper.GetString("certificates.ca-cert"))
 		if err != nil {
-			return errors.Wrap(err, "failed to obtain client CA certificate")
+			return errors.Wrap(err, fmt.Sprintf("failed to obtain CA certificate from %s", viper.GetString("certificates.ca-cert")))
 		}
 	}
 	sender, err := sendergrpc.New(ctx,
