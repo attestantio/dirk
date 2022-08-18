@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/attestantio/dirk/rules"
@@ -122,7 +123,7 @@ func (s *Service) runSignBeaconAttestationChecks(ctx context.Context, metadata *
 
 	// The request must have the appropriate domain.
 	if !bytes.Equal(req.Domain[0:4], e2types.DomainBeaconAttester[:]) {
-		log.Warn().Msg("Not approving non-beacon attestation due to incorrect domain")
+		log.Warn().Str("domain", fmt.Sprintf("%#x", req.Domain)).Msg("Not approving non-beacon attestation due to incorrect domain")
 		return rules.DENIED
 	}
 
