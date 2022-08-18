@@ -14,7 +14,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ^1.13
+        go-version: ^1.17
       id: go
 
     - name: Check out code into the Go module directory
@@ -50,7 +50,7 @@ jobs:
 
     - name: Fetch xgo
       run: |
-       go get github.com/wealdtech/xgo
+       go install github.com/wealdtech/xgo@latest
 
     - name: Cross-compile linux
       run: |
@@ -96,8 +96,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dirk-${{ env.RELEASE_VERSION }}-windows.sha256
-        asset_name: dirk-${{ env.RELEASE_VERSION }}-windows.sha256
+        asset_path: ./dirk-${{ env.RELEASE_VERSION }}-windows-exe.zip.sha256
+        asset_name: dirk-${{ env.RELEASE_VERSION }}-windows-exe.zip.sha256
         asset_content_type: text/plain
 
     - name: Upload windows zip file
@@ -118,8 +118,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dirk-${{ env.RELEASE_VERSION }}-linux-amd64.sha256
-        asset_name: dirk-${{ env.RELEASE_VERSION }}-linux-amd64.sha256
+        asset_path: ./dirk-${{ env.RELEASE_VERSION }}-linux-amd64.tar.gz.sha256
+        asset_name: dirk-${{ env.RELEASE_VERSION }}-linux-amd64.tar.gz.sha256
         asset_content_type: text/plain
 
     - name: Upload linux AMD64 tgz file
@@ -140,8 +140,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dirk-${{ env.RELEASE_VERSION }}-linux-arm64.sha256
-        asset_name: dirk-${{ env.RELEASE_VERSION }}-linux-arm64.sha256
+        asset_path: ./dirk-${{ env.RELEASE_VERSION }}-linux-arm64.tar.gz.sha256
+        asset_name: dirk-${{ env.RELEASE_VERSION }}-linux-arm64.tar.gz.sha256
         asset_content_type: text/plain
 
     - name: Upload linux ARM64 tgz file
