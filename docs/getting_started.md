@@ -88,7 +88,7 @@ X509v3 Subject Alternative Name:
 
 This information is required for Go programs (notably, Vouch) to validate connections to Dirk.
 
-and the same commands can be used for the other clients, using "client2" and "client3" in place of "client1".  At this point you should have the following files:
+and the same commands can be used for the other clients, using "client1", "client2" and "client3" in place of "server.example.com".  At this point you should have the following files:
 
   - `client1.crt`: the signed certificate for client1; needs to be moved to the server running client1
   - `client1.csr`: the signing request for client1; can be deleted
