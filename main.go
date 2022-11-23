@@ -1,4 +1,4 @@
-// Copyright © 2020, 2021 Attestant Limited.
+// Copyright © 2020 - 2022 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -78,7 +78,7 @@ import (
 )
 
 // ReleaseVersion is the release version for the code.
-var ReleaseVersion = "1.1.0"
+var ReleaseVersion = "1.1.1"
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -238,12 +238,15 @@ func fetchConfig() error {
 func initProfiling() error {
 	profileAddress := viper.GetString("profile-address")
 	if profileAddress != "" {
-		runtime.SetMutexProfileFraction(1)
-		runtime.SetBlockProfileRate(1)
-		log.Info().Str("profileAddress", profileAddress).Msg("Starting profile server")
 		go func() {
-			if err := http.ListenAndServe(profileAddress, nil); err != nil {
-				log.Error().Str("profileAddress", profileAddress).Err(err).Msg("Failed to start profile server")
+			log.Info().Str("profile_address", profileAddress).Msg("Starting profile server")
+			server := &http.Server{
+				Addr:              profileAddress,
+				ReadHeaderTimeout: 5 * time.Second,
+			}
+			runtime.SetMutexProfileFraction(1)
+			if err := server.ListenAndServe(); err != nil {
+				log.Warn().Str("profile_address", profileAddress).Err(err).Msg("Failed to run profile server")
 			}
 		}()
 	}
