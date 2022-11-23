@@ -58,12 +58,12 @@ Each client has a list of accounts, and each account has a list of permissions. 
 
 ```
   client1.example.com:
-    Wallet1/Account1: Access account,Sign,Sign beacon proposal,Sign beacon attestation
-    Wallet1/Account2: Access account,Sign,Sign beacon proposal,Sign beacon attestation
+    Wallet1/Account1: [Access account,Sign,Sign beacon proposal,Sign beacon attestation]
+    Wallet1/Account2: [Access account,Sign,Sign beacon proposal,Sign beacon attestation]
   client2.example.com:
-    Wallet2: Access account,Sign,Sign beacon proposal,Sign beacon attestation
+    Wallet2: [Access account,Sign,Sign beacon proposal,Sign beacon attestation]
   server.example.com:
-    .*: Access account,Create account
+    .*: [Access account,Create account]
 ```
 
 Here, `client1.example.com` is able to server
@@ -72,7 +72,7 @@ Here, `client1.example.com` is able to server
 Dirk adds an implicit denial at the end of each list of permissions, for example the permission list:
 
 ```
-  Unlock account, Unlock wallet
+  [Unlock account, Unlock wallet]
 ```
 
 is read by Dirk as "allow unlocking account, allow unlock wallet, _deny everything else_".  Implicit denial ensures that mis-configurations are more likely to end up in denying expected operations, rather than allowing unexpected operations.  This is important in two areas: firstly, if a new operation is introduced it is by default not allowed, and secondly if a mis-configuration does take place it is more likely to result in a safe, if non-optimal, set of permissions.
@@ -83,9 +83,7 @@ In addition to an implicit denial, it is possible to have explicit denials.  Exp
 Explicit denial is configured by prepending the ~ symbol to the operation, for example the permission list:
 
 ```
-  ~Voluntary exit, All
+  [~Voluntary exit, All]
 ```
 
 is read by Dirk as "do not allow voluntary exits, allow all other operations".  Explicit denials are useful when you want your permissions to be of the form "allow all operations _except_..."
-
-
