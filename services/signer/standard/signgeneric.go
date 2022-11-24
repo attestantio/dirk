@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2022 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -64,6 +64,18 @@ func (s *Service) SignGeneric(
 		log.Warn().Str("result", "denied").Msg("Request missing domain")
 		s.monitor.SignCompleted(started, "generic", core.ResultDenied)
 		return core.ResultDenied, nil
+	}
+
+	if e := log.Trace(); e.Enabled() {
+		e.Str("domain", fmt.Sprintf("%#x", data.Domain)).
+			Str("data", fmt.Sprintf("%#x", data.Data))
+		if len(accountName) > 0 {
+			e.Str("account", accountName)
+		}
+		if len(pubKey) > 0 {
+			e.Str("pubkey", fmt.Sprintf("%#x", pubKey))
+		}
+		e.Msg("Data to sign")
 	}
 
 	wallet, account, checkRes := s.preCheck(ctx, credentials, accountName, pubKey, ruler.ActionSign)

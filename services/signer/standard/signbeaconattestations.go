@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2022 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@ package standard
 
 import (
 	context "context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -69,51 +70,12 @@ func (s *Service) SignBeaconAttestations(
 	log.Trace().Dur("elapsed", time.Since(started)).Msg("Starting signing process")
 	signatures := make([][]byte, len(data))
 
-	// Check input.
-	for i := range data {
-		if data[i] == nil {
-			log.Warn().Str("result", "denied").Msg("Request missing data")
-			s.monitor.SignCompleted(started, "attestation", core.ResultDenied)
-			results[i] = core.ResultDenied
-			return results, nil
-		}
-		if data[i].BeaconBlockRoot == nil {
-			log.Warn().Str("result", "denied").Msg("Request missing beacon block root")
-			s.monitor.SignCompleted(started, "attestation", core.ResultDenied)
-			results[i] = core.ResultDenied
-			return results, nil
-		}
-		if data[i].Domain == nil {
-			log.Warn().Str("result", "denied").Msg("Request missing domain")
-			s.monitor.SignCompleted(started, "attestation", core.ResultDenied)
-			results[i] = core.ResultDenied
-			return results, nil
-		}
-		if data[i].Source == nil {
-			log.Warn().Str("result", "denied").Msg("Request missing source")
-			s.monitor.SignCompleted(started, "attestation", core.ResultDenied)
-			results[i] = core.ResultDenied
-			return results, nil
-		}
-		if data[i].Source.Root == nil {
-			log.Warn().Str("result", "denied").Msg("Request missing source root")
-			s.monitor.SignCompleted(started, "attestation", core.ResultDenied)
-			results[i] = core.ResultDenied
-			return results, nil
-		}
-		if data[i].Target == nil {
-			log.Warn().Str("result", "denied").Msg("Request missing target")
-			s.monitor.SignCompleted(started, "attestation", core.ResultDenied)
-			results[i] = core.ResultDenied
-			return results, nil
-		}
-		if data[i].Target.Root == nil {
-			log.Warn().Str("result", "denied").Msg("Request missing target root")
-			s.monitor.SignCompleted(started, "attestation", core.ResultDenied)
-			results[i] = core.ResultDenied
-			return results, nil
-		}
+	if err := s.checkAttestationsData(data, accountNames, pubKeys, results); err != nil {
+		log.Warn().Str("result", "denied").Msgf("Attestations data check failed: %s", err.Error())
+		s.monitor.SignCompleted(started, "attestation", core.ResultDenied)
+		return results, nil
 	}
+
 	log.Trace().Dur("elapsed", time.Since(started)).Msg("Data checked")
 
 	// We could have either or both of account names and/or entries, so take the longer
@@ -238,4 +200,63 @@ func (s *Service) SignBeaconAttestations(
 	log.Trace().Dur("elapsed", time.Since(started)).Msg("Completed signing")
 
 	return results, signatures
+}
+
+func (s *Service) checkAttestationsData(data []*rules.SignBeaconAttestationData,
+	accountNames []string,
+	pubKeys [][]byte,
+	results []core.Result,
+) error {
+	// Check input.
+	for i := range data {
+		if data[i] == nil {
+			results[i] = core.ResultDenied
+			return fmt.Errorf("request %d missing data", i)
+		}
+		if data[i].BeaconBlockRoot == nil {
+			results[i] = core.ResultDenied
+			return fmt.Errorf("request %d missing beacon block root", i)
+		}
+		if data[i].Domain == nil {
+			results[i] = core.ResultDenied
+			return fmt.Errorf("request %d missing domain", i)
+		}
+		if data[i].Source == nil {
+			results[i] = core.ResultDenied
+			return fmt.Errorf("request %d missing source", i)
+		}
+		if data[i].Source.Root == nil {
+			results[i] = core.ResultDenied
+			return fmt.Errorf("request %d missing source root", i)
+		}
+		if data[i].Target == nil {
+			results[i] = core.ResultDenied
+			return fmt.Errorf("request %d missing target", i)
+		}
+		if data[i].Target.Root == nil {
+			results[i] = core.ResultDenied
+			return fmt.Errorf("request %d missing target root", i)
+		}
+
+		if e := log.Trace(); e.Enabled() {
+			e.Int("position", i).
+				Str("domain", fmt.Sprintf("%#x", data[i].Domain)).
+				Str("block_root", fmt.Sprintf("%#x", data[i].BeaconBlockRoot)).
+				Uint64("slot", data[i].Slot).
+				Uint64("committee_index", data[i].CommitteeIndex).
+				Str("source_root", fmt.Sprintf("%#x", data[i].Source.Root)).
+				Str("source_root", fmt.Sprintf("%#x", data[i].Source.Root)).
+				Uint64("source_epoch", data[i].Source.Epoch).
+				Str("target_root", fmt.Sprintf("%#x", data[i].Target.Root)).
+				Uint64("target_epoch", data[i].Target.Epoch)
+			if len(accountNames) > i && len(accountNames[i]) > 0 {
+				e.Str("account", accountNames[i])
+			}
+			if len(pubKeys) > i && len(pubKeys[i]) > 0 {
+				e.Str("pubkey", fmt.Sprintf("%#x", pubKeys[i]))
+			}
+			e.Msg("Data to sign")
+		}
+	}
+	return nil
 }

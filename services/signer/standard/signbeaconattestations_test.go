@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2022 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -103,7 +103,7 @@ func TestSignBeaconAttestations(t *testing.T) {
 			credentials: &checker.Credentials{Client: "client1"},
 			data:        []*rules.SignBeaconAttestationData{nil},
 			res:         []core.Result{core.ResultDenied},
-			logEntry:    "Request missing data",
+			logEntry:    "Attestations data check failed: request 0 missing data",
 		},
 		{
 			name:     "CredentialsNil",
@@ -151,7 +151,7 @@ func TestSignBeaconAttestations(t *testing.T) {
 			},
 			accountNames: []string{"Test wallet/Test account 1"},
 			res:          []core.Result{core.ResultDenied},
-			logEntry:     "Request missing domain",
+			logEntry:     "Attestations data check failed: request 0 missing domain",
 		},
 		{
 			name:        "BeaconBlockRootMissing",
@@ -186,7 +186,7 @@ func TestSignBeaconAttestations(t *testing.T) {
 			},
 			accountNames: []string{"Test wallet/Test account 1"},
 			res:          []core.Result{core.ResultDenied},
-			logEntry:     "Request missing beacon block root",
+			logEntry:     "Attestations data check failed: request 0 missing beacon block root",
 		},
 		{
 			name:        "SourceMissing",
@@ -218,7 +218,7 @@ func TestSignBeaconAttestations(t *testing.T) {
 			},
 			accountNames: []string{"Test wallet/Test account 1"},
 			res:          []core.Result{core.ResultDenied},
-			logEntry:     "Request missing source",
+			logEntry:     "Attestations data check failed: request 0 missing source",
 		},
 		{
 			name:        "SourceRootMissing",
@@ -253,7 +253,7 @@ func TestSignBeaconAttestations(t *testing.T) {
 			},
 			accountNames: []string{"Test wallet/Test account 1"},
 			res:          []core.Result{core.ResultDenied},
-			logEntry:     "Request missing source root",
+			logEntry:     "Attestations data check failed: request 0 missing source root",
 		},
 		{
 			name:        "TargetMissing",
@@ -285,7 +285,7 @@ func TestSignBeaconAttestations(t *testing.T) {
 			},
 			accountNames: []string{"Test wallet/Test account 1"},
 			res:          []core.Result{core.ResultDenied},
-			logEntry:     "Request missing target",
+			logEntry:     "Attestations data check failed: request 0 missing target",
 		},
 		{
 			name:        "TargetRootMissing",
@@ -320,7 +320,7 @@ func TestSignBeaconAttestations(t *testing.T) {
 			},
 			accountNames: []string{"Test wallet/Test account 1"},
 			res:          []core.Result{core.ResultDenied},
-			logEntry:     "Request missing target root",
+			logEntry:     "Attestations data check failed: request 0 missing target root",
 		},
 		{
 			name:        "GoodName",

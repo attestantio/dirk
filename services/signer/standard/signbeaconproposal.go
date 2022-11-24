@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2022 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -75,6 +75,22 @@ func (s *Service) SignBeaconProposal(
 		s.monitor.SignCompleted(started, "proposal", core.ResultDenied)
 		log.Warn().Str("result", "denied").Msg("Request missing state root")
 		return core.ResultDenied, nil
+	}
+
+	if e := log.Trace(); e.Enabled() {
+		e.Str("domain", fmt.Sprintf("%#x", data.Domain)).
+			Uint64("slot", data.Slot).
+			Uint64("proposer_index", data.ProposerIndex).
+			Str("parent_root", fmt.Sprintf("%#x", data.ParentRoot)).
+			Str("state_root", fmt.Sprintf("%#x", data.StateRoot)).
+			Str("body_root", fmt.Sprintf("%#x", data.BodyRoot))
+		if len(accountName) > 0 {
+			e.Str("account", accountName)
+		}
+		if len(pubKey) > 0 {
+			e.Str("pubkey", fmt.Sprintf("%#x", pubKey))
+		}
+		e.Msg("Data to sign")
 	}
 
 	wallet, account, checkRes := s.preCheck(ctx, credentials, accountName, pubKey, ruler.ActionSignBeaconProposal)

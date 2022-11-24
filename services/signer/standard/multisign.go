@@ -1,4 +1,4 @@
-// Copyright © 2021 Attestant Limited.
+// Copyright © 2021, 2022 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@ package standard
 
 import (
 	context "context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -85,6 +86,19 @@ func (s *Service) Multisign(ctx context.Context,
 			s.monitor.SignCompleted(started, "generic", core.ResultDenied)
 			results[i] = core.ResultDenied
 			return results, nil
+		}
+
+		if e := log.Trace(); e.Enabled() {
+			e.Int("position", i).
+				Str("domain", fmt.Sprintf("%#x", data[i].Domain)).
+				Str("data", fmt.Sprintf("%#x", data[i].Data))
+			if len(accountNames) > i && len(accountNames[i]) > 0 {
+				e.Str("account", accountNames[i])
+			}
+			if len(pubKeys) > i && len(pubKeys[i]) > 0 {
+				e.Str("pubkey", fmt.Sprintf("%#x", pubKeys[i]))
+			}
+			e.Msg("Data to sign")
 		}
 	}
 
