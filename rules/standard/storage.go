@@ -43,7 +43,6 @@ func NewStore(base string) (*Store, error) {
 	// Garbage collect in the background on start.
 	go func(db *badger.DB) {
 		for {
-			log.Trace().Msg("Running garbage collection")
 			if err = db.RunValueLogGC(0.7); err != nil {
 				// Error occurs when there is nothing left to collect.
 				break
