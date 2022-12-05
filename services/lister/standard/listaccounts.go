@@ -26,16 +26,22 @@ import (
 	"github.com/attestantio/dirk/services/ruler"
 	wallet "github.com/wealdtech/go-eth2-wallet"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // ListAccounts lists accounts.
 func (s *Service) ListAccounts(ctx context.Context, credentials *checker.Credentials, paths []string) (core.Result, []e2wtypes.Account) {
+	ctx, span := otel.Tracer("attestantio.dirk.services.lister.standard").Start(ctx, "ListAccounts")
+	defer span.End()
 	started := time.Now()
 
 	if credentials == nil {
 		log.Error().Msg("No credentials supplied")
 		return core.ResultFailed, nil
 	}
+	span.SetAttributes(attribute.String("client", credentials.Client))
 
 	log := log.With().
 		Str("request_id", credentials.RequestID).
@@ -84,6 +90,7 @@ func (s *Service) ListAccounts(ctx context.Context, credentials *checker.Credent
 			continue
 		}
 
+		numWalletAccounts := 0
 		for _, walletAccount := range walletAccounts {
 			if accountRegex == nil || accountRegex.Match([]byte(walletAccount.Name())) {
 				accountName := fmt.Sprintf("%s/%s", wallet.Name(), walletAccount.Name())
@@ -122,12 +129,18 @@ func (s *Service) ListAccounts(ctx context.Context, credentials *checker.Credent
 				results := s.ruler.RunRules(ctx, credentials, ruler.ActionAccessAccount, rulesData)
 				if results[0] == rules.APPROVED {
 					accounts = append(accounts, walletAccount)
+					numWalletAccounts++
 				}
 			}
 		}
+		span.AddEvent("Obtained accounts from wallet", trace.WithAttributes(
+			attribute.String("wallet", walletName),
+			attribute.Int("accounts", numWalletAccounts),
+		))
 	}
 
 	log.Trace().Str("result", "succeeded").Dur("elapsed", time.Since(started)).Int("accounts", len(accounts)).Msg("Success")
+	span.AddEvent("Obtained all accounts", trace.WithAttributes(attribute.Int("accounts", len(accounts))))
 	s.monitor.ListAccountsCompleted(started)
 	return core.ResultSucceeded, accounts
 }

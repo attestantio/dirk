@@ -33,6 +33,7 @@ import (
 	"github.com/rs/zerolog"
 	zerologger "github.com/rs/zerolog/log"
 	pb "github.com/wealdtech/eth2-signer-api/pb/v1"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
@@ -137,6 +138,7 @@ func (s *Service) createServer(name string, certPEMBlock []byte, keyPEMBlock []b
 	grpcOpts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(
 			grpc_middleware.ChainUnaryServer(
+				otelgrpc.UnaryServerInterceptor(),
 				grpc_ctxtags.UnaryServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
 				interceptors.RequestIDInterceptor(),
 				interceptors.SourceIPInterceptor(),

@@ -16,7 +16,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
@@ -58,15 +57,12 @@ import (
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
 	standardwalletmanager "github.com/attestantio/dirk/services/walletmanager/standard"
 	"github.com/attestantio/dirk/util"
-	"github.com/attestantio/dirk/util/loggers"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/mitchellh/go-homedir"
-	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	zerologger "github.com/rs/zerolog/log"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	jaegerconfig "github.com/uber/jaeger-client-go/config"
 	e2types "github.com/wealdtech/go-eth2-types/v2"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 	majordomo "github.com/wealdtech/go-majordomo"
@@ -113,13 +109,9 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to initialise profiling")
 	}
 
-	closer, err := initTracing()
-	if err != nil {
+	if err := initTracing(ctx, majordomo); err != nil {
 		log.Error().Err(err).Msg("Failed to initialise tracing")
 		return
-	}
-	if closer != nil {
-		defer closer.Close()
 	}
 
 	runtime.GOMAXPROCS(runtime.NumCPU() * 8)
@@ -174,7 +166,6 @@ func fetchConfig() error {
 	pflag.String("log-level", "info", "minimum level of messsages to log")
 	pflag.String("log-file", "", "redirect log output to a file")
 	pflag.String("profile-address", "", "Address on which to run Go profile server")
-	pflag.String("tracing-address", "", "Address to which to send tracing data")
 	pflag.Bool("show-certificates", false, "show server certificates and exit")
 	pflag.Bool("show-permissions", false, "show client permissions and exit")
 	pflag.Bool("version", false, "show Dirk version exit")
@@ -251,34 +242,6 @@ func initProfiling() error {
 		}()
 	}
 	return nil
-}
-
-// initTracing initialises the tracing.
-func initTracing() (io.Closer, error) {
-	tracingAddress := viper.GetString("tracing-address")
-	if tracingAddress == "" {
-		return nil, nil
-	}
-	cfg := &jaegerconfig.Configuration{
-		ServiceName: "dirk",
-		Sampler: &jaegerconfig.SamplerConfig{
-			Type:  "const",
-			Param: 1,
-		},
-		Reporter: &jaegerconfig.ReporterConfig{
-			LogSpans:           true,
-			LocalAgentHostPort: tracingAddress,
-		},
-	}
-	tracer, closer, err := cfg.NewTracer(jaegerconfig.Logger(loggers.NewJaegerLogger(log)))
-	if err != nil {
-		return nil, err
-	}
-	if tracer != nil {
-		opentracing.SetGlobalTracer(tracer)
-	}
-
-	return closer, nil
 }
 
 func runCommands(ctx context.Context, majordomo majordomo.Service) (bool, int) {

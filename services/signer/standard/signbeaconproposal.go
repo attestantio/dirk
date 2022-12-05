@@ -23,6 +23,8 @@ import (
 	"github.com/attestantio/dirk/services/checker"
 	"github.com/attestantio/dirk/services/ruler"
 	spec "github.com/attestantio/go-eth2-client/spec/phase0"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // SignBeaconProposal signs a proposal for a beacon block.
@@ -36,12 +38,15 @@ func (s *Service) SignBeaconProposal(
 	core.Result,
 	[]byte,
 ) {
+	ctx, span := otel.Tracer("attestantio.dirk.services.signer.standard").Start(ctx, "SignBeaconProposal")
+	defer span.End()
 	started := time.Now()
 
 	if credentials == nil {
 		log.Warn().Msg("No credentials supplied")
 		return core.ResultFailed, nil
 	}
+	span.SetAttributes(attribute.String("client", credentials.Client))
 
 	log := log.With().
 		Str("request_id", credentials.RequestID).
@@ -99,6 +104,7 @@ func (s *Service) SignBeaconProposal(
 		return checkRes, nil
 	}
 	accountName = fmt.Sprintf("%s/%s", wallet.Name(), account.Name())
+	span.SetAttributes(attribute.String("account", accountName))
 	log = log.With().Str("account", accountName).Logger()
 
 	// Confirm approval via rules.
