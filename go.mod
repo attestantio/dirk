@@ -111,9 +111,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-// replace github.com/wealdtech/eth2-signer-api => ../../wealdtech/eth2-signer-api
-//
-// replace github.com/wealdtech/go-eth2-wallet-sharded => ../../wealdtech/go-eth2-wallet-sharded
-//
-// replace github.com/wealdtech/go-eth2-wallet-types/v2 => ../../wealdtech/go-eth2-wallet-types
