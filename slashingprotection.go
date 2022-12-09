@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2022 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,7 +18,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -74,7 +73,7 @@ func exportSlashingProtection(ctx context.Context) int {
 	}
 
 	if viper.GetString("slashing-protection-file") != "" {
-		if err := ioutil.WriteFile(viper.GetString("slashing-protection-file"), data, 0600); err != nil {
+		if err := os.WriteFile(viper.GetString("slashing-protection-file"), data, 0600); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write output: %v\n", err)
 			return 1
 		}
@@ -145,7 +144,7 @@ func importSlashingProtection(ctx context.Context) int {
 		fmt.Fprintf(os.Stderr, "Slashing protection file required for import\n")
 		return 1
 	}
-	data, err := ioutil.ReadFile(viper.GetString("slashing-protection-file"))
+	data, err := os.ReadFile(viper.GetString("slashing-protection-file"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to read slashing protection file: %v\n", err)
 		return 1

@@ -140,7 +140,7 @@ func Setup() (*walletmanager.Handler, error) {
 		return nil, errors.Wrap(err, "failed to create ruler")
 	}
 
-	checker, err := mockchecker.New()
+	checker, err := mockchecker.New(zerolog.Disabled)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create checker")
 	}

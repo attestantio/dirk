@@ -62,7 +62,7 @@ func TestNew(t *testing.T) {
 		}))
 	require.NoError(t, err)
 
-	checkerSvc, err := mockchecker.New()
+	checkerSvc, err := mockchecker.New(zerolog.Disabled)
 	require.NoError(t, err)
 
 	unlockerSvc, err := localunlocker.New(context.Background(),

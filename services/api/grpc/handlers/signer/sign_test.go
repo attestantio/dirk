@@ -29,6 +29,7 @@ import (
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
 	"github.com/attestantio/dirk/testing/accounts"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
 	pb "github.com/wealdtech/eth2-signer-api/pb/v1"
 	e2types "github.com/wealdtech/go-eth2-types/v2"
@@ -157,7 +158,7 @@ func Setup() (*signer.Handler, error) {
 		return nil, err
 	}
 
-	checker, err := mockchecker.New()
+	checker, err := mockchecker.New(zerolog.Disabled)
 	if err != nil {
 		return nil, err
 	}

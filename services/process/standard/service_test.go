@@ -64,7 +64,7 @@ func createProcessService(ctx context.Context, id uint64) (process.Service, erro
 		return nil, errors.Wrap(err, "failed to create peers service")
 	}
 
-	checkerSvc, err := mockchecker.New()
+	checkerSvc, err := mockchecker.New(zerolog.Disabled)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func TestNew(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	checkerSvc, err := mockchecker.New()
+	checkerSvc, err := mockchecker.New(zerolog.Disabled)
 	require.NoError(t, err)
 
 	unlockerSvc, err := localunlocker.New(context.Background(),

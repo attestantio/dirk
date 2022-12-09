@@ -26,6 +26,9 @@ import (
 	"github.com/attestantio/dirk/util"
 	spec "github.com/attestantio/go-eth2-client/spec/phase0"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 // SignBeaconAttestations signs multiple attestations for a beacon block.
@@ -39,10 +42,13 @@ func (s *Service) SignBeaconAttestations(
 	[]core.Result,
 	[][]byte,
 ) {
+	ctx, span := otel.Tracer("attestantio.dirk.services.signer.standard").Start(ctx, "SignBeaconAttestations")
+	defer span.End()
 	started := time.Now()
 
 	if len(data) == 0 {
 		log.Warn().Str("result", "denied").Msg("Request empty")
+		span.SetStatus(codes.Error, "Request empty")
 		s.monitor.SignCompleted(started, "attestation", core.ResultDenied)
 		results := make([]core.Result, 1)
 		results[0] = core.ResultDenied
@@ -61,6 +67,7 @@ func (s *Service) SignBeaconAttestations(
 		}
 		return results, nil
 	}
+	span.SetAttributes(attribute.String("client", credentials.Client))
 
 	log := log.With().
 		Str("request_id", credentials.RequestID).
@@ -83,6 +90,7 @@ func (s *Service) SignBeaconAttestations(
 	if len(accountNames) > entries {
 		entries = len(accountNames)
 	}
+	span.SetAttributes(attribute.Int("requests", entries))
 	rulesData := make([]*ruler.RulesData, entries)
 	accounts := make([]e2wtypes.Account, entries)
 	_, err := util.Scatter(entries, func(offset int, entries int, _ *sync.RWMutex) (interface{}, error) {

@@ -27,6 +27,7 @@ import (
 	"github.com/attestantio/dirk/services/ruler"
 	"github.com/attestantio/dirk/services/ruler/golang"
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
@@ -282,7 +283,7 @@ func setupSignerService(ctx context.Context) (*Service, e2wtypes.Wallet, []e2wty
 		return nil, nil, nil, err
 	}
 
-	checkerSvc, err := mockchecker.New()
+	checkerSvc, err := mockchecker.New(zerolog.Disabled)
 	if err != nil {
 		return nil, nil, nil, err
 	}

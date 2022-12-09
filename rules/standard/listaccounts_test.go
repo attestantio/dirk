@@ -15,7 +15,6 @@ package standard_test
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -27,7 +26,7 @@ import (
 
 func TestListAccounts(t *testing.T) {
 	ctx := context.Background()
-	base, err := ioutil.TempDir("", "")
+	base, err := os.MkdirTemp("", "")
 	require.NoError(t, err)
 	defer os.RemoveAll(base)
 

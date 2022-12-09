@@ -564,7 +564,7 @@ func TestSignBeaconAttestations(t *testing.T) {
 			zerolog.SetGlobalLevel(zerolog.TraceLevel)
 			capture := logger.NewLogCapture()
 
-			checkerSvc, err := mockchecker.New()
+			checkerSvc, err := mockchecker.New(zerolog.TraceLevel)
 			require.NoError(t, err)
 
 			rulerSvc, err := golang.New(ctx,

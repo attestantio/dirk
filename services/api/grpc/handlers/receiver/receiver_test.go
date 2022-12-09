@@ -15,7 +15,6 @@ package receiver_test
 
 import (
 	context "context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -42,7 +41,7 @@ import (
 
 func TestNonInitiator(t *testing.T) {
 	ctx := context.Background()
-	base, err := ioutil.TempDir("", "")
+	base, err := os.MkdirTemp("", "")
 	require.NoError(t, err)
 	require.NoError(t, resources.SetupCerts(base))
 	defer os.RemoveAll(base)
@@ -55,7 +54,7 @@ func TestNonInitiator(t *testing.T) {
 		}))
 	require.NoError(t, err)
 
-	checker, err := mockchecker.New()
+	checker, err := mockchecker.New(zerolog.Disabled)
 	require.NoError(t, err)
 
 	unlocker, err := localunlocker.New(context.Background(),

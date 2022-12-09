@@ -28,6 +28,7 @@ import (
 	"github.com/attestantio/dirk/services/ruler/golang"
 	"github.com/attestantio/dirk/services/signer"
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
@@ -92,7 +93,7 @@ func TestSignBeaconProposal(t *testing.T) {
 		localunlocker.WithAccountPassphrases([]string{"Test account 1 passphrase"}))
 	require.NoError(t, err)
 
-	checkerSvc, err := mockchecker.New()
+	checkerSvc, err := mockchecker.New(zerolog.Disabled)
 	require.NoError(t, err)
 
 	tests := []struct {

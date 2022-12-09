@@ -15,7 +15,6 @@ package golang
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -938,7 +937,7 @@ func TestInternalRunRules(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			capture := logger.NewLogCapture()
-			storagePath, err := ioutil.TempDir("", "")
+			storagePath, err := os.MkdirTemp("", "")
 			require.NoError(t, err)
 			defer os.RemoveAll(storagePath)
 			testRules, err := standardrules.New(ctx,

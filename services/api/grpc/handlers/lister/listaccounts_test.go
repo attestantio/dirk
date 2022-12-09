@@ -28,6 +28,7 @@ import (
 	"github.com/attestantio/dirk/services/ruler/golang"
 	accounts "github.com/attestantio/dirk/testing/accounts"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	pb "github.com/wealdtech/eth2-signer-api/pb/v1"
@@ -169,30 +170,35 @@ func Setup() (*lister.Handler, error) {
 		return nil, errors.Wrap(err, "failed to create accounts")
 	}
 
-	locker, err := syncmaplocker.New(ctx)
+	locker, err := syncmaplocker.New(ctx,
+		syncmaplocker.WithLogLevel(zerolog.Disabled),
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	fetcher, err := memfetcher.New(ctx,
+		memfetcher.WithLogLevel(zerolog.Disabled),
 		memfetcher.WithStores([]e2wtypes.Store{store}))
 	if err != nil {
 		return nil, err
 	}
 
 	ruler, err := golang.New(ctx,
+		golang.WithLogLevel(zerolog.Disabled),
 		golang.WithLocker(locker),
 		golang.WithRules(mockrules.New()))
 	if err != nil {
 		return nil, err
 	}
 
-	checker, err := mockchecker.New()
+	checker, err := mockchecker.New(zerolog.Disabled)
 	if err != nil {
 		return nil, err
 	}
 
 	service, err := standardlister.New(ctx,
+		standardlister.WithLogLevel(zerolog.Disabled),
 		standardlister.WithChecker(checker),
 		standardlister.WithFetcher(fetcher),
 		standardlister.WithRuler(ruler))
@@ -200,5 +206,8 @@ func Setup() (*lister.Handler, error) {
 		return nil, err
 	}
 
-	return lister.New(ctx, lister.WithLister(service))
+	return lister.New(ctx,
+		lister.WithLogLevel(zerolog.Disabled),
+		lister.WithLister(service),
+	)
 }
