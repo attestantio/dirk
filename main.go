@@ -166,6 +166,7 @@ func fetchConfig() error {
 	pflag.String("log-level", "info", "minimum level of messsages to log")
 	pflag.String("log-file", "", "redirect log output to a file")
 	pflag.String("profile-address", "", "Address on which to run Go profile server")
+	pflag.String("tracing-address", "", "Address to which to send tracing data")
 	pflag.Bool("show-certificates", false, "show server certificates and exit")
 	pflag.Bool("show-permissions", false, "show client permissions and exit")
 	pflag.Bool("version", false, "show Dirk version exit")
