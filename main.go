@@ -570,13 +570,13 @@ func initMajordomo(ctx context.Context) (majordomo.Service, error) {
 	}
 
 	if viper.GetString("majordomo.gsm.project") != "" {
-		var gsmCredentialPath string
+		var gsmCredentialsPath string
 		if viper.GetString("majordomo.gsm.credentials") != "" {
-			gsmCredentialPath = resolvePath(viper.GetString("majordomo.gsm.credentials"))
+			gsmCredentialsPath = resolvePath(viper.GetString("majordomo.gsm.credentials"))
 		}
 		gsmConfidant, err := gsmconfidant.New(ctx,
 			gsmconfidant.WithLogLevel(util.LogLevel("majordomo.confidants.gsm")),
-			gsmconfidant.WithCredentialsPath(gsmCredentialPath),
+			gsmconfidant.WithCredentialsPath(gsmCredentialsPath),
 			gsmconfidant.WithProject(viper.GetString("majordomo.gsm.project")),
 		)
 		if err != nil {
