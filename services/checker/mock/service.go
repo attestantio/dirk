@@ -18,6 +18,7 @@ import (
 
 	"github.com/attestantio/dirk/services/checker"
 	static "github.com/attestantio/dirk/services/checker/static"
+	"github.com/rs/zerolog"
 )
 
 // New creates a new mock checker that will deny clients called 'Deny this client' and any accounts starting with 'Deny'.
@@ -41,6 +42,7 @@ func New() (checker.Service, error) {
 		},
 	}
 	return static.New(context.Background(),
+		static.WithLogLevel(zerolog.Disabled),
 		static.WithPermissions(permissions),
 	)
 }
