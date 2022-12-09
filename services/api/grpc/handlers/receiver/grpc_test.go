@@ -142,7 +142,7 @@ func TestEndToEnd(t *testing.T) {
 }
 
 func createServers(ctx context.Context) (string, []*core.Endpoint, []*grpcapi.Service, error) {
-	base, err := ioutil.TempDir("", "")
+	base, err := os.MkdirTemp("", "")
 	if err != nil {
 		return "", nil, nil, err
 	}
