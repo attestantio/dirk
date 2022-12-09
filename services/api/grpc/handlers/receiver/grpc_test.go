@@ -208,7 +208,7 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 	if err != nil {
 		return nil, err
 	}
-	checker, err := mockchecker.New()
+	checker, err := mockchecker.New(zerolog.Disabled)
 	if err != nil {
 		return nil, err
 	}

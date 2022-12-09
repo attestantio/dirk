@@ -22,7 +22,7 @@ import (
 )
 
 // New creates a new mock checker that will deny clients called 'Deny this client' and any accounts starting with 'Deny'.
-func New() (checker.Service, error) {
+func New(logLevel zerolog.Level) (checker.Service, error) {
 	permissions := map[string][]*checker.Permissions{
 		"Deny this client": {
 			{
@@ -42,7 +42,7 @@ func New() (checker.Service, error) {
 		},
 	}
 	return static.New(context.Background(),
-		static.WithLogLevel(zerolog.Disabled),
+		static.WithLogLevel(logLevel),
 		static.WithPermissions(permissions),
 	)
 }

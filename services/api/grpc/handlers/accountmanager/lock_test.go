@@ -146,7 +146,7 @@ func Setup() (*accountmanager.Handler, error) {
 		return nil, errors.Wrap(err, "failed to create account rules service")
 	}
 
-	checker, err := mockchecker.New()
+	checker, err := mockchecker.New(zerolog.Disabled)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create account checker service")
 	}

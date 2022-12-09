@@ -192,7 +192,7 @@ func Setup() (*lister.Handler, error) {
 		return nil, err
 	}
 
-	checker, err := mockchecker.New()
+	checker, err := mockchecker.New(zerolog.Disabled)
 	if err != nil {
 		return nil, err
 	}

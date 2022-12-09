@@ -32,6 +32,7 @@ import (
 	standardsigner "github.com/attestantio/dirk/services/signer/standard"
 	"github.com/attestantio/dirk/services/unlocker"
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
@@ -113,7 +114,7 @@ func TestSignGeneric(t *testing.T) {
 		localunlocker.WithAccountPassphrases([]string{"Test account 1 passphrase"}))
 	require.NoError(t, err)
 
-	checkerSvc, err := mockchecker.New()
+	checkerSvc, err := mockchecker.New(zerolog.Disabled)
 	require.NoError(t, err)
 
 	tests := []struct {

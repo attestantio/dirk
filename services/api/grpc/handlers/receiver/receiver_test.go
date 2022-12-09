@@ -55,7 +55,7 @@ func TestNonInitiator(t *testing.T) {
 		}))
 	require.NoError(t, err)
 
-	checker, err := mockchecker.New()
+	checker, err := mockchecker.New(zerolog.Disabled)
 	require.NoError(t, err)
 
 	unlocker, err := localunlocker.New(context.Background(),

@@ -94,7 +94,7 @@ func TestService(t *testing.T) {
 		localunlocker.WithAccountPassphrases([]string{"Test account 1 passphrase"}))
 	require.NoError(t, err)
 
-	checkerSvc, err := mockchecker.New()
+	checkerSvc, err := mockchecker.New(zerolog.Disabled)
 	require.NoError(t, err)
 
 	tests := []struct {
