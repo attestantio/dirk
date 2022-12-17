@@ -132,7 +132,7 @@ func (s *Service) OnExecute(ctx context.Context, sender uint64, account string) 
 
 	generation, err := s.getGeneration(ctx, account)
 	if err != nil {
-		if err == ErrNotFound {
+		if errors.Is(err, ErrNotFound) {
 			return ErrNotInProgress
 		}
 		return err
@@ -175,7 +175,7 @@ func (s *Service) OnCommit(ctx context.Context, sender uint64, account string, c
 	defer s.generationsMu.Unlock()
 
 	generation, err := s.getGeneration(ctx, account)
-	if err == ErrNotFound {
+	if errors.Is(err, ErrNotFound) {
 		return nil, nil, ErrNotInProgress
 	}
 
@@ -254,7 +254,7 @@ func (s *Service) OnAbort(ctx context.Context, sender uint64, account string) er
 	defer s.generationsMu.Unlock()
 
 	_, err := s.getGeneration(ctx, account)
-	if err == ErrNotFound {
+	if errors.Is(err, ErrNotFound) {
 		return ErrNotInProgress
 	}
 

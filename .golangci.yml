@@ -131,8 +131,6 @@ linters:
     - decorder
     - dupl
     - dupword
-    - errchkjson
-    - errorlint
     - exhaustive
     - exhaustivestruct
     - exhaustruct
