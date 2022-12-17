@@ -277,7 +277,7 @@ func (s *Service) runRulesForMultipleBeaconAttestations(ctx context.Context,
 	return s.rules.OnSignBeaconAttestations(ctx, metadatas, reqData)
 }
 
-func (s *Service) assembleMetadata(_ context.Context, credentials *checker.Credentials, accountName string, pubKey []byte) (*rules.ReqMetadata, error) {
+func (*Service) assembleMetadata(_ context.Context, credentials *checker.Credentials, accountName string, pubKey []byte) (*rules.ReqMetadata, error) {
 	if credentials == nil {
 		return nil, errors.New("no credentials")
 	}
