@@ -131,7 +131,6 @@ linters:
     - decorder
     - dupl
     - dupword
-    - exhaustive
     - exhaustivestruct
     - exhaustruct
     - forbidigo

@@ -72,6 +72,11 @@ func (s *Service) Unlock(ctx context.Context,
 	case rules.FAILED:
 		s.monitor.AccountManagerCompleted(started, "unlock", core.ResultFailed)
 		return core.ResultFailed, errors.New("rules check failed")
+	case rules.UNKNOWN:
+		s.monitor.AccountManagerCompleted(started, "unlock", core.ResultFailed)
+		return core.ResultFailed, errors.New("rules check indeterminate result")
+	case rules.APPROVED:
+		// Nothing to do.
 	}
 
 	// Unlock it.

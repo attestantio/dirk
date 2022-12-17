@@ -103,7 +103,7 @@ func TestMultisign(t *testing.T) {
 			credentials: &checker.Credentials{Client: "client1"},
 			data:        []*rules.SignData{nil},
 			res:         []core.Result{core.ResultDenied},
-			logEntry:    "Request empty",
+			logEntry:    "Check failed",
 		},
 		{
 			name:     "CredentialsNil",
@@ -133,7 +133,7 @@ func TestMultisign(t *testing.T) {
 			},
 			accountNames: []string{"Test wallet/Test account 1"},
 			res:          []core.Result{core.ResultDenied},
-			logEntry:     "Request missing domain",
+			logEntry:     "Check failed",
 		},
 		{
 			name:        "DataMissing",
@@ -150,7 +150,7 @@ func TestMultisign(t *testing.T) {
 			},
 			accountNames: []string{"Test wallet/Test account 1"},
 			res:          []core.Result{core.ResultDenied},
-			logEntry:     "Request missing data",
+			logEntry:     "Check failed",
 		},
 		{
 			name:        "GoodName",

@@ -72,6 +72,12 @@ func (s *Service) Lock(ctx context.Context,
 		log.Error().Str("result", "failed").Msg("Rules check failed")
 		s.monitor.AccountManagerCompleted(started, "lock", core.ResultFailed)
 		return core.ResultFailed, nil
+	case rules.UNKNOWN:
+		log.Error().Str("result", "failed").Msg("Rules check indeterminate result")
+		s.monitor.AccountManagerCompleted(started, "lock", core.ResultFailed)
+		return core.ResultFailed, nil
+	case rules.APPROVED:
+		// Nothing to do.
 	}
 
 	// Lock it.

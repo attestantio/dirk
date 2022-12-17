@@ -24,6 +24,7 @@ import (
 	"github.com/attestantio/dirk/services/checker"
 	"github.com/attestantio/dirk/services/ruler"
 	"github.com/attestantio/dirk/util"
+	"github.com/pkg/errors"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -76,20 +77,8 @@ func (s *Service) Multisign(ctx context.Context,
 
 	// Check input.
 	for i := range data {
-		if data[i] == nil {
-			log.Warn().Str("result", "denied").Msg("Request empty")
-			s.monitor.SignCompleted(started, "generic", core.ResultDenied)
-			results[i] = core.ResultDenied
-			return results, nil
-		}
-		if data[i].Data == nil {
-			log.Warn().Str("result", "denied").Msg("Request missing data")
-			s.monitor.SignCompleted(started, "generic", core.ResultDenied)
-			results[i] = core.ResultDenied
-			return results, nil
-		}
-		if data[i].Domain == nil {
-			log.Warn().Str("result", "denied").Msg("Request missing domain")
+		if err := checkSignData(data[i]); err != nil {
+			log.Warn().Err(err).Str("result", "denied").Msg("Check failed")
 			s.monitor.SignCompleted(started, "generic", core.ResultDenied)
 			results[i] = core.ResultDenied
 			return results, nil
@@ -179,6 +168,8 @@ func (s *Service) Multisign(ctx context.Context,
 				s.monitor.SignCompleted(started, "generic", core.ResultFailed)
 				results[i] = core.ResultFailed
 				continue
+			case rules.APPROVED:
+				// Nothing to do.
 			}
 
 			signingRoot, err := generateSigningRoot(ctx, data[i].Data, data[i].Domain)
@@ -211,4 +202,17 @@ func (s *Service) Multisign(ctx context.Context,
 	log.Trace().Dur("elapsed", time.Since(started)).Msg("Completed signing")
 
 	return results, signatures
+}
+
+func checkSignData(data *rules.SignData) error {
+	if data == nil {
+		return errors.New("request empty")
+	}
+	if data.Data == nil {
+		return errors.New("request missing data")
+	}
+	if data.Domain == nil {
+		return errors.New("request missing domain")
+	}
+	return nil
 }

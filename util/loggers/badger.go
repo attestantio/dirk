@@ -28,7 +28,7 @@ type BadgerLogger struct {
 func NewBadgerLogger(log zerolog.Logger) *BadgerLogger {
 	// Badger logs more verbosely than Dirk, so turn down the verbosity a notch.
 	switch log.GetLevel() {
-	case zerolog.ErrorLevel:
+	case zerolog.ErrorLevel, zerolog.FatalLevel, zerolog.PanicLevel:
 		log = log.Level(zerolog.FatalLevel)
 	case zerolog.WarnLevel:
 		log = log.Level(zerolog.ErrorLevel)
@@ -38,6 +38,7 @@ func NewBadgerLogger(log zerolog.Logger) *BadgerLogger {
 		log = log.Level(zerolog.InfoLevel)
 	case zerolog.TraceLevel:
 		log = log.Level(zerolog.TraceLevel)
+	case zerolog.NoLevel, zerolog.Disabled:
 	}
 	log = log.With().Str("store", "badger").Logger()
 	return &BadgerLogger{log: log}

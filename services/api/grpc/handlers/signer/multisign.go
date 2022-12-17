@@ -85,7 +85,7 @@ func (h *Handler) Multisign(ctx context.Context, req *pb.MultisignRequest) (*pb.
 			res.Responses[i].State = pb.ResponseState_DENIED
 		case core.ResultFailed:
 			res.Responses[i].State = pb.ResponseState_FAILED
-		default:
+		case core.ResultUnknown:
 			res.Responses[i].State = pb.ResponseState_UNKNOWN
 		}
 	}

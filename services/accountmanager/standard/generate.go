@@ -90,6 +90,11 @@ func (s *Service) Generate(ctx context.Context,
 	case rules.FAILED:
 		s.monitor.AccountManagerCompleted(started, "generate", core.ResultFailed)
 		return core.ResultFailed, nil, nil, errors.New("rules check failed")
+	case rules.UNKNOWN:
+		s.monitor.AccountManagerCompleted(started, "generate", core.ResultFailed)
+		return core.ResultFailed, nil, nil, errors.New("rules check indeterminate result")
+	case rules.APPROVED:
+		// Nothing to do.
 	}
 
 	// Generate it.

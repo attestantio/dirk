@@ -57,7 +57,7 @@ func (h *Handler) Sign(ctx context.Context, req *pb.SignRequest) (*pb.SignRespon
 		res.State = pb.ResponseState_DENIED
 	case core.ResultFailed:
 		res.State = pb.ResponseState_FAILED
-	default:
+	case core.ResultUnknown:
 		res.State = pb.ResponseState_UNKNOWN
 	}
 

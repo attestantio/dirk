@@ -118,6 +118,13 @@ func (s *Service) SignGeneric(
 		span.SetStatus(codes.Ok, "")
 		log.Error().Str("result", "failed").Msg("Rules check failed")
 		return core.ResultFailed, nil
+	case rules.UNKNOWN:
+		s.monitor.SignCompleted(started, "generic", core.ResultFailed)
+		span.SetStatus(codes.Ok, "")
+		log.Error().Str("result", "failed").Msg("Rules check indeterminate result")
+		return core.ResultFailed, nil
+	case rules.APPROVED:
+		// Nothing to do.
 	}
 
 	signingRoot, err := generateSigningRoot(ctx, data.Data, data.Domain)
