@@ -131,7 +131,6 @@ func TestFetchAccount(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		credentials *checker.Credentials
 		accountName string
 		pubKey      []byte
 		res         core.Result
@@ -164,7 +163,7 @@ func TestFetchAccount(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, _, res := signerSvc.fetchAccount(context.Background(), test.credentials, test.accountName, test.pubKey)
+			_, _, res := signerSvc.fetchAccount(context.Background(), test.accountName, test.pubKey)
 			assert.Equal(t, test.res, res)
 		})
 	}

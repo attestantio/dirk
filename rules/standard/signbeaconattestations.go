@@ -118,7 +118,7 @@ func (s *Service) fetchSignBeaconAttestationStates(ctx context.Context, pubKeys 
 	return states, nil
 }
 
-func (s *Service) runSignBeaconAttestationChecks(ctx context.Context, metadata *rules.ReqMetadata, req *rules.SignBeaconAttestationData, state *signBeaconAttestationState) rules.Result {
+func (s *Service) runSignBeaconAttestationChecks(_ context.Context, metadata *rules.ReqMetadata, req *rules.SignBeaconAttestationData, state *signBeaconAttestationState) rules.Result {
 	log := log.With().Str("client", metadata.Client).Str("account", metadata.Account).Str("rule", "sign beacon attestation").Logger()
 
 	// The request must have the appropriate domain.

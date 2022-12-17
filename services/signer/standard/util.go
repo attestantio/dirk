@@ -21,7 +21,7 @@ import (
 )
 
 // generateSigningRoot generates a signing root from a data root and domain.
-func generateSigningRoot(ctx context.Context, root []byte, domain []byte) ([32]byte, error) {
+func generateSigningRoot(_ context.Context, root []byte, domain []byte) ([32]byte, error) {
 	signingData := &SigningRoot{
 		DataRoot: root,
 		Domain:   domain,

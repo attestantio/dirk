@@ -49,6 +49,7 @@ func WithMonitor(monitor metrics.LockerMonitor) Parameter {
 }
 
 // parseAndCheckParameters parses and checks parameters to ensure that mandatory parameters are present and correct.
+//nolint:unparam
 func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	parameters := parameters{
 		logLevel: zerolog.GlobalLevel(),

@@ -195,7 +195,7 @@ func (s *Service) SendContribution(ctx context.Context, peer *core.Endpoint, acc
 	return resSecret, resVVec, nil
 }
 
-func composeCredentials(ctx context.Context, certPEMBlock []byte, keyPEMBlock []byte, caPEMBlock []byte) (credentials.TransportCredentials, error) {
+func composeCredentials(_ context.Context, certPEMBlock []byte, keyPEMBlock []byte, caPEMBlock []byte) (credentials.TransportCredentials, error) {
 	clientCert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to access client certificate/key")
@@ -217,7 +217,7 @@ func composeCredentials(ctx context.Context, certPEMBlock []byte, keyPEMBlock []
 }
 
 // obtainConnection obtains a connection to the required address via GRPC.
-func (s *Service) obtainConnection(ctx context.Context, address string) (*puddle.Resource, error) {
+func (s *Service) obtainConnection(_ context.Context, address string) (*puddle.Resource, error) {
 	s.connectionPoolsMutex.Lock()
 	pool, exists := s.connectionPools[address]
 	if !exists {

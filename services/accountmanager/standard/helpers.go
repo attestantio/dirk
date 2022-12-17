@@ -25,7 +25,7 @@ import (
 // preCheck carries out pre-checks for all account manager requests.
 func (s *Service) preCheck(ctx context.Context, credentials *checker.Credentials, name string, pubKey []byte, action string) (e2wtypes.Wallet, e2wtypes.Account, core.Result) {
 	// Fetch the account.
-	wallet, account, result := s.fetchAccount(ctx, credentials, name, pubKey)
+	wallet, account, result := s.fetchAccount(ctx, name, pubKey)
 	if result != core.ResultSucceeded {
 		return nil, nil, result
 	}
@@ -41,7 +41,7 @@ func (s *Service) preCheck(ctx context.Context, credentials *checker.Credentials
 }
 
 // fetchAccount fetches an account by either name or public key, depending on which has been supplied.
-func (s *Service) fetchAccount(ctx context.Context, credentials *checker.Credentials, name string, pubKey []byte) (e2wtypes.Wallet, e2wtypes.Account, core.Result) {
+func (s *Service) fetchAccount(ctx context.Context, name string, pubKey []byte) (e2wtypes.Wallet, e2wtypes.Account, core.Result) {
 	if name == "" && pubKey == nil {
 		log.Warn().Str("result", "denied").Msg("Neither account nor public key supplied; denied")
 		return nil, nil, core.ResultDenied

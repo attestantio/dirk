@@ -152,7 +152,6 @@ linters:
     - maligned
     - nilnil
     - nlreturn
-    - nolintlint
     - nosnakecase
     - promlinter
     - rowserrcheck
@@ -160,7 +159,6 @@ linters:
     - sqlclosecheck
     - structcheck
     - thelper
-    - unparam
     - varcheck
     - varnamelen
     - wastedassign

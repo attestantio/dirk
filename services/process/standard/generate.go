@@ -84,17 +84,17 @@ func (s *Service) OnGenerate(ctx context.Context,
 
 	if numParticipants == 1 {
 		// Only 1 participant means we are generating a standard account.
-		pubKey, err := s.generate(ctx, credentials, wallet, accountName, passphrase)
+		pubKey, err := s.generate(ctx, wallet, accountName, passphrase)
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to generate account")
 			return nil, nil, errors.New("failed account generation")
 		}
 		return pubKey, nil, err
 	}
-	return s.generateDistributed(ctx, credentials, wallet, account, passphrase, signingThreshold, numParticipants)
+	return s.generateDistributed(ctx, wallet, account, passphrase, signingThreshold, numParticipants)
 }
 
-func (s *Service) generate(ctx context.Context, credentials *checker.Credentials, wallet e2wtypes.Wallet, accountName string, passphrase []byte) ([]byte, error) {
+func (s *Service) generate(ctx context.Context, wallet e2wtypes.Wallet, accountName string, passphrase []byte) ([]byte, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "services.process.generate")
 	defer span.Finish()
 
@@ -132,7 +132,7 @@ func (s *Service) generate(ctx context.Context, credentials *checker.Credentials
 	return createdAccount.PublicKey().Marshal(), nil
 }
 
-func (s *Service) generateDistributed(ctx context.Context, credentials *checker.Credentials, wallet e2wtypes.Wallet, account string, passphrase []byte, signingThreshold uint32, numParticipants uint32) ([]byte, []*core.Endpoint, error) {
+func (s *Service) generateDistributed(ctx context.Context, wallet e2wtypes.Wallet, account string, passphrase []byte, signingThreshold uint32, numParticipants uint32) ([]byte, []*core.Endpoint, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "services.process.generateDistributed")
 	defer span.Finish()
 
