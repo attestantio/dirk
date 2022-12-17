@@ -80,7 +80,7 @@ func (s *Service) OnGenerate(ctx context.Context, credentials *checker.Credentia
 	}, nil
 }
 
-// OnContribute is is called when we need to swap contributions with another participant.
+// OnContribute is called when we need to swap contributions with another participant.
 func (s *Service) OnContribute(ctx context.Context, sender uint64, account string, secret bls.SecretKey, vVec []bls.PublicKey) (bls.SecretKey, []bls.PublicKey, error) {
 	return bls.SecretKey{}, nil, nil
 }

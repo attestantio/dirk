@@ -38,6 +38,6 @@ type Service interface {
 	// OnGenerate is called when an request to generate a new key is received.
 	OnGenerate(ctx context.Context, credentials *checker.Credentials, account string, passphrase []byte, threshold uint32, numParticipants uint32) ([]byte, []*core.Endpoint, error)
 
-	// OnContribute is is called when we need to swap contributions with another participant.
+	// OnContribute is called when we need to swap contributions with another participant.
 	OnContribute(ctx context.Context, sender uint64, account string, secret bls.SecretKey, vVec []bls.PublicKey) (bls.SecretKey, []bls.PublicKey, error)
 }

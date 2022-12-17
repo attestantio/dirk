@@ -128,9 +128,7 @@ linters:
     - contextcheck
     - cyclop
     - deadcode
-    - decorder
     - dupl
-    - dupword
     - exhaustivestruct
     - exhaustruct
     - forbidigo
