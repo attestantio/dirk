@@ -150,7 +150,6 @@ linters:
     - lll
     - maintidx
     - maligned
-    - nestif
     - nilnil
     - nlreturn
     - nolintlint

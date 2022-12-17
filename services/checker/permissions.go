@@ -29,24 +29,24 @@ func DumpPermissions(perms map[string][]*Permissions) {
 	for client, perms := range perms {
 		if client == "" {
 			fmt.Println("ERROR: client does not have a name")
-		} else {
-			fmt.Printf("Permissions for %q:\n", client)
-			for _, perm := range perms {
-				var pathDescriptor string
-				if perm.Path == "" {
-					pathDescriptor = "all accounts"
-				} else {
-					pathDescriptor = fmt.Sprintf("accounts matching the path %q", perm.Path)
-				}
-
-				var opDescriptor string
-				if len(perm.Operations) == 1 && perm.Operations[0] == "All" {
-					opDescriptor = "all operations"
-				} else {
-					opDescriptor = fmt.Sprintf("operations %s\n", strings.Join(perm.Operations, ", "))
-				}
-				fmt.Printf(" - %s can carry out %s\n", pathDescriptor, opDescriptor)
+			continue
+		}
+		fmt.Printf("Permissions for %q:\n", client)
+		for _, perm := range perms {
+			var pathDescriptor string
+			if perm.Path == "" {
+				pathDescriptor = "all accounts"
+			} else {
+				pathDescriptor = fmt.Sprintf("accounts matching the path %q", perm.Path)
 			}
+
+			var opDescriptor string
+			if len(perm.Operations) == 1 && perm.Operations[0] == "All" {
+				opDescriptor = "all operations"
+			} else {
+				opDescriptor = fmt.Sprintf("operations %s\n", strings.Join(perm.Operations, ", "))
+			}
+			fmt.Printf(" - %s can carry out %s\n", pathDescriptor, opDescriptor)
 		}
 	}
 }
