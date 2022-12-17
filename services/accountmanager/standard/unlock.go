@@ -86,6 +86,7 @@ func (s *Service) Unlock(ctx context.Context,
 
 	if err := locker.Unlock(ctx, passphrase); err != nil {
 		s.monitor.AccountManagerCompleted(started, "unlock", core.ResultDenied)
+		//nolint:nilerr
 		return core.ResultDenied, nil
 	}
 
