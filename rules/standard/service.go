@@ -74,6 +74,7 @@ func (s *Service) Close(ctx context.Context) error {
 var (
 	// actionSign is the action of signing data.
 	// currently unused as generic signing requires no slashing protection.
+	//nolint:godot
 	// actionSign = []byte{0x01}
 	// actionSignBeaconAttestation is the action of signing a beacon attestation.
 	actionSignBeaconAttestation = []byte{0x02}
@@ -81,5 +82,6 @@ var (
 	actionSignBeaconProposal = []byte{0x03}
 	// actionAccessAccount is the action of accessing an account.
 	// currently unused as accesing an account requires no slashing protection.
+	//nolint:godot
 	// actionAccessAccount = []byte{0x04}
 )

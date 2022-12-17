@@ -25,7 +25,7 @@ import (
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
 
-// Unlock unlocks an account
+// Unlock unlocks an account.
 func (s *Service) Unlock(ctx context.Context,
 	credentials *checker.Credentials,
 	accountName string,

@@ -23,7 +23,7 @@ import (
 	zerologger "github.com/rs/zerolog/log"
 )
 
-// Service provides a global account locker using sync.Map
+// Service provides a global account locker using sync.Map.
 type Service struct {
 	monitor      metrics.LockerMonitor
 	locks        *sync.Map
