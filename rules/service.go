@@ -106,6 +106,7 @@ type SlashingProtection struct {
 }
 
 // Service is the interface that must be followed by a remote ruler for approval of requests.
+//nolint:interfacebloat
 type Service interface {
 	// OnListAccounts is called when a request to list accounts needs to be approved.
 	OnListAccounts(ctx context.Context, metadata *ReqMetadata, req *AccessAccountData) Result

@@ -133,6 +133,12 @@ func (s *Service) SignBeaconAttestation(
 		log.Error().Str("result", "failed").Msg("Rules check failed")
 		s.monitor.SignCompleted(started, "attestation", core.ResultFailed)
 		return core.ResultFailed, nil
+	case rules.UNKNOWN:
+		log.Error().Str("result", "failed").Msg("Rules check indeterminate result")
+		s.monitor.SignCompleted(started, "attestation", core.ResultFailed)
+		return core.ResultFailed, nil
+	case rules.APPROVED:
+		// Nothing to do.
 	}
 
 	// Create a spec version of the attestation to obtain its hash tree root.

@@ -100,7 +100,7 @@ func (h *Handler) SignBeaconAttestations(ctx context.Context, req *pb.SignBeacon
 			res.Responses[i].State = pb.ResponseState_DENIED
 		case core.ResultFailed:
 			res.Responses[i].State = pb.ResponseState_FAILED
-		default:
+		case core.ResultUnknown:
 			res.Responses[i].State = pb.ResponseState_UNKNOWN
 		}
 	}

@@ -155,6 +155,8 @@ func (s *Service) SignBeaconAttestations(
 				s.monitor.SignCompleted(started, "attestation", core.ResultFailed)
 				results[i] = core.ResultFailed
 				continue
+			case rules.APPROVED:
+				// Nothing to do.
 			}
 
 			// Create a spec version of the attestation to obtain its hash tree root.

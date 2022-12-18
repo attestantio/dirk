@@ -45,27 +45,27 @@ func New() (*Service, error) {
 }
 
 // OnPrepare is called when we receive a request from the given participant to prepare for DKG.
-func (s *Service) OnPrepare(ctx context.Context, sender uint64, account string, passphrase []byte, threshold uint32, participants []*core.Endpoint) error {
+func (*Service) OnPrepare(_ context.Context, _ uint64, _ string, _ []byte, _ uint32, _ []*core.Endpoint) error {
 	return nil
 }
 
 // OnExecute is called when we receive a request from the given participant to execute the given DKG.
-func (s *Service) OnExecute(ctx context.Context, sender uint64, account string) error {
+func (*Service) OnExecute(_ context.Context, _ uint64, _ string) error {
 	return nil
 }
 
 // OnCommit is called when we receive a request from the given participant to commit the given DKG.
-func (s *Service) OnCommit(ctx context.Context, sender uint64, account string, confirmationData []byte) ([]byte, []byte, error) {
+func (*Service) OnCommit(_ context.Context, _ uint64, _ string, _ []byte) ([]byte, []byte, error) {
 	return nil, nil, nil
 }
 
 // OnAbort is called when we receive a request from the given participant to abort the given DKG.
-func (s *Service) OnAbort(ctx context.Context, sender uint64, account string) error {
+func (*Service) OnAbort(_ context.Context, _ uint64, _ string) error {
 	return nil
 }
 
 // OnGenerate is called when an request to generate a new key is received.
-func (s *Service) OnGenerate(ctx context.Context, credentials *checker.Credentials, account string, passphrase []byte, threshold uint32, numParticipants uint32) ([]byte, []*core.Endpoint, error) {
+func (*Service) OnGenerate(_ context.Context, _ *checker.Credentials, _ string, _ []byte, _ uint32, _ uint32) ([]byte, []*core.Endpoint, error) {
 	return nil, []*core.Endpoint{
 		{
 			ID:   1,
@@ -80,7 +80,7 @@ func (s *Service) OnGenerate(ctx context.Context, credentials *checker.Credentia
 	}, nil
 }
 
-// OnContribute is is called when we need to swap contributions with another participant.
-func (s *Service) OnContribute(ctx context.Context, sender uint64, account string, secret bls.SecretKey, vVec []bls.PublicKey) (bls.SecretKey, []bls.PublicKey, error) {
+// OnContribute is called when we need to swap contributions with another participant.
+func (*Service) OnContribute(_ context.Context, _ uint64, _ string, _ bls.SecretKey, _ []bls.PublicKey) (bls.SecretKey, []bls.PublicKey, error) {
 	return bls.SecretKey{}, nil, nil
 }

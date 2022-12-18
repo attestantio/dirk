@@ -44,7 +44,7 @@ func (h *Handler) Lock(ctx context.Context, req *pb.LockWalletRequest) (*pb.Lock
 			res.State = pb.ResponseState_DENIED
 		case core.ResultFailed:
 			res.State = pb.ResponseState_FAILED
-		default:
+		case core.ResultUnknown:
 			res.State = pb.ResponseState_UNKNOWN
 		}
 	}

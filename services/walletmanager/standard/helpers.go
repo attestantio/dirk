@@ -24,7 +24,7 @@ import (
 // preCheck carries out pre-checks for all account manager requests.
 func (s *Service) preCheck(ctx context.Context, credentials *checker.Credentials, name string, action string) (e2wtypes.Wallet, core.Result) {
 	// Fetch the account.
-	wallet, result := s.fetchWallet(ctx, credentials, name)
+	wallet, result := s.fetchWallet(ctx, name)
 	if result != core.ResultSucceeded {
 		return nil, result
 	}
@@ -39,7 +39,7 @@ func (s *Service) preCheck(ctx context.Context, credentials *checker.Credentials
 }
 
 // fetchWallet fetches a wallet by name.
-func (s *Service) fetchWallet(ctx context.Context, credentials *checker.Credentials, name string) (e2wtypes.Wallet, core.Result) {
+func (s *Service) fetchWallet(ctx context.Context, name string) (e2wtypes.Wallet, core.Result) {
 	if name == "" {
 		log.Debug().Str("result", "denied").Msg("Wallet not supplied; denied")
 		return nil, core.ResultDenied

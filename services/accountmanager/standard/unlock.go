@@ -25,7 +25,7 @@ import (
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
 
-// Unlock unlocks an account
+// Unlock unlocks an account.
 func (s *Service) Unlock(ctx context.Context,
 	credentials *checker.Credentials,
 	accountName string,
@@ -72,6 +72,11 @@ func (s *Service) Unlock(ctx context.Context,
 	case rules.FAILED:
 		s.monitor.AccountManagerCompleted(started, "unlock", core.ResultFailed)
 		return core.ResultFailed, errors.New("rules check failed")
+	case rules.UNKNOWN:
+		s.monitor.AccountManagerCompleted(started, "unlock", core.ResultFailed)
+		return core.ResultFailed, errors.New("rules check indeterminate result")
+	case rules.APPROVED:
+		// Nothing to do.
 	}
 
 	// Unlock it.
@@ -86,6 +91,7 @@ func (s *Service) Unlock(ctx context.Context,
 
 	if err := locker.Unlock(ctx, passphrase); err != nil {
 		s.monitor.AccountManagerCompleted(started, "unlock", core.ResultDenied)
+		//nolint:nilerr
 		return core.ResultDenied, nil
 	}
 

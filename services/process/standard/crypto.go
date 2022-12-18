@@ -22,7 +22,7 @@ import (
 )
 
 // contribution generates a contribution.
-func (s *Service) contribution(ctx context.Context, generation *generation) error {
+func (*Service) contribution(_ context.Context, generation *generation) error {
 	threshold := generation.threshold
 	participants := generation.participants
 

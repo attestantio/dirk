@@ -202,8 +202,8 @@ func fetchConfig() error {
 	viper.SetDefault("storage-path", "storage")
 
 	if err := viper.ReadInConfig(); err != nil {
-		switch err.(type) {
-		case viper.ConfigFileNotFoundError:
+		switch {
+		case errors.Is(err, viper.ConfigFileNotFoundError{}):
 			// It is allowable for Dirk to not have a configuration file, but only if
 			// we have the information from elsewhere (e.g. environment variables).  Check
 			// to see if we have a server name configured, as if not we aren't going to
@@ -212,14 +212,16 @@ func fetchConfig() error {
 				// Assume the underlying issue is that the configuration file is missing.
 				return errors.Wrap(err, "could not find the configuration file")
 			}
-		case viper.ConfigParseError:
+		case errors.Is(err, viper.ConfigParseError{}):
 			return errors.Wrap(err, "could not parse the configuration file")
-		case viper.RemoteConfigError:
+		case errors.Is(err, viper.RemoteConfigError("")):
 			return errors.Wrap(err, "could not find the remote configuration file")
-		case viper.UnsupportedConfigError:
+		case errors.Is(err, viper.UnsupportedConfigError("")):
 			return errors.Wrap(err, "unsupported configuration file format")
-		case viper.UnsupportedRemoteProviderError:
+		case errors.Is(err, viper.UnsupportedRemoteProviderError("")):
 			return errors.Wrap(err, "unsupported remote configuration provider")
+		default:
+			return err
 		}
 	}
 
@@ -227,6 +229,7 @@ func fetchConfig() error {
 }
 
 // initProfiling initialises the profiling server.
+//nolint:unparam
 func initProfiling() error {
 	profileAddress := viper.GetString("profile-address")
 	if profileAddress != "" {

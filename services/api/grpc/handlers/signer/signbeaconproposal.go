@@ -66,7 +66,7 @@ func (h *Handler) SignBeaconProposal(ctx context.Context, req *pb.SignBeaconProp
 		res.State = pb.ResponseState_DENIED
 	case core.ResultFailed:
 		res.State = pb.ResponseState_FAILED
-	default:
+	case core.ResultUnknown:
 		res.State = pb.ResponseState_UNKNOWN
 	}
 

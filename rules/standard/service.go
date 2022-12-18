@@ -81,5 +81,6 @@ var (
 	actionSignBeaconProposal = []byte{0x03}
 	// actionAccessAccount is the action of accessing an account.
 	// currently unused as accesing an account requires no slashing protection.
+	//nolint:godot
 	// actionAccessAccount = []byte{0x04}
 )

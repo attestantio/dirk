@@ -72,6 +72,12 @@ func (s *Service) Unlock(ctx context.Context,
 		log.Error().Str("result", "failed").Msg("Rules check failed")
 		s.monitor.WalletManagerCompleted(started, "unlock", core.ResultFailed)
 		return core.ResultFailed, errors.New("rules check failed")
+	case rules.UNKNOWN:
+		log.Error().Str("result", "failed").Msg("Rules check indeterminate result")
+		s.monitor.WalletManagerCompleted(started, "unlock", core.ResultFailed)
+		return core.ResultFailed, errors.New("rules check indeterminate result")
+	case rules.APPROVED:
+		// Nothing to do.
 	}
 
 	// Unlock it.

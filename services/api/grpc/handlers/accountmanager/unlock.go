@@ -44,7 +44,7 @@ func (h *Handler) Unlock(ctx context.Context, req *pb.UnlockAccountRequest) (*pb
 			res.State = pb.ResponseState_DENIED
 		case core.ResultFailed:
 			res.State = pb.ResponseState_FAILED
-		default:
+		case core.ResultUnknown:
 			res.State = pb.ResponseState_UNKNOWN
 		}
 	}

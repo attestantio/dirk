@@ -197,7 +197,15 @@ func (s *Service) AddAccount(ctx context.Context, wallet e2wtypes.Wallet, accoun
 }
 
 // populateCaches populates wallet and account caches for the service.
-func populateCaches(ctx context.Context, stores []e2wtypes.Store, encryptor e2wtypes.Encryptor) (map[string]e2wtypes.Wallet, map[string]map[string]e2wtypes.Account, map[[48]byte]string, error) {
+func populateCaches(ctx context.Context,
+	stores []e2wtypes.Store,
+	encryptor e2wtypes.Encryptor,
+) (
+	map[string]e2wtypes.Wallet,
+	map[string]map[string]e2wtypes.Account,
+	map[[48]byte]string,
+	error,
+) {
 	log.Trace().Msg("Populating fetcher caches")
 
 	wallets := make(map[string]e2wtypes.Wallet)
@@ -206,18 +214,21 @@ func populateCaches(ctx context.Context, stores []e2wtypes.Store, encryptor e2wt
 	var mu sync.Mutex
 
 	var wg sync.WaitGroup
+	var err error
 	for _, store := range stores {
 		for walletBytes := range store.RetrieveWallets() {
 			wg.Add(1)
 			go func(
 				mu *sync.Mutex,
+				store e2wtypes.Store,
 				walletBytes []byte,
 				wallets map[string]e2wtypes.Wallet,
 				walletAccounts map[string]map[string]e2wtypes.Account,
 				pubKeyPaths map[[48]byte]string,
 				wg *sync.WaitGroup) {
 				defer wg.Done()
-				wallet, err := walletFromBytes(ctx, walletBytes, store, encryptor)
+				var wallet e2wtypes.Wallet
+				wallet, err = walletFromBytes(ctx, walletBytes, store, encryptor)
 				if err != nil {
 					log.Error().Err(err).Msg("failed to decode wallet")
 					return
@@ -240,11 +251,14 @@ func populateCaches(ctx context.Context, stores []e2wtypes.Store, encryptor e2wt
 				mu.Lock()
 				walletAccounts[wallet.Name()] = accounts
 				mu.Unlock()
-			}(&mu, walletBytes, wallets, walletAccounts, pubKeyPaths, &wg)
+			}(&mu, store, walletBytes, wallets, walletAccounts, pubKeyPaths, &wg)
 		}
 	}
 	wg.Wait()
 
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	return wallets, walletAccounts, pubKeyPaths, nil
 }
 

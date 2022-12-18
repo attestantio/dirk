@@ -24,7 +24,7 @@ import (
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
 
-// Lock locks an account
+// Lock locks an account.
 func (s *Service) Lock(ctx context.Context,
 	credentials *checker.Credentials,
 	accountName string,
@@ -70,6 +70,11 @@ func (s *Service) Lock(ctx context.Context,
 		log.Error().Str("result", "failed").Msg("Rules check failed")
 		s.monitor.WalletManagerCompleted(started, "lock", core.ResultFailed)
 		return core.ResultFailed, nil
+	case rules.UNKNOWN:
+		log.Error().Str("result", "unknown").Msg("Rules check indeterminate result")
+		s.monitor.WalletManagerCompleted(started, "lock", core.ResultFailed)
+	case rules.APPROVED:
+		// Nothing to do.
 	}
 
 	// Lock it.

@@ -105,7 +105,7 @@ func (s *Service) runRules(ctx context.Context,
 	rulesData []*ruler.RulesData,
 ) []rules.Result {
 	if len(rulesData) > 1 && action == ruler.ActionSignBeaconAttestation {
-		return s.runRulesForMultipleBeaconAttestations(ctx, credentials, action, rulesData)
+		return s.runRulesForMultipleBeaconAttestations(ctx, credentials, rulesData)
 	}
 
 	results := make([]rules.Result, len(rulesData))
@@ -225,7 +225,6 @@ func (s *Service) runRules(ctx context.Context,
 // runRulesForMultipleBeaconAttestations is the fast path for multisigning beacon attestations.
 func (s *Service) runRulesForMultipleBeaconAttestations(ctx context.Context,
 	credentials *checker.Credentials,
-	action string,
 	rulesData []*ruler.RulesData,
 ) []rules.Result {
 	results := make([]rules.Result, len(rulesData))
@@ -278,7 +277,7 @@ func (s *Service) runRulesForMultipleBeaconAttestations(ctx context.Context,
 	return s.rules.OnSignBeaconAttestations(ctx, metadatas, reqData)
 }
 
-func (s *Service) assembleMetadata(ctx context.Context, credentials *checker.Credentials, accountName string, pubKey []byte) (*rules.ReqMetadata, error) {
+func (*Service) assembleMetadata(_ context.Context, credentials *checker.Credentials, accountName string, pubKey []byte) (*rules.ReqMetadata, error) {
 	if credentials == nil {
 		return nil, errors.New("no credentials")
 	}
