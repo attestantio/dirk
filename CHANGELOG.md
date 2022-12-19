@@ -5,6 +5,7 @@
   - use bytes rather than string on slashing protection import
   - provide full information on the data being signed with trace logging
   - update tracing implementation to use opentelemetry
+  - provide additional options for S3 wallet stores
 
 # Version 1.1.0
   - garbage collect the slashing database on startup to reduce on-disk size

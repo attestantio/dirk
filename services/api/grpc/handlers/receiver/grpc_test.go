@@ -45,6 +45,7 @@ import (
 	mockwalletmanager "github.com/attestantio/dirk/services/walletmanager/mock"
 	"github.com/attestantio/dirk/testing/mock"
 	"github.com/attestantio/dirk/testing/resources"
+	"github.com/attestantio/dirk/util"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
@@ -202,6 +203,10 @@ func createServers(ctx context.Context) (string, []*core.Endpoint, []*grpcapi.Se
 }
 
 func createServer(ctx context.Context, name string, id uint64, port uint32, base string) (*grpcapi.Service, error) {
+	majordomo, err := util.InitMajordomo(ctx)
+	if err != nil {
+		return nil, err
+	}
 	unlocker, err := localunlocker.New(ctx,
 		localunlocker.WithAccountPassphrases([]string{}))
 	if err != nil {
@@ -211,7 +216,7 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 	if err != nil {
 		return nil, err
 	}
-	stores, err := core.InitStores(ctx, []*core.Store{
+	stores, err := core.InitStores(ctx, majordomo, []*core.Store{
 		{
 			Name:     "Local",
 			Type:     "filesystem",

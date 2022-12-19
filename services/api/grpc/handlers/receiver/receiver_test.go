@@ -30,6 +30,7 @@ import (
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
 	"github.com/attestantio/dirk/testing/mock"
 	"github.com/attestantio/dirk/testing/resources"
+	"github.com/attestantio/dirk/util"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -61,8 +62,11 @@ func TestNonInitiator(t *testing.T) {
 		localunlocker.WithAccountPassphrases([]string{"Test account 1 passphrase"}))
 	require.NoError(t, err)
 
+	majordomo, err := util.InitMajordomo(ctx)
+	require.NoError(t, err)
+
 	// Create receiver 1.
-	stores1, err := core.InitStores(ctx, []*core.Store{
+	stores1, err := core.InitStores(ctx, majordomo, []*core.Store{
 		{
 			Name:     "Local",
 			Type:     "filesystem",
@@ -98,7 +102,7 @@ func TestNonInitiator(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create receiver 2.
-	stores2, err := core.InitStores(ctx, []*core.Store{
+	stores2, err := core.InitStores(ctx, majordomo, []*core.Store{
 		{
 			Name:     "Local",
 			Type:     "filesystem",
@@ -134,7 +138,7 @@ func TestNonInitiator(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create receiver 3.
-	stores3, err := core.InitStores(ctx, []*core.Store{
+	stores3, err := core.InitStores(ctx, majordomo, []*core.Store{
 		{
 			Name:     "Local",
 			Type:     "filesystem",

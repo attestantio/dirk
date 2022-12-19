@@ -23,7 +23,6 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"runtime"
 	"runtime/debug"
 	"strconv"
@@ -57,7 +56,6 @@ import (
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
 	standardwalletmanager "github.com/attestantio/dirk/services/walletmanager/standard"
 	"github.com/attestantio/dirk/util"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	zerologger "github.com/rs/zerolog/log"
@@ -66,11 +64,6 @@ import (
 	e2types "github.com/wealdtech/go-eth2-types/v2"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 	majordomo "github.com/wealdtech/go-majordomo"
-	asmconfidant "github.com/wealdtech/go-majordomo/confidants/asm"
-	directconfidant "github.com/wealdtech/go-majordomo/confidants/direct"
-	fileconfidant "github.com/wealdtech/go-majordomo/confidants/file"
-	gsmconfidant "github.com/wealdtech/go-majordomo/confidants/gsm"
-	standardmajordomo "github.com/wealdtech/go-majordomo/standard"
 )
 
 // ReleaseVersion is the release version for the code.
@@ -83,7 +76,7 @@ func main() {
 		zerologger.Fatal().Err(err).Msg("Failed to fetch configuration")
 	}
 
-	majordomo, err := initMajordomo(ctx)
+	majordomo, err := util.InitMajordomo(ctx)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialise majordomo")
 	}
@@ -295,7 +288,7 @@ func runCommands(ctx context.Context, majordomo majordomo.Service) (bool, int) {
 func startServices(ctx context.Context, majordomo majordomo.Service, monitor metrics.Service) error {
 	var err error
 
-	stores, err := initStores(ctx)
+	stores, err := initStores(ctx, majordomo)
 	if err != nil {
 		return err
 	}
@@ -490,73 +483,6 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 	return nil
 }
 
-func initMajordomo(ctx context.Context) (majordomo.Service, error) {
-	majordomo, err := standardmajordomo.New(ctx,
-		standardmajordomo.WithLogLevel(util.LogLevel("majordomo")),
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create majordomo service")
-	}
-
-	directConfidant, err := directconfidant.New(ctx,
-		directconfidant.WithLogLevel(util.LogLevel("majordomo.confidants.direct")),
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create direct confidant")
-	}
-	if err := majordomo.RegisterConfidant(ctx, directConfidant); err != nil {
-		return nil, errors.Wrap(err, "failed to register direct confidant")
-	}
-
-	fileConfidant, err := fileconfidant.New(ctx,
-		fileconfidant.WithLogLevel(util.LogLevel("majordomo.confidants.file")),
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create file confidant")
-	}
-	if err := majordomo.RegisterConfidant(ctx, fileConfidant); err != nil {
-		return nil, errors.Wrap(err, "failed to register file confidant")
-	}
-
-	if viper.GetString("majordomo.asm.region") != "" {
-		var asmCredentials *credentials.Credentials
-		if viper.GetString("majordomo.asm.id") != "" {
-			asmCredentials = credentials.NewStaticCredentials(viper.GetString("majordomo.asm.id"), viper.GetString("majordomo.asm.secret"), "")
-		}
-		asmConfidant, err := asmconfidant.New(ctx,
-			asmconfidant.WithLogLevel(util.LogLevel("majordomo.confidants.asm")),
-			asmconfidant.WithCredentials(asmCredentials),
-			asmconfidant.WithRegion(viper.GetString("majordomo.asm.region")),
-		)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create AWS secrets manager confidant")
-		}
-		if err := majordomo.RegisterConfidant(ctx, asmConfidant); err != nil {
-			return nil, errors.Wrap(err, "failed to register AWS secrets manager confidant")
-		}
-	}
-
-	if viper.GetString("majordomo.gsm.project") != "" {
-		var gsmCredentialsPath string
-		if viper.GetString("majordomo.gsm.credentials") != "" {
-			gsmCredentialsPath = resolvePath(viper.GetString("majordomo.gsm.credentials"))
-		}
-		gsmConfidant, err := gsmconfidant.New(ctx,
-			gsmconfidant.WithLogLevel(util.LogLevel("majordomo.confidants.gsm")),
-			gsmconfidant.WithCredentialsPath(gsmCredentialsPath),
-			gsmconfidant.WithProject(viper.GetString("majordomo.gsm.project")),
-		)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create Google secrets manager confidant")
-		}
-		if err := majordomo.RegisterConfidant(ctx, gsmConfidant); err != nil {
-			return nil, errors.Wrap(err, "failed to register Google secrets manager confidant")
-		}
-	}
-
-	return majordomo, nil
-}
-
 func startMonitor(ctx context.Context) (metrics.Service, error) {
 	log.Trace().Msg("Starting metrics service")
 	var monitor metrics.Service
@@ -595,17 +521,17 @@ func logModules() {
 func initRules(ctx context.Context) (rules.Service, error) {
 	return standardrules.New(ctx,
 		standardrules.WithLogLevel(util.LogLevel("rules")),
-		standardrules.WithStoragePath(resolvePath(viper.GetString("storage-path"))),
+		standardrules.WithStoragePath(util.ResolvePath(viper.GetString("storage-path"))),
 		standardrules.WithAdminIPs(viper.GetStringSlice("server.rules.admin-ips")),
 	)
 }
 
-func initStores(ctx context.Context) ([]e2wtypes.Store, error) {
+func initStores(ctx context.Context, majordomo majordomo.Service) ([]e2wtypes.Store, error) {
 	storesCfg := &core.Stores{}
 	if err := viper.Unmarshal(&storesCfg); err != nil {
 		return nil, errors.Wrap(err, "failed to obtain stores configuration")
 	}
-	stores, err := core.InitStores(ctx, storesCfg.Stores)
+	stores, err := core.InitStores(ctx, majordomo, storesCfg.Stores)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialise stores")
 	}
@@ -744,20 +670,4 @@ func startLister(ctx context.Context, monitor metrics.Service, fetcher fetcher.S
 		standardlister.WithChecker(checker),
 		standardlister.WithRuler(ruler),
 	)
-}
-
-// resolvePath resolves a potentially relative path to an absolute path.
-func resolvePath(path string) string {
-	if filepath.IsAbs(path) {
-		return path
-	}
-	baseDir := viper.GetString("base-dir")
-	if baseDir == "" {
-		homeDir, err := homedir.Dir()
-		if err != nil {
-			log.Fatal().Err(err).Msg("Could not determine a home directory")
-		}
-		baseDir = homeDir
-	}
-	return filepath.Join(baseDir, path)
 }

@@ -28,6 +28,7 @@ import (
 	standardprocess "github.com/attestantio/dirk/services/process/standard"
 	mocksender "github.com/attestantio/dirk/services/sender/mock"
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
+	"github.com/attestantio/dirk/util"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
 	e2types "github.com/wealdtech/go-eth2-types/v2"
@@ -46,7 +47,10 @@ func TestNew(t *testing.T) {
 
 	senderSvc := mocksender.New(1)
 
-	stores, err := core.InitStores(ctx, nil)
+	majordomo, err := util.InitMajordomo(ctx)
+	require.NoError(t, err)
+
+	stores, err := core.InitStores(ctx, majordomo, nil)
 	require.NoError(t, err)
 
 	fetcherSvc, err := memfetcher.New(ctx,

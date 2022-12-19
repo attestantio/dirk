@@ -36,6 +36,7 @@ import (
 	"github.com/attestantio/dirk/services/unlocker"
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
 	"github.com/attestantio/dirk/testing/mock"
+	"github.com/attestantio/dirk/util"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -111,7 +112,10 @@ func TestMain(m *testing.M) {
 func TestNew(t *testing.T) {
 	ctx := context.Background()
 
-	stores, err := core.InitStores(ctx, nil)
+	majordomo, err := util.InitMajordomo(ctx)
+	require.NoError(t, err)
+
+	stores, err := core.InitStores(ctx, majordomo, nil)
 	require.NoError(t, err)
 
 	endpoints := map[uint64]string{

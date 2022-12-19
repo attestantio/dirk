@@ -43,6 +43,16 @@ stores:
 - name: Local
   type: filesystem
   location: /home/me/dirk/wallets
+- name: Remote
+  type: s3
+  # The s3 store comes with additional options.
+  s3:
+    region: us-west-1
+    bucket: my-s3-store
+    path: /wallets
+    credentials:
+      id: ABCDEF123
+      secret: XXXXXXXXX
 metrics:
   # listen-address is where Dirk's Prometheus server will present.  If this value is not present then Dirk
   # will not gather metrics.
