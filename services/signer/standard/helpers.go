@@ -16,6 +16,7 @@ package standard
 import (
 	context "context"
 	"fmt"
+	"time"
 
 	"github.com/attestantio/dirk/core"
 	"github.com/attestantio/dirk/services/checker"
@@ -104,18 +105,19 @@ func (s *Service) unlockAccount(ctx context.Context, wallet e2wtypes.Wallet, acc
 		return core.ResultSucceeded
 	}
 
-	log := log.With().Str("wallet", wallet.Name()).Str("account", account.Name()).Logger()
+	log := log.With().Str("wallet", wallet.Name()).Stringer("wallet_id", wallet.ID()).Str("account", account.Name()).Stringer("account_id", account.ID()).Logger()
 	unlocked, err := locker.IsUnlocked(ctx)
 	if err != nil {
 		log.Error().Str("result", "failed").Msg("Failed to establish if account is unlocked")
 		return core.ResultFailed
 	}
 	if unlocked {
-		log.Trace().Str("result", "succeeded").Msg("Account is unlocked")
+		log.Info().Str("result", "succeeded").Msg("Account is already unlocked")
 		return core.ResultSucceeded
 	}
 
-	log.Trace().Msg("Unlocking")
+	log.Info().Msg("Unlocking")
+	started := time.Now()
 	unlocked, err = s.unlocker.UnlockAccount(ctx, wallet, account)
 	if err != nil {
 		log.Error().Str("result", "failed").Msg("Failed during attempt to unlock account")
@@ -126,6 +128,6 @@ func (s *Service) unlockAccount(ctx context.Context, wallet e2wtypes.Wallet, acc
 		return core.ResultDenied
 	}
 
-	log.Trace().Str("result", "succeeded").Msg("Account is unlocked")
+	log.Info().Str("result", "succeeded").Dur("unlock_time", time.Since(started)).Msg("Unlocked account")
 	return core.ResultSucceeded
 }
