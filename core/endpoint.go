@@ -13,7 +13,10 @@
 
 package core
 
-import "fmt"
+import (
+	"fmt"
+	"net"
+)
 
 // Endpoint contains information about an endpoint.
 type Endpoint struct {
@@ -24,7 +27,7 @@ type Endpoint struct {
 
 // ConnectAddress returns an address suitable for connecting to the endpoint.
 func (e *Endpoint) ConnectAddress() string {
-	return fmt.Sprintf("%s:%d", e.Name, e.Port)
+	return net.JoinHostPort(e.Name, fmt.Sprintf("%d", e.Port))
 }
 
 // String returns a human-readable representation of the endpoint.
