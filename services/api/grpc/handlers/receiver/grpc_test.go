@@ -186,7 +186,7 @@ func createServers(ctx context.Context) (string, []*core.Endpoint, []*grpcapi.Se
 
 	servers := make(map[uint64]string)
 	for _, endpoint := range endpoints {
-		servers[endpoint.ID] = fmt.Sprintf("%s:%d", endpoint.Name, endpoint.Port)
+		servers[endpoint.ID] = net.JoinHostPort(endpoint.Name, fmt.Sprintf("%d", endpoint.Port))
 	}
 
 	grpcdServices := make([]*grpcapi.Service, 0)
