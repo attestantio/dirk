@@ -67,8 +67,8 @@ func (s *Service) UnlockWallet(ctx context.Context, wallet e2wtypes.Wallet) (boo
 		return true, nil
 	}
 
-	if wallet.Type() == "non-deterministic" {
-		// Non-deterministic wallets don't have passphrases.
+	if wallet.Type() != "hierarchical deterministic" {
+		// These wallets don't have passphrases.
 		err := locker.Unlock(ctx, nil)
 		if err != nil {
 			return false, err

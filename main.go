@@ -203,7 +203,7 @@ func fetchConfig() error {
 
 	if err := viper.ReadInConfig(); err != nil {
 		switch {
-		case errors.Is(err, viper.ConfigFileNotFoundError{}):
+		case errors.As(err, &viper.ConfigFileNotFoundError{}):
 			// It is allowable for Dirk to not have a configuration file, but only if
 			// we have the information from elsewhere (e.g. environment variables).  Check
 			// to see if we have a server name configured, as if not we aren't going to
@@ -212,16 +212,10 @@ func fetchConfig() error {
 				// Assume the underlying issue is that the configuration file is missing.
 				return errors.Wrap(err, "could not find the configuration file")
 			}
-		case errors.Is(err, viper.ConfigParseError{}):
+		case errors.As(err, &viper.ConfigParseError{}):
 			return errors.Wrap(err, "could not parse the configuration file")
-		case errors.Is(err, viper.RemoteConfigError("")):
-			return errors.Wrap(err, "could not find the remote configuration file")
-		case errors.Is(err, viper.UnsupportedConfigError("")):
-			return errors.Wrap(err, "unsupported configuration file format")
-		case errors.Is(err, viper.UnsupportedRemoteProviderError("")):
-			return errors.Wrap(err, "unsupported remote configuration provider")
 		default:
-			return err
+			return errors.Wrap(err, "failed to obtain configuration")
 		}
 	}
 
