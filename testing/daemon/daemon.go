@@ -21,7 +21,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	standardrules "github.com/attestantio/dirk/rules/standard"
 	standardaccountmanager "github.com/attestantio/dirk/services/accountmanager/standard"
@@ -105,12 +104,12 @@ var Wallet2Keys = [][]byte{
 // Cancelling the context will kill the daemon.
 //
 // The specifics of what are created are:
-//  - ND wallet 'Wallet 1' with 16 interop keys indices 0 through 15
-//  - ND wallet 'Wallet 2' with 16 interop keys indices 16 through 31
-//  - distributed wallet 'Wallet 3' with no keys
-//  - full permissions for 'client-test01' to access 'Wallet 1' and 'Wallet 3'
-//  - full permissions for 'client-test02' to access 'Wallet 2' and 'Wallet 3'
-//  - full permissions for 'client-test03' to access 'Wallet 1' and 'Wallet 2'
+// - ND wallet 'Wallet 1' with 16 interop keys indices 0 through 15
+// - ND wallet 'Wallet 2' with 16 interop keys indices 16 through 31
+// - distributed wallet 'Wallet 3' with no keys
+// - full permissions for 'client-test01' to access 'Wallet 1' and 'Wallet 3'
+// - full permissions for 'client-test02' to access 'Wallet 2' and 'Wallet 3'
+// - full permissions for 'client-test03' to access 'Wallet 1' and 'Wallet 2'
 //
 // Returns the log capture for the daemon, along with the filesystem path for the wallets.
 func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[uint64]string) (*logger.LogCapture, string, error) {
@@ -120,7 +119,6 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 	}
 
 	// Start off creating the wallet and accounts if required.
-	rand.Seed(time.Now().UnixNano())
 	if path == "" {
 		// #nosec G404
 		path = filepath.Join(os.TempDir(), fmt.Sprintf("Dirk-%d", rand.Int31()))

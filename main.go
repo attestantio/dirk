@@ -216,6 +216,7 @@ func fetchConfig() error {
 }
 
 // initProfiling initialises the profiling server.
+//
 //nolint:unparam
 func initProfiling() error {
 	profileAddress := viper.GetString("profile-address")
