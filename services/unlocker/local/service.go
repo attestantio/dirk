@@ -15,6 +15,7 @@ package local
 
 import (
 	"context"
+	"time"
 
 	"github.com/attestantio/dirk/services/metrics"
 	"github.com/pkg/errors"
@@ -25,7 +26,7 @@ import (
 
 // Service is an unlocker service that holds unlock passphrases for wallets and accounts.
 type Service struct {
-	monitor            metrics.UnlockerMonitor
+	monitor            metrics.Service
 	walletPassphrases  []string
 	accountPassphrases []string
 }
@@ -44,6 +45,10 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 	log = zerologger.With().Str("service", "unlocker").Str("impl", "local").Logger()
 	if parameters.logLevel != log.GetLevel() {
 		log = log.Level(parameters.logLevel)
+	}
+
+	if err := registerMetrics(ctx, parameters.monitor); err != nil {
+		return nil, errors.New("failed to register metrics")
 	}
 
 	s := &Service{
@@ -85,6 +90,8 @@ func (s *Service) UnlockWallet(ctx context.Context, wallet e2wtypes.Wallet) (boo
 
 // UnlockAccount attempts to unlock an account.
 func (s *Service) UnlockAccount(ctx context.Context, wallet e2wtypes.Wallet, account e2wtypes.Account) (bool, error) {
+	started := time.Now()
+
 	if wallet == nil {
 		return false, errors.New("no wallet supplied")
 	}
@@ -95,14 +102,17 @@ func (s *Service) UnlockAccount(ctx context.Context, wallet e2wtypes.Wallet, acc
 	locker, isUnlocker := account.(e2wtypes.AccountLocker)
 	if !isUnlocker {
 		// Account does not support unlocking.
+		monitorUnlockAccount(true, time.Since(started))
 		return true, nil
 	}
 
 	for _, passphrase := range s.accountPassphrases {
 		if err := locker.Unlock(ctx, []byte(passphrase)); err == nil {
+			monitorUnlockAccount(true, time.Since(started))
 			return true, nil
 		}
 	}
 
+	monitorUnlockAccount(false, time.Since(started))
 	return false, nil
 }

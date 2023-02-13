@@ -67,7 +67,7 @@ import (
 )
 
 // ReleaseVersion is the release version for the code.
-var ReleaseVersion = "1.1.1"
+var ReleaseVersion = "1.2.0-rc1"
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -554,13 +554,9 @@ func startUnlocker(ctx context.Context, majordomo majordomo.Service, monitor met
 		}
 		accountPassphrases = append(accountPassphrases, string(value))
 	}
-	var unlockerMonitor metrics.UnlockerMonitor
-	if monitor, isMonitor := monitor.(metrics.UnlockerMonitor); isMonitor {
-		unlockerMonitor = monitor
-	}
 	return localunlocker.New(ctx,
 		localunlocker.WithLogLevel(util.LogLevel("unlocker")),
-		localunlocker.WithMonitor(unlockerMonitor),
+		localunlocker.WithMonitor(monitor),
 		localunlocker.WithWalletPassphrases(walletPassphrases),
 		localunlocker.WithAccountPassphrases(accountPassphrases),
 	)
