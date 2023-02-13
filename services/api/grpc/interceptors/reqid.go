@@ -17,7 +17,6 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"time"
 
 	"google.golang.org/grpc"
 )
@@ -27,7 +26,6 @@ type RequestID struct{}
 
 // RequestIDInterceptor adds a request ID to incoming requests.
 func RequestIDInterceptor() grpc.UnaryServerInterceptor {
-	rand.Seed(time.Now().UnixNano())
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		// #nosec G404
 		newCtx := context.WithValue(ctx, &RequestID{}, fmt.Sprintf("%02x", rand.Int31()))
