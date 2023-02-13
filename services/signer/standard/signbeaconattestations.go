@@ -212,7 +212,7 @@ func (s *Service) SignBeaconAttestations(
 	return results, signatures
 }
 
-func (s *Service) checkAttestationsData(data []*rules.SignBeaconAttestationData,
+func (*Service) checkAttestationsData(data []*rules.SignBeaconAttestationData,
 	accountNames []string,
 	pubKeys [][]byte,
 	results []core.Result,
