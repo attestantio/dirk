@@ -482,8 +482,8 @@ func TestTimeout(t *testing.T) {
 	err = service.OnPrepare(ctx, 1, "Test/Test", []byte("test"), 2, endpoints)
 	require.NoError(t, err)
 
-	// Timeout for requests is 10 seconds.
-	time.Sleep(11 * time.Second)
+	// Timeout for requests is 70 seconds.
+	time.Sleep(71 * time.Second)
 
 	err = service.OnAbort(ctx, 1, "Test/Test")
 	assert.EqualError(t, err, standardprocess.ErrNotInProgress.Error())
