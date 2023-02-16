@@ -141,17 +141,17 @@ func (s *Service) SignBeaconAttestations(
 		for i := offset; i < offset+entries; i++ {
 			switch rulesResults[i] {
 			case rules.UNKNOWN:
-				log.Debug().Str("result", "failed").Msg("Unknown result from rules")
+				log.Debug().Int("index", i).Str("result", "failed").Msg("Unknown result from rules")
 				s.monitor.SignCompleted(started, "attestation", core.ResultFailed)
 				results[i] = core.ResultFailed
 				continue
 			case rules.DENIED:
-				log.Debug().Str("result", "denied").Msg("Denied by rules")
+				log.Debug().Int("index", i).Str("result", "denied").Msg("Denied by rules")
 				s.monitor.SignCompleted(started, "attestation", core.ResultDenied)
 				results[i] = core.ResultDenied
 				continue
 			case rules.FAILED:
-				log.Error().Str("result", "failed").Msg("Rules check failed")
+				log.Error().Int("index", i).Str("result", "failed").Msg("Rules check failed")
 				s.monitor.SignCompleted(started, "attestation", core.ResultFailed)
 				results[i] = core.ResultFailed
 				continue
@@ -212,7 +212,7 @@ func (s *Service) SignBeaconAttestations(
 	return results, signatures
 }
 
-func (s *Service) checkAttestationsData(data []*rules.SignBeaconAttestationData,
+func (*Service) checkAttestationsData(data []*rules.SignBeaconAttestationData,
 	accountNames []string,
 	pubKeys [][]byte,
 	results []core.Result,

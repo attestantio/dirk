@@ -17,6 +17,7 @@ import (
 	"context"
 	"testing"
 
+	nullmetrics "github.com/attestantio/dirk/services/metrics/null"
 	"github.com/attestantio/dirk/services/unlocker/local"
 	"github.com/attestantio/dirk/testing/mock"
 	"github.com/rs/zerolog"
@@ -44,6 +45,7 @@ func TestService(t *testing.T) {
 		{
 			name: "NilWalletPassphrases",
 			params: []local.Parameter{
+				local.WithMonitor(nullmetrics.New()),
 				local.WithWalletPassphrases(nil),
 			},
 			err: "problem with parameters: no wallet passphrases supplied",
@@ -51,6 +53,7 @@ func TestService(t *testing.T) {
 		{
 			name: "NilAccountPassphrases",
 			params: []local.Parameter{
+				local.WithMonitor(nullmetrics.New()),
 				local.WithAccountPassphrases(nil),
 			},
 			err: "problem with parameters: no account passphrases supplied",
@@ -58,7 +61,7 @@ func TestService(t *testing.T) {
 		{
 			name: "Good",
 			params: []local.Parameter{
-				local.WithMonitor(nil),
+				local.WithMonitor(nullmetrics.New()),
 				local.WithLogLevel(zerolog.Disabled),
 			},
 		},

@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2023 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,13 +15,14 @@ package local
 
 import (
 	"github.com/attestantio/dirk/services/metrics"
+	nullmetrics "github.com/attestantio/dirk/services/metrics/null"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
 
 type parameters struct {
 	logLevel           zerolog.Level
-	monitor            metrics.UnlockerMonitor
+	monitor            metrics.Service
 	walletPassphrases  []string
 	accountPassphrases []string
 }
@@ -44,8 +45,8 @@ func WithLogLevel(logLevel zerolog.Level) Parameter {
 	})
 }
 
-// WithMonitor sets the monitor for this module.
-func WithMonitor(monitor metrics.UnlockerMonitor) Parameter {
+// WithMonitor sets the monitor for the module.
+func WithMonitor(monitor metrics.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
 		p.monitor = monitor
 	})
@@ -69,6 +70,7 @@ func WithAccountPassphrases(passphrases []string) Parameter {
 func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	parameters := parameters{
 		logLevel:           zerolog.GlobalLevel(),
+		monitor:            nullmetrics.New(),
 		walletPassphrases:  []string{},
 		accountPassphrases: []string{},
 	}
@@ -79,8 +81,7 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	}
 
 	if parameters.monitor == nil {
-		// Use no-op monitor.
-		parameters.monitor = &noopMonitor{}
+		return nil, errors.New("no monitor specified")
 	}
 	if parameters.walletPassphrases == nil {
 		return nil, errors.New("no wallet passphrases supplied")
