@@ -20,6 +20,6 @@ import (
 )
 
 // OnSignBeaconProposal is called when a request to sign a beacon block proposal needs to be approved.
-func (s *Service) OnSignBeaconProposal(ctx context.Context, metadata *rules.ReqMetadata, req *rules.SignBeaconProposalData) rules.Result {
+func (s *Service) OnSignBeaconProposal(_ context.Context, _ *rules.ReqMetadata, _ *rules.SignBeaconProposalData) rules.Result {
 	return rules.APPROVED
 }

@@ -33,7 +33,7 @@ type LogCapture struct {
 // NewLogCapture captures logs for querying.
 func NewLogCapture() *LogCapture {
 	c := &LogCapture{
-		//entries: make([]*LogEntry, 0),
+		// entries: make([]*LogEntry, 0),
 		entries: make([]string, 0),
 	}
 	zerologger.Logger = zerologger.Logger.Hook(c)
@@ -41,7 +41,7 @@ func NewLogCapture() *LogCapture {
 }
 
 // Run is the hook to capture log entries.  It also stops the entry from being printed.
-func (c *LogCapture) Run(e *zerolog.Event, level zerolog.Level, msg string) {
+func (c *LogCapture) Run(e *zerolog.Event, _ zerolog.Level, msg string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.entries = append(c.entries, msg)

@@ -20,8 +20,8 @@ import (
 )
 
 // OnSignBeaconAttestations is called when a request to sign multiple beacon block attestations needs to be approved.
-func (s *Service) OnSignBeaconAttestations(ctx context.Context,
-	metadata []*rules.ReqMetadata,
+func (s *Service) OnSignBeaconAttestations(_ context.Context,
+	_ []*rules.ReqMetadata,
 	req []*rules.SignBeaconAttestationData,
 ) []rules.Result {
 	results := make([]rules.Result, len(req))

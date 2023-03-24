@@ -56,7 +56,7 @@ func NewStore(base string) (*Store, error) {
 }
 
 // FetchAll fetches a map of all keys and values.
-func (s *Store) FetchAll(ctx context.Context) (map[[49]byte][]byte, error) {
+func (s *Store) FetchAll(_ context.Context) (map[[49]byte][]byte, error) {
 	items := make(map[[49]byte][]byte)
 	err := s.db.View(func(txn *badger.Txn) error {
 		it := txn.NewIterator(badger.DefaultIteratorOptions)
@@ -168,6 +168,6 @@ func (s *Store) Store(ctx context.Context, key []byte, value []byte) error {
 }
 
 // Close closes the store.
-func (s *Store) Close(ctx context.Context) error {
+func (s *Store) Close(_ context.Context) error {
 	return s.db.Close()
 }

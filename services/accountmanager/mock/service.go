@@ -29,12 +29,12 @@ func New() *Service {
 }
 
 // Generate generates a new account.
-func (s *Service) Generate(ctx context.Context,
-	credentials *checker.Credentials,
-	account string,
-	passphrase []byte,
-	participants uint32,
-	signingThreshold uint32,
+func (s *Service) Generate(_ context.Context,
+	_ *checker.Credentials,
+	_ string,
+	_ []byte,
+	_ uint32,
+	_ uint32,
 ) (
 	core.Result,
 	[]byte,
@@ -58,10 +58,10 @@ func (s *Service) Generate(ctx context.Context,
 }
 
 // Unlock unlocks an account.
-func (s *Service) Unlock(ctx context.Context,
-	credentials *checker.Credentials,
-	account string,
-	passphrase []byte,
+func (s *Service) Unlock(_ context.Context,
+	_ *checker.Credentials,
+	_ string,
+	_ []byte,
 ) (
 	core.Result,
 	error,
@@ -70,9 +70,9 @@ func (s *Service) Unlock(ctx context.Context,
 }
 
 // Lock locks an account.
-func (s *Service) Lock(ctx context.Context,
-	credentials *checker.Credentials,
-	account string,
+func (s *Service) Lock(_ context.Context,
+	_ *checker.Credentials,
+	_ string,
 ) (
 	core.Result,
 	error,

@@ -20,6 +20,6 @@ import (
 )
 
 // OnLockWallet is called when a request to lock a wallet needs to be approved.
-func (s *Service) OnLockWallet(ctx context.Context, metadata *rules.ReqMetadata, req *rules.LockWalletData) rules.Result {
+func (s *Service) OnLockWallet(_ context.Context, _ *rules.ReqMetadata, _ *rules.LockWalletData) rules.Result {
 	return rules.APPROVED
 }

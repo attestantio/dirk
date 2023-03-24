@@ -29,10 +29,10 @@ func New() *Service {
 }
 
 // Unlock unlocks a wallet.
-func (s *Service) Unlock(ctx context.Context,
-	credentials *checker.Credentials,
-	account string,
-	passphrase []byte,
+func (s *Service) Unlock(_ context.Context,
+	_ *checker.Credentials,
+	_ string,
+	_ []byte,
 ) (
 	core.Result,
 	error,
@@ -41,9 +41,9 @@ func (s *Service) Unlock(ctx context.Context,
 }
 
 // Lock locks a wallet.
-func (s *Service) Lock(ctx context.Context,
-	credentials *checker.Credentials,
-	account string,
+func (s *Service) Lock(_ context.Context,
+	_ *checker.Credentials,
+	_ string,
 ) (
 	core.Result,
 	error,

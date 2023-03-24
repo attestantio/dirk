@@ -59,7 +59,7 @@ func (a *Wallet) Version() uint {
 }
 
 // Accounts returns the accounts in the wallet.
-func (a *Wallet) Accounts(ctx context.Context) <-chan e2wtypes.Account {
+func (a *Wallet) Accounts(_ context.Context) <-chan e2wtypes.Account {
 	ch := make(chan e2wtypes.Account, 1024)
 	close(ch)
 	return ch
