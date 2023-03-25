@@ -35,7 +35,7 @@ type Handler struct {
 var log zerolog.Logger
 
 // New creates a new receiver handler.
-func New(ctx context.Context, params ...Parameter) (*Handler, error) {
+func New(_ context.Context, params ...Parameter) (*Handler, error) {
 	parameters, err := parseAndCheckParameters(params...)
 	if err != nil {
 		return nil, errors.Wrap(err, "problem with parameters")

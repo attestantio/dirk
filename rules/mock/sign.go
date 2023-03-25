@@ -20,6 +20,6 @@ import (
 )
 
 // OnSign is called when a request to sign generic data needs to be approved.
-func (s *Service) OnSign(ctx context.Context, metadata *rules.ReqMetadata, req *rules.SignData) rules.Result {
+func (s *Service) OnSign(_ context.Context, _ *rules.ReqMetadata, _ *rules.SignData) rules.Result {
 	return rules.APPROVED
 }

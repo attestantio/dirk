@@ -43,7 +43,7 @@ type path struct {
 var log zerolog.Logger
 
 // New creates a new static checker.
-func New(ctx context.Context, params ...Parameter) (*Service, error) {
+func New(_ context.Context, params ...Parameter) (*Service, error) {
 	parameters, err := parseAndCheckParameters(params...)
 	if err != nil {
 		return nil, errors.Wrap(err, "problem with parameters")
@@ -64,7 +64,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 }
 
 // Check checks the client to see if the account is allowed.
-func (s *Service) Check(ctx context.Context, credentials *checker.Credentials, account string, operation string) bool {
+func (s *Service) Check(_ context.Context, credentials *checker.Credentials, account string, operation string) bool {
 	log.Trace().Str("account", account).Str("operation", operation).Msg("Checking permissions for operation")
 
 	if credentials == nil {

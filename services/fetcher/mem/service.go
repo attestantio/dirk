@@ -80,7 +80,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 }
 
 // FetchWallet fetches the wallet.
-func (s *Service) FetchWallet(ctx context.Context, path string) (e2wtypes.Wallet, error) {
+func (s *Service) FetchWallet(_ context.Context, path string) (e2wtypes.Wallet, error) {
 	walletName, _, err := e2wallet.WalletAndAccountNames(path)
 	if err != nil {
 		log.Warn().Msg("Invalid path")
@@ -98,7 +98,7 @@ func (s *Service) FetchWallet(ctx context.Context, path string) (e2wtypes.Wallet
 }
 
 // FetchAccount fetches the account given its name.
-func (s *Service) FetchAccount(ctx context.Context, path string) (e2wtypes.Wallet, e2wtypes.Account, error) {
+func (s *Service) FetchAccount(_ context.Context, path string) (e2wtypes.Wallet, e2wtypes.Account, error) {
 	// Fetch the account name.
 	walletName, accountName, err := e2wallet.WalletAndAccountNames(path)
 	if err != nil {
@@ -149,7 +149,7 @@ func (s *Service) FetchAccountByKey(ctx context.Context, pubKey []byte) (e2wtype
 }
 
 // FetchAccounts fetches all accounts for the wallet.
-func (s *Service) FetchAccounts(ctx context.Context, path string) (map[string]e2wtypes.Account, error) {
+func (s *Service) FetchAccounts(_ context.Context, path string) (map[string]e2wtypes.Account, error) {
 	// Fetch the wallet name.
 	walletName, _, err := e2wallet.WalletAndAccountNames(path)
 	if err != nil {
@@ -179,7 +179,7 @@ func (s *Service) FetchAccounts(ctx context.Context, path string) (map[string]e2
 }
 
 // AddAccount adds an account to the fetcher's internal stores.
-func (s *Service) AddAccount(ctx context.Context, wallet e2wtypes.Wallet, account e2wtypes.Account) error {
+func (s *Service) AddAccount(_ context.Context, wallet e2wtypes.Wallet, account e2wtypes.Account) error {
 	s.rwMu.Lock()
 	defer s.rwMu.Unlock()
 	if _, exists := s.wallets[wallet.Name()]; !exists {
@@ -225,7 +225,8 @@ func populateCaches(ctx context.Context,
 				wallets map[string]e2wtypes.Wallet,
 				walletAccounts map[string]map[string]e2wtypes.Account,
 				pubKeyPaths map[[48]byte]string,
-				wg *sync.WaitGroup) {
+				wg *sync.WaitGroup,
+			) {
 				defer wg.Done()
 				var wallet e2wtypes.Wallet
 				wallet, err = walletFromBytes(ctx, walletBytes, store, encryptor)

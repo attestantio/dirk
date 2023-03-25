@@ -71,13 +71,13 @@ func (a *Account) Path() string {
 }
 
 // Lock locks the account.  A locked account cannot sign.
-func (a *Account) Lock(ctx context.Context) error {
+func (a *Account) Lock(_ context.Context) error {
 	a.unlocked = false
 	return nil
 }
 
 // Unlock unlocks the account.  An unlocked account can sign.
-func (a *Account) Unlock(ctx context.Context, passphrase []byte) error {
+func (a *Account) Unlock(_ context.Context, passphrase []byte) error {
 	if bytes.Equal(a.passphrase, passphrase) {
 		a.unlocked = true
 		return nil
@@ -86,7 +86,7 @@ func (a *Account) Unlock(ctx context.Context, passphrase []byte) error {
 }
 
 // IsUnlocked returns true if the account is unlocked.
-func (a *Account) IsUnlocked(ctx context.Context) (bool, error) {
+func (a *Account) IsUnlocked(_ context.Context) (bool, error) {
 	return a.unlocked, nil
 }
 

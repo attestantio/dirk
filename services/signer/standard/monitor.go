@@ -24,4 +24,4 @@ import (
 type noopMonitor struct{}
 
 // SignCompleted is called when a siging process has completed.
-func (n *noopMonitor) SignCompleted(started time.Time, request string, result core.Result) {}
+func (n *noopMonitor) SignCompleted(_ time.Time, _ string, _ core.Result) {}

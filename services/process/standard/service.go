@@ -55,7 +55,7 @@ type Service struct {
 var log zerolog.Logger
 
 // New creates a new process service.
-func New(ctx context.Context, params ...Parameter) (*Service, error) {
+func New(_ context.Context, params ...Parameter) (*Service, error) {
 	parameters, err := parseAndCheckParameters(params...)
 	if err != nil {
 		return nil, errors.Wrap(err, "problem with parameters")
@@ -89,7 +89,8 @@ func (s *Service) OnPrepare(ctx context.Context,
 	account string,
 	passphrase []byte,
 	threshold uint32,
-	participants []*core.Endpoint) error {
+	participants []*core.Endpoint,
+) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "services.process.OnPrepare")
 	defer span.Finish()
 	log.Trace().Uint64("sender_id", sender).Str("account", account).Msg("Preparing for distributed key generation")
@@ -167,7 +168,7 @@ func (s *Service) OnExecute(ctx context.Context, sender uint64, account string) 
 }
 
 // OnCommit is called when we receive a request from the given participant to commit the given DKG.
-func (s *Service) OnCommit(ctx context.Context, sender uint64, account string, confirmationData []byte) ([]byte, []byte, error) {
+func (s *Service) OnCommit(ctx context.Context, _ uint64, account string, confirmationData []byte) ([]byte, []byte, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "services.process.OnCommit")
 	defer span.Finish()
 
@@ -246,7 +247,7 @@ func (s *Service) OnCommit(ctx context.Context, sender uint64, account string, c
 }
 
 // OnAbort is called when we receive a request from the given participant to abort the given DKG.
-func (s *Service) OnAbort(ctx context.Context, sender uint64, account string) error {
+func (s *Service) OnAbort(ctx context.Context, _ uint64, account string) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "services.process.OnAbort")
 	defer span.Finish()
 
@@ -287,7 +288,6 @@ func (s *Service) OnContribute(ctx context.Context, sender uint64, account strin
 
 	// We return our unique generated secret for the sender, and our own verification vector.
 	return generation.distributionSecrets[sender], generation.sharedVVecs[generation.id], nil
-
 }
 
 func (s *Service) storeDistributedKey(ctx context.Context,
@@ -296,7 +296,8 @@ func (s *Service) storeDistributedKey(ctx context.Context,
 	privateKey bls.SecretKey,
 	threshold uint32,
 	verificationVector []bls.PublicKey,
-	participants []*core.Endpoint) error {
+	participants []*core.Endpoint,
+) error {
 	store := s.stores[0]
 
 	walletName, accountName, err := e2wallet.WalletAndAccountNames(account)
@@ -322,7 +323,6 @@ func (s *Service) storeDistributedKey(ctx context.Context,
 			if err := locker.Lock(ctx); err != nil {
 				log.Warn().Str("wallet", wallet.Name()).Msg("Failed to lock")
 			}
-
 		}()
 	}
 

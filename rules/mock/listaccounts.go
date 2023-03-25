@@ -20,6 +20,6 @@ import (
 )
 
 // OnListAccounts is called when a request to list accounts needs to be approved.
-func (s *Service) OnListAccounts(ctx context.Context, metadata *rules.ReqMetadata, req *rules.AccessAccountData) rules.Result {
+func (s *Service) OnListAccounts(_ context.Context, _ *rules.ReqMetadata, _ *rules.AccessAccountData) rules.Result {
 	return rules.APPROVED
 }

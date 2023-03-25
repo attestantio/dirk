@@ -30,11 +30,15 @@ func New() *Service {
 }
 
 // SignGeneric signs generic data.
-func (s *Service) SignGeneric(ctx context.Context,
-	credentials *checker.Credentials,
-	accountName string,
-	pubKey []byte,
-	data *rules.SignData) (core.Result, []byte) {
+func (s *Service) SignGeneric(_ context.Context,
+	_ *checker.Credentials,
+	_ string,
+	_ []byte,
+	_ *rules.SignData,
+) (
+	core.Result,
+	[]byte,
+) {
 	return core.ResultSucceeded, []byte{
 		0x90, 0x42, 0xa3, 0x1d, 0xb8, 0x1e, 0x14, 0x65, 0x98, 0xce, 0xd6, 0xe5, 0x6d, 0xff, 0x63, 0x11,
 		0xdf, 0xfb, 0x39, 0x52, 0xbc, 0xd0, 0x8f, 0xf9, 0x22, 0x78, 0xad, 0x72, 0x19, 0xb0, 0x69, 0xc9,
@@ -46,11 +50,15 @@ func (s *Service) SignGeneric(ctx context.Context,
 }
 
 // Multisign signs multiple generic data.
-func (s *Service) Multisign(ctx context.Context,
-	credentials *checker.Credentials,
-	accountNames []string,
-	pubKeys [][]byte,
-	data []*rules.SignData) ([]core.Result, [][]byte) {
+func (s *Service) Multisign(_ context.Context,
+	_ *checker.Credentials,
+	_ []string,
+	_ [][]byte,
+	_ []*rules.SignData,
+) (
+	[]core.Result,
+	[][]byte,
+) {
 	return []core.Result{core.ResultSucceeded}, [][]byte{{
 		0x90, 0x42, 0xa3, 0x1d, 0xb8, 0x1e, 0x14, 0x65, 0x98, 0xce, 0xd6, 0xe5, 0x6d, 0xff, 0x63, 0x11,
 		0xdf, 0xfb, 0x39, 0x52, 0xbc, 0xd0, 0x8f, 0xf9, 0x22, 0x78, 0xad, 0x72, 0x19, 0xb0, 0x69, 0xc9,
@@ -62,11 +70,15 @@ func (s *Service) Multisign(ctx context.Context,
 }
 
 // SignBeaconAttestation signs a beacon attestation.
-func (s *Service) SignBeaconAttestation(ctx context.Context,
-	credentials *checker.Credentials,
-	accountName string,
-	pubKey []byte,
-	data *rules.SignBeaconAttestationData) (core.Result, []byte) {
+func (s *Service) SignBeaconAttestation(_ context.Context,
+	_ *checker.Credentials,
+	_ string,
+	_ []byte,
+	_ *rules.SignBeaconAttestationData,
+) (
+	core.Result,
+	[]byte,
+) {
 	return core.ResultSucceeded, []byte{
 		0x90, 0x42, 0xa3, 0x1d, 0xb8, 0x1e, 0x14, 0x65, 0x98, 0xce, 0xd6, 0xe5, 0x6d, 0xff, 0x63, 0x11,
 		0xdf, 0xfb, 0x39, 0x52, 0xbc, 0xd0, 0x8f, 0xf9, 0x22, 0x78, 0xad, 0x72, 0x19, 0xb0, 0x69, 0xc9,
@@ -78,11 +90,15 @@ func (s *Service) SignBeaconAttestation(ctx context.Context,
 }
 
 // SignBeaconAttestations signs multiple beacon attestations.
-func (s *Service) SignBeaconAttestations(ctx context.Context,
-	credentials *checker.Credentials,
-	accountNames []string,
-	pubKeys [][]byte,
-	data []*rules.SignBeaconAttestationData) ([]core.Result, [][]byte) {
+func (s *Service) SignBeaconAttestations(_ context.Context,
+	_ *checker.Credentials,
+	_ []string,
+	_ [][]byte,
+	data []*rules.SignBeaconAttestationData,
+) (
+	[]core.Result,
+	[][]byte,
+) {
 	results := make([]core.Result, len(data))
 	signatures := make([][]byte, len(data))
 	for i := 0; i < len(data); i++ {
@@ -100,11 +116,15 @@ func (s *Service) SignBeaconAttestations(ctx context.Context,
 }
 
 // SignBeaconProposal signs a proposal for a beacon block.
-func (s *Service) SignBeaconProposal(ctx context.Context,
-	credentials *checker.Credentials,
-	accountName string,
-	pubKey []byte,
-	data *rules.SignBeaconProposalData) (core.Result, []byte) {
+func (s *Service) SignBeaconProposal(_ context.Context,
+	_ *checker.Credentials,
+	_ string,
+	_ []byte,
+	_ *rules.SignBeaconProposalData,
+) (
+	core.Result,
+	[]byte,
+) {
 	return core.ResultSucceeded, []byte{
 		0x90, 0x42, 0xa3, 0x1d, 0xb8, 0x1e, 0x14, 0x65, 0x98, 0xce, 0xd6, 0xe5, 0x6d, 0xff, 0x63, 0x11,
 		0xdf, 0xfb, 0x39, 0x52, 0xbc, 0xd0, 0x8f, 0xf9, 0x22, 0x78, 0xad, 0x72, 0x19, 0xb0, 0x69, 0xc9,

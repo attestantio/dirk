@@ -20,11 +20,11 @@ import (
 )
 
 // ExportSlashingProtection exports the slashing protection data.
-func (s *Service) ExportSlashingProtection(ctx context.Context) (map[[48]byte]*rules.SlashingProtection, error) {
+func (s *Service) ExportSlashingProtection(_ context.Context) (map[[48]byte]*rules.SlashingProtection, error) {
 	return nil, nil
 }
 
 // ImportSlashingProtection impports the slashing protection data.
-func (s *Service) ImportSlashingProtection(ctx context.Context, protection map[[48]byte]*rules.SlashingProtection) error {
+func (s *Service) ImportSlashingProtection(_ context.Context, _ map[[48]byte]*rules.SlashingProtection) error {
 	return nil
 }

@@ -24,5 +24,5 @@ import (
 type noopMonitor struct{}
 
 // AccountManagerCompleted is called when an account manager process has completed.
-func (n *noopMonitor) AccountManagerCompleted(started time.Time, request string, result core.Result) {
+func (n *noopMonitor) AccountManagerCompleted(_ time.Time, _ string, _ core.Result) {
 }

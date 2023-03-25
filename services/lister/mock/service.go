@@ -30,8 +30,12 @@ func New() *Service {
 }
 
 // ListAccounts lists accessible accounts given by the paths.
-func (s *Service) ListAccounts(ctx context.Context,
-	credentials *checker.Credentials,
-	paths []string) (core.Result, []e2wtypes.Account) {
+func (s *Service) ListAccounts(_ context.Context,
+	_ *checker.Credentials,
+	_ []string,
+) (
+	core.Result,
+	[]e2wtypes.Account,
+) {
 	return core.ResultSucceeded, make([]e2wtypes.Account, 0)
 }
