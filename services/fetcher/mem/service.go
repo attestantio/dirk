@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/attestantio/dirk/services/metrics"
 	"github.com/google/uuid"
@@ -76,7 +77,73 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		rwWalletAccounts: make(map[string]map[string]e2wtypes.Account),
 	}
 
+	if parameters.refreshInterval > 0 {
+		go s.repopulateCache(ctx, parameters.stores, parameters.encryptor, walletAccounts, parameters.refreshInterval)
+	}
+
 	return s, nil
+}
+
+func (s *Service) repopulateCache(
+	ctx context.Context,
+	stores []e2wtypes.Store,
+	encryptor e2wtypes.Encryptor,
+	initialAccouts map[string]map[string]e2wtypes.Account,
+	interval time.Duration,
+) {
+	ticker := time.NewTicker(interval)
+	exists := map[string]map[string]struct{}{}
+
+	log.Info().Dur("interval", interval).Msg("start a refresh gorutine")
+
+	for walletName := range initialAccouts {
+		for accountName := range initialAccouts[walletName] {
+			_, ok := exists[walletName]
+			if !ok {
+				exists[walletName] = map[string]struct{}{}
+			}
+
+			exists[walletName][accountName] = struct{}{}
+		}
+	}
+
+	for {
+		select {
+		case <-ticker.C:
+			for _, store := range stores {
+				for walletBytes := range store.RetrieveWallets() {
+					wallet, err := walletFromBytes(ctx, walletBytes, store, encryptor)
+					if err != nil {
+						log.Warn().Err(err).Msg("failed to decode wallet")
+						continue
+					}
+
+					for account := range wallet.Accounts(ctx) {
+						_, ok := exists[wallet.Name()][account.Name()]
+						if ok {
+							continue
+						}
+
+						log.Info().
+							Str("wallet", wallet.Name()).
+							Str("account", account.Name()).
+							Msg("repopulate")
+
+						err := s.AddAccount(ctx, wallet, account)
+						if err != nil {
+							log.Warn().Err(err).Msg("failed to add a fresh account")
+							return
+						}
+
+						exists[wallet.Name()][account.Name()] = struct{}{}
+					}
+				}
+			}
+
+		case <-ctx.Done():
+			break
+		}
+	}
 }
 
 // FetchWallet fetches the wallet.

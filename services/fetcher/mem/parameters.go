@@ -14,6 +14,8 @@
 package mem
 
 import (
+	"time"
+
 	"github.com/attestantio/dirk/services/metrics"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -26,6 +28,8 @@ type parameters struct {
 	monitor   metrics.FetcherMonitor
 	encryptor e2wtypes.Encryptor
 	stores    []e2wtypes.Store
+
+	refreshInterval time.Duration
 }
 
 // Parameter is the interface for service parameters.
@@ -64,6 +68,13 @@ func WithEncryptor(encryptor e2wtypes.Encryptor) Parameter {
 func WithStores(stores []e2wtypes.Store) Parameter {
 	return parameterFunc(func(p *parameters) {
 		p.stores = stores
+	})
+}
+
+// WithRefreshInterval sets the refresh interval for new accounts
+func WithRefreshInterval(value time.Duration) Parameter {
+	return parameterFunc(func(p *parameters) {
+		p.refreshInterval = value
 	})
 }
 

@@ -596,6 +596,7 @@ func startFetcher(ctx context.Context, stores []e2wtypes.Store, monitor metrics.
 		memfetcher.WithLogLevel(util.LogLevel("fetcher")),
 		memfetcher.WithMonitor(fetcherMonitor),
 		memfetcher.WithStores(stores),
+		memfetcher.WithRefreshInterval(viper.GetDuration("fetcher.refresh-interval")),
 	)
 }
 
