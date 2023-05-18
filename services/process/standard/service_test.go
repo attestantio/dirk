@@ -48,6 +48,8 @@ import (
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
 
+const generationTimeout = 10 * time.Second
+
 // Helper to create a process service.
 func createProcessService(ctx context.Context, id uint64) (process.Service, error) {
 	stores := []e2wtypes.Store{scratch.New()}
@@ -86,6 +88,7 @@ func createProcessService(ctx context.Context, id uint64) (process.Service, erro
 	process, err := standardprocess.New(ctx,
 		standardprocess.WithChecker(checkerSvc),
 		standardprocess.WithGenerationPassphrase([]byte("secret")),
+		standardprocess.WithGenerationTimeout(generationTimeout),
 		standardprocess.WithID(id),
 		standardprocess.WithPeers(peers),
 		standardprocess.WithSender(sendermock.New(id)),
@@ -155,6 +158,7 @@ func TestNew(t *testing.T) {
 		stores               []e2wtypes.Store
 		endpoints            map[uint64]string
 		generationPassphrase []byte
+		generationTimeout    time.Duration
 		sender               sender.Service
 		fetcher              fetcher.Service
 		unlocker             unlocker.Service
@@ -171,6 +175,7 @@ func TestNew(t *testing.T) {
 			stores:               stores,
 			endpoints:            endpoints,
 			generationPassphrase: []byte("secret"),
+			generationTimeout:    generationTimeout,
 			sender:               senderSvc,
 			fetcher:              fetcherSvc,
 			unlocker:             unlockerSvc,
@@ -185,6 +190,7 @@ func TestNew(t *testing.T) {
 			stores:               stores,
 			endpoints:            endpoints,
 			generationPassphrase: []byte("secret"),
+			generationTimeout:    generationTimeout,
 			fetcher:              fetcherSvc,
 			unlocker:             unlockerSvc,
 			id:                   1,
@@ -198,6 +204,7 @@ func TestNew(t *testing.T) {
 			stores:               stores,
 			endpoints:            endpoints,
 			generationPassphrase: []byte("secret"),
+			generationTimeout:    generationTimeout,
 			sender:               senderSvc,
 			unlocker:             unlockerSvc,
 			id:                   1,
@@ -211,6 +218,7 @@ func TestNew(t *testing.T) {
 			stores:               stores,
 			endpoints:            endpoints,
 			generationPassphrase: []byte("secret"),
+			generationTimeout:    generationTimeout,
 			sender:               senderSvc,
 			fetcher:              fetcherSvc,
 			id:                   1,
@@ -222,6 +230,7 @@ func TestNew(t *testing.T) {
 			stores:               stores,
 			endpoints:            endpoints,
 			generationPassphrase: []byte("secret"),
+			generationTimeout:    generationTimeout,
 			sender:               senderSvc,
 			fetcher:              fetcherSvc,
 			unlocker:             unlockerSvc,
@@ -234,6 +243,7 @@ func TestNew(t *testing.T) {
 			checker:              checkerSvc,
 			endpoints:            endpoints,
 			generationPassphrase: []byte("secret"),
+			generationTimeout:    generationTimeout,
 			sender:               senderSvc,
 			fetcher:              fetcherSvc,
 			unlocker:             unlockerSvc,
@@ -247,6 +257,7 @@ func TestNew(t *testing.T) {
 			stores:               stores,
 			endpoints:            endpoints,
 			generationPassphrase: []byte("secret"),
+			generationTimeout:    generationTimeout,
 			sender:               senderSvc,
 			fetcher:              fetcherSvc,
 			unlocker:             unlockerSvc,
@@ -259,6 +270,7 @@ func TestNew(t *testing.T) {
 			stores:               stores,
 			endpoints:            endpoints,
 			generationPassphrase: []byte("secret"),
+			generationTimeout:    generationTimeout,
 			sender:               senderSvc,
 			fetcher:              fetcherSvc,
 			unlocker:             unlockerSvc,
@@ -274,6 +286,7 @@ func TestNew(t *testing.T) {
 				standardprocess.WithChecker(test.checker),
 				standardprocess.WithStores(test.stores),
 				standardprocess.WithGenerationPassphrase(test.generationPassphrase),
+				standardprocess.WithGenerationTimeout(test.generationTimeout),
 				standardprocess.WithSender(test.sender),
 				standardprocess.WithFetcher(test.fetcher),
 				standardprocess.WithUnlocker(test.unlocker),
@@ -486,8 +499,8 @@ func TestTimeout(t *testing.T) {
 	err = service.OnPrepare(ctx, 1, "Test/Test", []byte("test"), 2, endpoints)
 	require.NoError(t, err)
 
-	// Timeout for requests is 70 seconds.
-	time.Sleep(71 * time.Second)
+	// Timeout for requests is set using variable
+	time.Sleep(generationTimeout + (1 * time.Second))
 
 	err = service.OnAbort(ctx, 1, "Test/Test")
 	assert.EqualError(t, err, standardprocess.ErrNotInProgress.Error())
