@@ -193,7 +193,7 @@ func fetchConfig() error {
 
 	// Defaults.
 	viper.SetDefault("storage-path", "storage")
-	viper.SetDefault("process.generation-timeout", 10*time.Second)
+	viper.SetDefault("process.generation-timeout", 70*time.Second)
 
 	if err := viper.ReadInConfig(); err != nil {
 		switch {

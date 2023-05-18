@@ -41,7 +41,7 @@ import (
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
 
-const generationTimeout = 10 * time.Second
+const generationTimeout = 70 * time.Second
 
 func TestNonInitiator(t *testing.T) {
 	ctx := context.Background()

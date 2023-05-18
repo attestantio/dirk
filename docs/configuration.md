@@ -76,7 +76,7 @@ process:
   # generation-passphrase is the passphrase used to encrypt newly-generated accounts.  It is a majordomo URL.
   generation-passphrase: file:///home/me/dirk/security/passphrases/account-passphrase.txt
   # generation-timeout is the timeout is seconds used to generate new accounts.
-  generation-timeout: 10s
+  generation-timeout: 70s
 permissions:
   # This permission allows client1 the ability to carry out all operations on accounts in wallet1.
   client1:
