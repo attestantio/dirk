@@ -66,8 +66,8 @@ func (s *Service) getGeneration(ctx context.Context, account string) (*generatio
 		return nil, ErrNotFound
 	}
 
-	// Generations more than 70 seconds old need to be removed.
-	if time.Since(generator.processStarted) > 70*time.Second {
+	// Generations more than generation timeout old need to be removed.
+	if time.Since(generator.processStarted) > s.generationTimeout {
 		// Been too long; remove it.
 		log.Debug().Str("account", account).Msg("Generation been active too long; invalidating")
 		delete(s.generations, account)

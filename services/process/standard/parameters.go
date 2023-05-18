@@ -14,6 +14,8 @@
 package standard
 
 import (
+	"time"
+
 	"github.com/attestantio/dirk/services/checker"
 	"github.com/attestantio/dirk/services/fetcher"
 	"github.com/attestantio/dirk/services/metrics"
@@ -38,6 +40,7 @@ type parameters struct {
 	peers                peers.Service
 	stores               []e2wtypes.Store
 	generationPassphrase []byte
+	generationTimeout    time.Duration
 }
 
 // Parameter is the interface for service parameters.
@@ -128,11 +131,19 @@ func WithGenerationPassphrase(generationPassphrase []byte) Parameter {
 	})
 }
 
+// WithGenerationTimeout sets the generation timeout for this module.
+func WithGenerationTimeout(generationTimeout time.Duration) Parameter {
+	return parameterFunc(func(p *parameters) {
+		p.generationTimeout = generationTimeout
+	})
+}
+
 // parseAndCheckParameters parses and checks parameters to ensure that mandatory parameters are present and correct.
 func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	parameters := parameters{
-		logLevel:  zerolog.GlobalLevel(),
-		encryptor: keystorev4.New(),
+		logLevel:          zerolog.GlobalLevel(),
+		encryptor:         keystorev4.New(),
+		generationTimeout: 70 * time.Second,
 	}
 	for _, p := range params {
 		if params != nil {

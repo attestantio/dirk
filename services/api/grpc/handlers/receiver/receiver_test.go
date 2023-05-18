@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/attestantio/dirk/core"
 	receiverhandler "github.com/attestantio/dirk/services/api/grpc/handlers/receiver"
@@ -39,6 +40,8 @@ import (
 	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
+
+const generationTimeout = 10 * time.Second
 
 func TestNonInitiator(t *testing.T) {
 	ctx := context.Background()
@@ -90,6 +93,7 @@ func TestNonInitiator(t *testing.T) {
 		standardprocess.WithStores(stores1),
 		standardprocess.WithUnlocker(unlocker),
 		standardprocess.WithGenerationPassphrase([]byte("test")),
+		standardprocess.WithGenerationTimeout(generationTimeout),
 	)
 	require.NoError(t, err)
 	mock.Processes[1] = process1
@@ -126,6 +130,7 @@ func TestNonInitiator(t *testing.T) {
 		standardprocess.WithStores(stores2),
 		standardprocess.WithUnlocker(unlocker),
 		standardprocess.WithGenerationPassphrase([]byte("test")),
+		standardprocess.WithGenerationTimeout(generationTimeout),
 	)
 	require.NoError(t, err)
 	mock.Processes[2] = process2
@@ -162,6 +167,7 @@ func TestNonInitiator(t *testing.T) {
 		standardprocess.WithStores(stores3),
 		standardprocess.WithUnlocker(unlocker),
 		standardprocess.WithGenerationPassphrase([]byte("test")),
+		standardprocess.WithGenerationTimeout(generationTimeout),
 	)
 	require.NoError(t, err)
 	mock.Processes[3] = process3

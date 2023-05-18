@@ -193,6 +193,7 @@ func fetchConfig() error {
 
 	// Defaults.
 	viper.SetDefault("storage-path", "storage")
+	viper.SetDefault("process.generation-timeout", 10*time.Second)
 
 	if err := viper.ReadInConfig(); err != nil {
 		switch {
@@ -401,6 +402,7 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 			return errors.Wrap(err, "failed to obtain account generation passphrase for process")
 		}
 	}
+
 	process, err := standardprocess.New(ctx,
 		standardprocess.WithLogLevel(util.LogLevel("process")),
 		standardprocess.WithMonitor(processMonitor),
@@ -412,6 +414,7 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 		standardprocess.WithID(serverID),
 		standardprocess.WithStores(stores),
 		standardprocess.WithGenerationPassphrase(generationPassphrase),
+		standardprocess.WithGenerationTimeout(viper.GetDuration("process.generation-timeout")),
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to create process service")

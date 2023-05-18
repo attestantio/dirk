@@ -46,6 +46,7 @@ type Service struct {
 	id                   uint64
 	stores               []e2wtypes.Store
 	generationPassphrase []byte
+	generationTimeout    time.Duration
 
 	generations   map[string]*generation
 	generationsMu sync.RWMutex
@@ -77,6 +78,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		stores:               parameters.stores,
 		encryptor:            parameters.encryptor,
 		generationPassphrase: parameters.generationPassphrase,
+		generationTimeout:    parameters.generationTimeout,
 		generations:          make(map[string]*generation),
 	}
 
