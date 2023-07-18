@@ -73,7 +73,8 @@ func (s *Service) Prepare(ctx context.Context,
 	account string,
 	passphrase []byte,
 	threshold uint32,
-	participants []*core.Endpoint) error {
+	participants []*core.Endpoint,
+) error {
 	connResource, err := s.obtainConnection(ctx, peer.ConnectAddress())
 	if err != nil {
 		return errors.Wrap(err, "Failed to obtain connection for Prepare()")
@@ -235,6 +236,8 @@ func (s *Service) obtainConnection(_ context.Context, address string) (*puddle.R
 		s.connectionPools[address] = pool
 	}
 	s.connectionPoolsMutex.Unlock()
+	// Use the background context to avoid acquiring the parent context's timeout.
+	//nolint:contextcheck
 	res, err := pool.Acquire(context.Background())
 	if err != nil {
 		return nil, err

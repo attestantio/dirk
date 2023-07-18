@@ -16,7 +16,7 @@ log-file: /home/me/dirk.log
 # log-level is the global log level for Dirk logging.
 log-level: Debug
 server:
-  # id should be randomly chosen 8-digit numeric ID; it must be unique across all of your Dirk instances.
+  # id should be randomly chosen numeric ID; it must be unique across all of your Dirk instances.
   id: 75843236
   # name is the name of your server, as specified in its SSL certificate.
   name: myserver.example.com

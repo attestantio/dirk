@@ -125,9 +125,9 @@ linters:
   # Disable specific linter
   # https://golangci-lint.run/usage/linters/#disabled-by-default
   disable:
-    - contextcheck
     - cyclop
     - deadcode
+    - depguard
     - dupl
     - exhaustivestruct
     - exhaustruct

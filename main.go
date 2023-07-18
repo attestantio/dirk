@@ -44,6 +44,7 @@ import (
 	"github.com/attestantio/dirk/services/locker"
 	syncmaplocker "github.com/attestantio/dirk/services/locker/syncmap"
 	"github.com/attestantio/dirk/services/metrics"
+	nullmetrics "github.com/attestantio/dirk/services/metrics/null"
 	prometheusmetrics "github.com/attestantio/dirk/services/metrics/prometheus"
 	"github.com/attestantio/dirk/services/peers"
 	staticpeers "github.com/attestantio/dirk/services/peers/static"
@@ -486,15 +487,15 @@ func startMonitor(ctx context.Context) (metrics.Service, error) {
 	var monitor metrics.Service
 	var err error
 	if viper.GetString("metrics.listen-address") == "" {
-		log.Debug().Msg("No metrics listen address supplied; monitor not starting")
-		return nil, nil
-	}
-	monitor, err = prometheusmetrics.New(ctx,
-		prometheusmetrics.WithLogLevel(util.LogLevel("metrics")),
-		prometheusmetrics.WithAddress(viper.GetString("metrics.listen-address")),
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to start metrics service")
+		monitor = nullmetrics.New()
+	} else {
+		monitor, err = prometheusmetrics.New(ctx,
+			prometheusmetrics.WithLogLevel(util.LogLevel("metrics")),
+			prometheusmetrics.WithAddress(viper.GetString("metrics.listen-address")),
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to start metrics service")
+		}
 	}
 	return monitor, nil
 }
