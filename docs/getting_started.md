@@ -41,7 +41,7 @@ Once the key is generated we need to create the certificate itself:
 openssl req -x509 -new -nodes -key dirk_authority.key -sha256 -days 1825 -out dirk_authority.crt
 ```
 
-The server and each client need their own certificates.  The process for creating each certificate is the same, so follow the below process for each server and just change the name each time from `server.example.com` to whatever you need (e.g. `client1`, `client2`, `client3` for the above configuration).
+The server and each client need their own certificates.  The process for creating each certificate is the same, so follow the below process for each server and just change the name each time from `server.example.com` to whatever you need (e.g. `client1`, `client2`, `client3` for the above configuration).  Note that you must include the `DNS.1` entry in the `alt_names` section, as this is used by Dirk to confirm the identity of the node connecting to it.
 
 First, create a key for the server in question:
 
