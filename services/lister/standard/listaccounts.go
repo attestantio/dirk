@@ -92,7 +92,7 @@ func (s *Service) ListAccounts(ctx context.Context, credentials *checker.Credent
 
 		numWalletAccounts := 0
 		for _, walletAccount := range walletAccounts {
-			if accountRegex == nil || accountRegex.Match([]byte(walletAccount.Name())) {
+			if accountRegex == nil || accountRegex.MatchString(walletAccount.Name()) {
 				accountName := fmt.Sprintf("%s/%s", wallet.Name(), walletAccount.Name())
 				log := log.With().Str("account", accountName).Logger()
 				checkRes := s.checkAccess(ctx, credentials, accountName, ruler.ActionAccessAccount)
