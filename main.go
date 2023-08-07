@@ -1,4 +1,4 @@
-// Copyright © 2020 - 2022 Attestant Limited.
+// Copyright © 2020 - 2023 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -68,7 +68,7 @@ import (
 )
 
 // ReleaseVersion is the release version for the code.
-var ReleaseVersion = "1.2.0-rc1"
+var ReleaseVersion = "1.2.0-rc4"
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -99,9 +99,7 @@ func main() {
 	logModules()
 	log.Info().Str("version", ReleaseVersion).Msg("Starting dirk")
 
-	if err := initProfiling(); err != nil {
-		log.Fatal().Err(err).Msg("Failed to initialise profiling")
-	}
+	initProfiling()
 
 	if err := initTracing(ctx, majordomo); err != nil {
 		log.Error().Err(err).Msg("Failed to initialise tracing")
@@ -218,9 +216,7 @@ func fetchConfig() error {
 }
 
 // initProfiling initialises the profiling server.
-//
-//nolint:unparam
-func initProfiling() error {
+func initProfiling() {
 	profileAddress := viper.GetString("profile-address")
 	if profileAddress != "" {
 		go func() {
@@ -235,7 +231,6 @@ func initProfiling() error {
 			}
 		}()
 	}
-	return nil
 }
 
 func runCommands(ctx context.Context, majordomo majordomo.Service) (bool, int) {
