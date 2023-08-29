@@ -87,6 +87,17 @@ permissions:
   # This permission allows client3 the ability to carry out all operations on accounts in wallet2.
   client3:
     wallet2: All
+
+# tracing sends OTLP trace data to the supplied endpoint.
+tracing:
+  # Address is the host and port of an OTLP trace receiver.
+  address: 'server:4317'
+  # If the endpoint is secure you will need to supply a client certificate and key, and optionally a CA certificate if your client
+  # certificate is issued by a private certificate authority.
+  client-cert: 'file:///home/vouch/certs/server.crt'
+  client-key: 'file:///home/vouch/certs/server.key'
+  ca-cert: 'file:///home/vouch/certs/ca.crt'
+
 ```
 
 ## Logging
