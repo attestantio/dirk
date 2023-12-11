@@ -21,7 +21,7 @@ import (
 
 // Service provides an interface to unlock wallets and accounts when required.
 type Service interface {
-	UnlockWallet(context.Context, e2wtypes.Wallet) (bool, error)
+	UnlockWallet(ctx context.Context, wallet e2wtypes.Wallet) (bool, error)
 
-	UnlockAccount(context.Context, e2wtypes.Wallet, e2wtypes.Account) (bool, error)
+	UnlockAccount(ctx context.Context, wallet e2wtypes.Wallet, account e2wtypes.Account) (bool, error)
 }

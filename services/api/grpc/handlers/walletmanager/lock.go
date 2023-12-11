@@ -32,7 +32,7 @@ func (h *Handler) Lock(ctx context.Context, req *pb.LockWalletRequest) (*pb.Lock
 	log.Trace().Str("wallet", req.GetWallet()).Msg("Lock wallet received")
 	res := &pb.LockWalletResponse{}
 
-	result, err := h.walletManager.Lock(ctx, handlers.GenerateCredentials(ctx), req.Wallet)
+	result, err := h.walletManager.Lock(ctx, handlers.GenerateCredentials(ctx), req.GetWallet())
 	if err != nil {
 		log.Error().Err(err).Msg("Lock attempt resulted in error")
 		res.State = pb.ResponseState_FAILED

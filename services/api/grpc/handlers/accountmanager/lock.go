@@ -32,7 +32,7 @@ func (h *Handler) Lock(ctx context.Context, req *pb.LockAccountRequest) (*pb.Loc
 	log.Trace().Str("account", req.GetAccount()).Msg("Lock account received")
 	res := &pb.LockAccountResponse{}
 
-	result, err := h.accountManager.Lock(ctx, handlers.GenerateCredentials(ctx), req.Account)
+	result, err := h.accountManager.Lock(ctx, handlers.GenerateCredentials(ctx), req.GetAccount())
 	if err != nil {
 		log.Error().Err(err).Msg("Lock attempt resulted in error")
 		res.State = pb.ResponseState_FAILED

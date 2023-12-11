@@ -20,17 +20,16 @@ import (
 )
 
 func (s *Service) setupListerMetrics() error {
-	s.listerProcessTimer =
-		prometheus.NewHistogram(prometheus.HistogramOpts{
-			Namespace: "dirk",
-			Subsystem: "lister_process",
-			Name:      "duration_seconds",
-			Help:      "The time dirk spends in the account list process.",
-			Buckets: []float64{
-				0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10,
-				0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20,
-			},
-		})
+	s.listerProcessTimer = prometheus.NewHistogram(prometheus.HistogramOpts{
+		Namespace: "dirk",
+		Subsystem: "lister_process",
+		Name:      "duration_seconds",
+		Help:      "The time dirk spends in the account list process.",
+		Buckets: []float64{
+			0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10,
+			0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20,
+		},
+	})
 	if err := prometheus.Register(s.listerProcessTimer); err != nil {
 		return err
 	}

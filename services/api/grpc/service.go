@@ -136,9 +136,9 @@ func (s *Service) createServer(name string, certPEMBlock []byte, keyPEMBlock []b
 	grpclog.SetLoggerV2(loggers.NewGRPCLoggerV2(log.With().Str("service", "grpc").Logger()))
 
 	grpcOpts := []grpc.ServerOption{
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.UnaryInterceptor(
 			grpc_middleware.ChainUnaryServer(
-				otelgrpc.UnaryServerInterceptor(),
 				grpc_ctxtags.UnaryServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
 				interceptors.RequestIDInterceptor(),
 				interceptors.SourceIPInterceptor(),

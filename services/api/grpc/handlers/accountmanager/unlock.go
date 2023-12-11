@@ -32,7 +32,7 @@ func (h *Handler) Unlock(ctx context.Context, req *pb.UnlockAccountRequest) (*pb
 	log.Trace().Str("account", req.GetAccount()).Msg("Unlock account received")
 	res := &pb.UnlockAccountResponse{}
 
-	result, err := h.accountManager.Unlock(ctx, handlers.GenerateCredentials(ctx), req.Account, req.Passphrase)
+	result, err := h.accountManager.Unlock(ctx, handlers.GenerateCredentials(ctx), req.GetAccount(), req.GetPassphrase())
 	if err != nil {
 		log.Error().Err(err).Msg("Unlock attempt resulted in error")
 		res.State = pb.ResponseState_FAILED

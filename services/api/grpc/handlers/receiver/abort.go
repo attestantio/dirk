@@ -31,7 +31,7 @@ func (h *Handler) Abort(ctx context.Context, req *pb.AbortRequest) (*empty.Empty
 	}
 	log.Debug().Uint64("sender_id", senderID).Msg("Aborting as per request from sender")
 
-	if err := h.process.OnAbort(ctx, senderID, req.Account); err != nil {
+	if err := h.process.OnAbort(ctx, senderID, req.GetAccount()); err != nil {
 		log.Error().Err(err).Msg("Failed to abort distributed key generation")
 		return nil, errors.New("Failed")
 	}

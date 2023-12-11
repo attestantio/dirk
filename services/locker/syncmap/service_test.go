@@ -60,8 +60,8 @@ func TestNew(t *testing.T) {
 			}
 		})
 	}
-
 }
+
 func TestLocking(t *testing.T) {
 	ctx := context.Background()
 

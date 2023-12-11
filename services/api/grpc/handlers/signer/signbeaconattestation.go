@@ -43,34 +43,34 @@ func (h *Handler) SignBeaconAttestation(ctx context.Context, req *pb.SignBeaconA
 		res.State = pb.ResponseState_DENIED
 		return res, nil
 	}
-	if req.Data == nil {
+	if req.GetData() == nil {
 		log.Warn().Str("result", "denied").Msg("Request data not specified")
 		res.State = pb.ResponseState_DENIED
 		return res, nil
 	}
-	if req.Data.Source == nil {
+	if req.GetData().GetSource() == nil {
 		log.Warn().Str("result", "denied").Msg("Request source checkpoint not specified")
 		res.State = pb.ResponseState_DENIED
 		return res, nil
 	}
-	if req.Data.Target == nil {
+	if req.GetData().GetTarget() == nil {
 		log.Warn().Str("result", "denied").Msg("Request target checkpoint not specified")
 		res.State = pb.ResponseState_DENIED
 		return res, nil
 	}
 
 	data := &rules.SignBeaconAttestationData{
-		Domain:          req.Domain,
-		Slot:            req.Data.Slot,
-		CommitteeIndex:  req.Data.CommitteeIndex,
-		BeaconBlockRoot: req.Data.BeaconBlockRoot,
+		Domain:          req.GetDomain(),
+		Slot:            req.GetData().GetSlot(),
+		CommitteeIndex:  req.GetData().GetCommitteeIndex(),
+		BeaconBlockRoot: req.GetData().GetBeaconBlockRoot(),
 		Source: &rules.Checkpoint{
-			Epoch: req.Data.Source.Epoch,
-			Root:  req.Data.Source.Root,
+			Epoch: req.GetData().GetSource().GetEpoch(),
+			Root:  req.GetData().GetSource().GetRoot(),
 		},
 		Target: &rules.Checkpoint{
-			Epoch: req.Data.Target.Epoch,
-			Root:  req.Data.Target.Root,
+			Epoch: req.GetData().GetTarget().GetEpoch(),
+			Root:  req.GetData().GetTarget().GetRoot(),
 		},
 	}
 

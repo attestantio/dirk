@@ -235,7 +235,7 @@ func initProfiling() {
 
 func runCommands(ctx context.Context, majordomo majordomo.Service) (bool, int) {
 	if viper.GetBool("version") {
-		fmt.Printf("%s\n", ReleaseVersion)
+		fmt.Fprintf(os.Stdout, "%s\n", ReleaseVersion)
 		return true, 0
 	}
 
@@ -500,13 +500,11 @@ func logModules() {
 	if ok {
 		log.Trace().Str("path", buildInfo.Path).Msg("Main package")
 		for _, dep := range buildInfo.Deps {
-			log := log.Trace()
-			if dep.Replace == nil {
-				log = log.Str("path", dep.Path).Str("version", dep.Version)
-			} else {
-				log = log.Str("path", dep.Replace.Path).Str("version", dep.Replace.Version)
+			path := dep.Path
+			if dep.Replace != nil {
+				path = dep.Replace.Path
 			}
-			log.Msg("Dependency")
+			log.Trace().Str("path", path).Str("version", dep.Version).Msg("Dependency")
 		}
 	}
 }
@@ -522,7 +520,7 @@ func initRules(ctx context.Context) (rules.Service, error) {
 
 func initStores(ctx context.Context, majordomo majordomo.Service) ([]e2wtypes.Store, error) {
 	storesCfg := &core.Stores{}
-	if err := viper.Unmarshal(&storesCfg); err != nil {
+	if err := viper.Unmarshal(storesCfg); err != nil {
 		return nil, errors.Wrap(err, "failed to obtain stores configuration")
 	}
 	stores, err := core.InitStores(ctx, majordomo, storesCfg.Stores)

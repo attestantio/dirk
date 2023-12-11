@@ -73,12 +73,12 @@ func exportSlashingProtection(ctx context.Context) int {
 	}
 
 	if viper.GetString("slashing-protection-file") != "" {
-		if err := os.WriteFile(viper.GetString("slashing-protection-file"), data, 0600); err != nil {
+		if err := os.WriteFile(viper.GetString("slashing-protection-file"), data, 0o600); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write output: %v\n", err)
 			return 1
 		}
 	} else {
-		fmt.Println(string(data))
+		fmt.Fprintln(os.Stdout, string(data))
 	}
 	return 0
 }
@@ -249,7 +249,7 @@ func storeSlashingProtection(ctx context.Context, protection *SlashingProtection
 				existingKeyProtection.HighestProposedSlot <= keyProtection.HighestProposedSlot {
 				protectionMap[key] = keyProtection
 			} else {
-				fmt.Printf("Existing entry for public key %#x contains newer data; not importing\n", key)
+				fmt.Fprintf(os.Stdout, "Existing entry for public key %#x contains newer data; not importing\n", key)
 			}
 		} else {
 			protectionMap[key] = keyProtection

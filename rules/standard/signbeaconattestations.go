@@ -186,10 +186,9 @@ func (s *Service) storeSignBeaconAttestationStates(ctx context.Context, pubKeys 
 		return err
 	}
 
-	if e := log.Trace(); e.Enabled() {
-		for _, state := range states {
-			log.Trace().Int64("source_epoch", state.SourceEpoch).Int64("target_epoch", state.TargetEpoch).Msg("Stored attestation state to store")
-		}
+	for _, state := range states {
+		log.Trace().Int64("source_epoch", state.SourceEpoch).Int64("target_epoch", state.TargetEpoch).Msg("Stored attestation state to store")
 	}
+
 	return nil
 }

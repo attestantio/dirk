@@ -36,8 +36,7 @@ type Config struct {
 }
 
 // Service is a mock service for distributed key generation.
-type Service struct {
-}
+type Service struct{}
 
 // New creates a new process service.
 func New() (*Service, error) {

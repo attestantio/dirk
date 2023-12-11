@@ -52,5 +52,5 @@ type RulesData struct {
 // Service provides an interface to check requests against a rules engine.
 type Service interface {
 	// RunRules runs a set of rules for the given information.
-	RunRules(context.Context, *checker.Credentials, string, []*RulesData) []rules.Result
+	RunRules(ctx context.Context, credentials *checker.Credentials, action string, data []*RulesData) []rules.Result
 }

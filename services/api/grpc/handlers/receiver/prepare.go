@@ -33,15 +33,15 @@ func (h *Handler) Prepare(ctx context.Context, req *pb.PrepareRequest) (*empty.E
 	}
 	log.Trace().Uint64("sender_id", senderID).Msg("Preparing as per request from sender")
 
-	participants := make([]*core.Endpoint, len(req.Participants))
-	for i, participant := range req.Participants {
+	participants := make([]*core.Endpoint, len(req.GetParticipants()))
+	for i, participant := range req.GetParticipants() {
 		participants[i] = &core.Endpoint{
-			ID:   participant.Id,
-			Name: participant.Name,
-			Port: participant.Port,
+			ID:   participant.GetId(),
+			Name: participant.GetName(),
+			Port: participant.GetPort(),
 		}
 	}
-	err := h.process.OnPrepare(ctx, senderID, req.Account, req.Passphrase, req.Threshold, participants)
+	err := h.process.OnPrepare(ctx, senderID, req.GetAccount(), req.GetPassphrase(), req.GetThreshold(), participants)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to prepare for distributed key generation")
 		return nil, errors.New("Failed to prepare")
