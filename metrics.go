@@ -23,8 +23,10 @@ import (
 
 var metricsNamespace = "dirk"
 
-var releaseMetric *prometheus.GaugeVec
-var readyMetric prometheus.Gauge
+var (
+	releaseMetric *prometheus.GaugeVec
+	readyMetric   prometheus.Gauge
+)
 
 func registerMetrics(ctx context.Context, monitor metrics.Service) error {
 	if releaseMetric != nil {

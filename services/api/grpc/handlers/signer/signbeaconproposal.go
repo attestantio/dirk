@@ -33,7 +33,7 @@ func (h *Handler) SignBeaconProposal(ctx context.Context, req *pb.SignBeaconProp
 		res.State = pb.ResponseState_DENIED
 		return res, nil
 	}
-	if req.Data == nil {
+	if req.GetData() == nil {
 		log.Warn().Str("result", "denied").Msg("Request data not specified")
 		res.State = pb.ResponseState_DENIED
 		return res, nil
@@ -50,12 +50,12 @@ func (h *Handler) SignBeaconProposal(ctx context.Context, req *pb.SignBeaconProp
 	}
 
 	data := &rules.SignBeaconProposalData{
-		Domain:        req.Domain,
-		Slot:          req.Data.Slot,
-		ProposerIndex: req.Data.ProposerIndex,
-		ParentRoot:    req.Data.ParentRoot,
-		StateRoot:     req.Data.StateRoot,
-		BodyRoot:      req.Data.BodyRoot,
+		Domain:        req.GetDomain(),
+		Slot:          req.GetData().GetSlot(),
+		ProposerIndex: req.GetData().GetProposerIndex(),
+		ParentRoot:    req.GetData().GetParentRoot(),
+		StateRoot:     req.GetData().GetStateRoot(),
+		BodyRoot:      req.GetData().GetBodyRoot(),
 	}
 	result, signature := h.signer.SignBeaconProposal(ctx, handlers.GenerateCredentials(ctx), req.GetAccount(), req.GetPublicKey(), data)
 	switch result {

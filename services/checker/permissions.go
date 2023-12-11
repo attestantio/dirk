@@ -15,6 +15,7 @@ package checker
 
 import (
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -28,10 +29,10 @@ type Permissions struct {
 func DumpPermissions(perms map[string][]*Permissions) {
 	for client, perms := range perms {
 		if client == "" {
-			fmt.Println("ERROR: client does not have a name")
+			fmt.Fprintf(os.Stdout, "ERROR: client does not have a name\n")
 			continue
 		}
-		fmt.Printf("Permissions for %q:\n", client)
+		fmt.Fprintf(os.Stdout, "Permissions for %q:\n", client)
 		for _, perm := range perms {
 			var pathDescriptor string
 			if perm.Path == "" {
@@ -46,7 +47,7 @@ func DumpPermissions(perms map[string][]*Permissions) {
 			} else {
 				opDescriptor = fmt.Sprintf("operations %s\n", strings.Join(perm.Operations, ", "))
 			}
-			fmt.Printf(" - %s can carry out %s\n", pathDescriptor, opDescriptor)
+			fmt.Fprintf(os.Stdout, " - %s can carry out %s\n", pathDescriptor, opDescriptor)
 		}
 	}
 }

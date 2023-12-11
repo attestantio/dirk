@@ -63,14 +63,12 @@ func (s *Service) fetchAccount(ctx context.Context, name string, pubKey []byte) 
 		wallet, account, err = s.fetcher.FetchAccountByKey(ctx, pubKey)
 	}
 	if err != nil {
-		llog := log.Warn().Str("result", "denied")
 		if name != "" {
-			llog = llog.Str("name", name)
+			log.Warn().Str("result", "denied").Str("name", name).Msg("Did not obtain account; denied")
+		} else {
+			log.Warn().Str("result", "denied").Str("pubkey", fmt.Sprintf("#%x", pubKey)).Msg("Did not obtain account; denied")
 		}
-		if pubKey != nil {
-			llog = llog.Str("pubkey", fmt.Sprintf("#%x", pubKey))
-		}
-		llog.Msg("Did not obtain account; denied")
+
 		return nil, nil, core.ResultDenied
 	}
 

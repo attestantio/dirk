@@ -31,7 +31,7 @@ func (h *Handler) Execute(ctx context.Context, req *pb.ExecuteRequest) (*empty.E
 	}
 	log.Trace().Uint64("sender_id", senderID).Msg("Executing as per request from sender")
 
-	err := h.process.OnExecute(ctx, senderID, req.Account)
+	err := h.process.OnExecute(ctx, senderID, req.GetAccount())
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to execute distributed key generation")
 		return nil, err

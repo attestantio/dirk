@@ -38,7 +38,7 @@ func (h *Handler) ListAccounts(ctx context.Context, req *pb.ListAccountsRequest)
 	res.Accounts = make([]*pb.Account, 0)
 	res.DistributedAccounts = make([]*pb.DistributedAccount, 0)
 
-	result, accounts := h.lister.ListAccounts(ctx, handlers.GenerateCredentials(ctx), req.Paths)
+	result, accounts := h.lister.ListAccounts(ctx, handlers.GenerateCredentials(ctx), req.GetPaths())
 	switch result {
 	case core.ResultDenied:
 		res.State = pb.ResponseState_DENIED
@@ -85,25 +85,25 @@ func (h *Handler) ListAccounts(ctx context.Context, req *pb.ListAccountsRequest)
 						log.Warn().Str("participant", v).Err(err).Msg("Invalid port for participant")
 						continue
 					}
-					pbAccount.Participants = append(pbAccount.Participants, &pb.Endpoint{
+					pbAccount.Participants = append(pbAccount.GetParticipants(), &pb.Endpoint{
 						Id:   k,
 						Name: parts[0],
 						Port: uint32(port),
 					})
 				}
-				res.DistributedAccounts = append(res.DistributedAccounts, pbAccount)
+				res.DistributedAccounts = append(res.GetDistributedAccounts(), pbAccount)
 			} else {
 				pbAccount := &pb.Account{
 					Uuid:      uuid,
 					Name:      name,
 					PublicKey: pubKeyProvider.PublicKey().Marshal(),
 				}
-				res.Accounts = append(res.Accounts, pbAccount)
+				res.Accounts = append(res.GetAccounts(), pbAccount)
 			}
 		}
 	}
 
 	res.State = pb.ResponseState_SUCCEEDED
-	log.Trace().Int("accounts", len(res.Accounts)).Int("distributedAccounts", len(res.DistributedAccounts)).Msg("Success")
+	log.Trace().Int("accounts", len(res.GetAccounts())).Int("distributedAccounts", len(res.GetDistributedAccounts())).Msg("Success")
 	return res, nil
 }

@@ -31,7 +31,13 @@ func (h *Handler) Generate(ctx context.Context, req *pb.GenerateRequest) (*pb.Ge
 	log.Trace().Str("account", req.GetAccount()).Msg("Generate account received")
 	res := &pb.GenerateResponse{}
 
-	pubKey, participants, err := h.process.OnGenerate(ctx, handlers.GenerateCredentials(ctx), req.Account, req.Passphrase, req.SigningThreshold, req.Participants)
+	pubKey, participants, err := h.process.OnGenerate(ctx,
+		handlers.GenerateCredentials(ctx),
+		req.GetAccount(),
+		req.GetPassphrase(),
+		req.GetSigningThreshold(),
+		req.GetParticipants(),
+	)
 	if err != nil {
 		log.Error().Err(err).Msg("Generate attempt resulted in error")
 		res.State = pb.ResponseState_FAILED

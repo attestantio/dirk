@@ -32,7 +32,7 @@ func (h *Handler) Unlock(ctx context.Context, req *pb.UnlockWalletRequest) (*pb.
 	log.Trace().Str("wallet", req.GetWallet()).Msg("Unlock wallet received")
 	res := &pb.UnlockWalletResponse{}
 
-	result, err := h.walletManager.Unlock(ctx, handlers.GenerateCredentials(ctx), req.Wallet, req.Passphrase)
+	result, err := h.walletManager.Unlock(ctx, handlers.GenerateCredentials(ctx), req.GetWallet(), req.GetPassphrase())
 	if err != nil {
 		log.Error().Err(err).Msg("Unlock attempt resulted in error")
 		res.State = pb.ResponseState_FAILED

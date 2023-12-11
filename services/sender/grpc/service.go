@@ -137,7 +137,7 @@ func (s *Service) Commit(ctx context.Context, peer *core.Endpoint, account strin
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "Failed to call Commit()")
 	}
-	return res.PublicKey, res.ConfirmationSignature, nil
+	return res.GetPublicKey(), res.GetConfirmationSignature(), nil
 }
 
 // Abort sends a request to the given participant to abort the given DKG.
@@ -182,11 +182,11 @@ func (s *Service) SendContribution(ctx context.Context, peer *core.Endpoint, acc
 	}
 
 	resSecret := bls.SecretKey{}
-	if err := resSecret.Deserialize(res.Secret); err != nil {
+	if err := resSecret.Deserialize(res.GetSecret()); err != nil {
 		return bls.SecretKey{}, nil, errors.Wrap(err, "Returned invalid secret key")
 	}
-	resVVec := make([]bls.PublicKey, len(res.VerificationVector))
-	for i, key := range res.VerificationVector {
+	resVVec := make([]bls.PublicKey, len(res.GetVerificationVector()))
+	for i, key := range res.GetVerificationVector() {
 		resVVec[i] = bls.PublicKey{}
 		if err := resVVec[i].Deserialize(key); err != nil {
 			return bls.SecretKey{}, nil, errors.Wrap(err, "Returned invalid verification vector")

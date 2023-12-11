@@ -50,6 +50,8 @@ func (c *LogCapture) Run(e *zerolog.Event, _ zerolog.Level, msg string) {
 
 // AssertHasEntry checks if there is a log entry with the given string.
 func (c *LogCapture) AssertHasEntry(t *testing.T, msg string) {
+	t.Helper()
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for i := range c.entries {

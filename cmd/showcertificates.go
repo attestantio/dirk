@@ -19,6 +19,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -32,21 +33,21 @@ func ShowCertificates(ctx context.Context, majordomo majordomo.Service) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to obtain server certificate")
 	}
-	fmt.Printf("Server certificate obtained from %s\n", viper.GetString("certificates.server-cert"))
+	fmt.Fprintf(os.Stdout, "Server certificate obtained from %s\n", viper.GetString("certificates.server-cert"))
 	keyPEMBlock, err := majordomo.Fetch(ctx, viper.GetString("certificates.server-key"))
 	if err != nil {
 		return errors.Wrap(err, "failed to obtain server key")
 	}
-	fmt.Printf("Server key obtained from %s\n", viper.GetString("certificates.server-key"))
+	fmt.Fprintf(os.Stdout, "Server key obtained from %s\n", viper.GetString("certificates.server-key"))
 	var caPEMBlock []byte
 	if viper.GetString("certificates.ca-cert") != "" {
 		caPEMBlock, err = majordomo.Fetch(ctx, viper.GetString("certificates.ca-cert"))
 		if err != nil {
 			return errors.Wrap(err, "failed to obtain client CA certificate")
 		}
-		fmt.Printf("CA certificate obtained from %s\n", viper.GetString("certificates.ca-cert"))
+		fmt.Fprintf(os.Stdout, "CA certificate obtained from %s\n", viper.GetString("certificates.ca-cert"))
 	}
-	fmt.Println()
+	fmt.Fprintln(os.Stdout)
 
 	serverCert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
 	if err != nil {
@@ -59,13 +60,13 @@ func ShowCertificates(ctx context.Context, majordomo majordomo.Service) error {
 	if err != nil {
 		return errors.Wrap(err, "could not read certificate")
 	}
-	fmt.Printf("Server certificate issued by: %s\n", cert.Issuer.CommonName)
+	fmt.Fprintf(os.Stdout, "Server certificate issued by: %s\n", cert.Issuer.CommonName)
 	if cert.NotAfter.Before(time.Now()) {
-		fmt.Printf("WARNING: server certificate expired at: %v\n", cert.NotAfter)
+		fmt.Fprintf(os.Stdout, "WARNING: server certificate expired at: %v\n", cert.NotAfter)
 	} else {
-		fmt.Printf("Server certificate expires: %v\n", cert.NotAfter)
+		fmt.Fprintf(os.Stdout, "Server certificate expires: %v\n", cert.NotAfter)
 	}
-	fmt.Printf("Server certificate issued to: %s\n", cert.Subject.CommonName)
+	fmt.Fprintf(os.Stdout, "Server certificate issued to: %s\n", cert.Subject.CommonName)
 
 	for len(caPEMBlock) > 0 {
 		var block *pem.Block
@@ -80,11 +81,11 @@ func ShowCertificates(ctx context.Context, majordomo majordomo.Service) error {
 		if err != nil {
 			continue
 		}
-		fmt.Printf("\nCertificate authority certificate is: %s\n", cert.Subject.CommonName)
+		fmt.Fprintf(os.Stdout, "\nCertificate authority certificate is: %s\n", cert.Subject.CommonName)
 		if cert.NotAfter.Before(time.Now()) {
-			fmt.Printf("WARNING: certificate authority certificate expired at: %v\n", cert.NotAfter)
+			fmt.Fprintf(os.Stdout, "WARNING: certificate authority certificate expired at: %v\n", cert.NotAfter)
 		} else {
-			fmt.Printf("Certificate authority certificate expires: %v\n", cert.NotAfter)
+			fmt.Fprintf(os.Stdout, "Certificate authority certificate expires: %v\n", cert.NotAfter)
 		}
 	}
 

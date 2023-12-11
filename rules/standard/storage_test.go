@@ -166,7 +166,6 @@ func TestBatchStore(t *testing.T) {
 				require.NotNil(t, err)
 				require.EqualError(t, err, test.err)
 			}
-
 		})
 	}
 }

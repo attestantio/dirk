@@ -33,59 +33,59 @@ func (h *Handler) SignBeaconAttestations(ctx context.Context, req *pb.SignBeacon
 		res.Responses[0] = &pb.SignResponse{State: pb.ResponseState_DENIED}
 		return res, nil
 	}
-	if len(req.Requests) == 0 {
+	if len(req.GetRequests()) == 0 {
 		log.Warn().Str("result", "denied").Msg("Request empty")
 		res.Responses = make([]*pb.SignResponse, 1)
 		res.Responses[0] = &pb.SignResponse{State: pb.ResponseState_DENIED}
 		return res, nil
 	}
 
-	res.Responses = make([]*pb.SignResponse, len(req.Requests))
-	for i := range req.Requests {
+	res.Responses = make([]*pb.SignResponse, len(req.GetRequests()))
+	for i := range req.GetRequests() {
 		res.Responses[i] = &pb.SignResponse{State: pb.ResponseState_UNKNOWN}
 	}
 
-	for i := range req.Requests {
-		if req.Requests[i] == nil {
+	for i, request := range req.GetRequests() {
+		if request == nil {
 			log.Warn().Str("result", "denied").Msg("Request nil")
 			res.Responses[i].State = pb.ResponseState_FAILED
 			return res, nil
 		}
-		if req.Requests[i].Data == nil {
+		if request.GetData() == nil {
 			log.Warn().Str("result", "denied").Msg("Request missing data")
 			res.Responses[i].State = pb.ResponseState_DENIED
 			return res, nil
 		}
-		if req.Requests[i].Data.Source == nil {
+		if request.GetData().GetSource() == nil {
 			log.Warn().Str("result", "denied").Msg("Request source checkpoint not specified")
 			res.Responses[i].State = pb.ResponseState_DENIED
 			return res, nil
 		}
-		if req.Requests[i].Data.Target == nil {
+		if request.GetData().GetTarget() == nil {
 			log.Warn().Str("result", "denied").Msg("Request target checkpoint not specified")
 			res.Responses[i].State = pb.ResponseState_DENIED
 			return res, nil
 		}
 	}
 
-	accountNames := make([]string, len(req.Requests))
-	pubKeys := make([][]byte, len(req.Requests))
-	reqData := make([]*rules.SignBeaconAttestationData, len(req.Requests))
-	for i := range req.Requests {
-		accountNames[i] = req.Requests[i].GetAccount()
-		pubKeys[i] = req.Requests[i].GetPublicKey()
+	accountNames := make([]string, len(req.GetRequests()))
+	pubKeys := make([][]byte, len(req.GetRequests()))
+	reqData := make([]*rules.SignBeaconAttestationData, len(req.GetRequests()))
+	for i, request := range req.GetRequests() {
+		accountNames[i] = request.GetAccount()
+		pubKeys[i] = request.GetPublicKey()
 		reqData[i] = &rules.SignBeaconAttestationData{
-			Domain:          req.Requests[i].Domain,
-			Slot:            req.Requests[i].Data.Slot,
-			CommitteeIndex:  req.Requests[i].Data.CommitteeIndex,
-			BeaconBlockRoot: req.Requests[i].Data.BeaconBlockRoot,
+			Domain:          request.GetDomain(),
+			Slot:            request.GetData().GetSlot(),
+			CommitteeIndex:  request.GetData().GetCommitteeIndex(),
+			BeaconBlockRoot: request.GetData().GetBeaconBlockRoot(),
 			Source: &rules.Checkpoint{
-				Epoch: req.Requests[i].Data.Source.Epoch,
-				Root:  req.Requests[i].Data.Source.Root,
+				Epoch: request.GetData().GetSource().GetEpoch(),
+				Root:  request.GetData().GetSource().GetRoot(),
 			},
 			Target: &rules.Checkpoint{
-				Epoch: req.Requests[i].Data.Target.Epoch,
-				Root:  req.Requests[i].Data.Target.Root,
+				Epoch: request.GetData().GetTarget().GetEpoch(),
+				Root:  request.GetData().GetTarget().GetRoot(),
 			},
 		}
 	}

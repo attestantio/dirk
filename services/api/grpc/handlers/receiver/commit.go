@@ -30,7 +30,7 @@ func (h *Handler) Commit(ctx context.Context, req *pb.CommitRequest) (*pb.Commit
 	}
 	log.Trace().Uint64("sender_id", senderID).Msg("Committing as per request from sender")
 
-	pubKey, confirmationSig, err := h.process.OnCommit(ctx, senderID, req.Account, req.ConfirmationData)
+	pubKey, confirmationSig, err := h.process.OnCommit(ctx, senderID, req.GetAccount(), req.GetConfirmationData())
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to commit distributed key generation")
 		return nil, errors.Wrap(err, "failed to commit created key")

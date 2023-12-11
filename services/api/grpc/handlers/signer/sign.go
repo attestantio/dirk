@@ -45,8 +45,8 @@ func (h *Handler) Sign(ctx context.Context, req *pb.SignRequest) (*pb.SignRespon
 	}
 
 	data := &rules.SignData{
-		Domain: req.Domain,
-		Data:   req.Data,
+		Domain: req.GetDomain(),
+		Data:   req.GetData(),
 	}
 	result, signature := h.signer.SignGeneric(ctx, handlers.GenerateCredentials(ctx), req.GetAccount(), req.GetPublicKey(), data)
 	switch result {
