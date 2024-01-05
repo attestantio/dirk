@@ -46,7 +46,13 @@ func NewStore(ctx context.Context,
 	opt.Logger = loggers.NewBadgerLogger(log)
 	db, err := badger.Open(opt)
 	if err != nil {
-		return nil, err
+		// Fallback for systems that don't support mmap.
+		opt.ValueLogLoadingMode = options.FileIO
+		db, err = badger.Open(opt)
+		if err != nil {
+			return nil, err
+		}
+		log.Info().Str("db", base).Msg("badger db opened without mmap support.")
 	}
 
 	var ticker *time.Ticker
