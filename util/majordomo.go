@@ -24,6 +24,7 @@ import (
 	directconfidant "github.com/wealdtech/go-majordomo/confidants/direct"
 	fileconfidant "github.com/wealdtech/go-majordomo/confidants/file"
 	gsmconfidant "github.com/wealdtech/go-majordomo/confidants/gsm"
+	httpconfidant "github.com/wealdtech/go-majordomo/confidants/http"
 	standardmajordomo "github.com/wealdtech/go-majordomo/standard"
 )
 
@@ -54,6 +55,16 @@ func InitMajordomo(ctx context.Context) (majordomo.Service, error) {
 	}
 	if err := majordomo.RegisterConfidant(ctx, fileConfidant); err != nil {
 		return nil, errors.Wrap(err, "failed to register file confidant")
+	}
+
+	httpConfidant, err := httpconfidant.New(ctx,
+		httpconfidant.WithLogLevel(LogLevel("majordomo.confidants.http")),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create http confidant")
+	}
+	if err := majordomo.RegisterConfidant(ctx, httpConfidant); err != nil {
+		return nil, errors.Wrap(err, "failed to register http confidant")
 	}
 
 	if viper.GetString("majordomo.asm.region") != "" {
