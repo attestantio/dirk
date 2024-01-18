@@ -56,7 +56,7 @@ func NewStore(ctx context.Context,
 		if err != nil {
 			return nil, errors.Wrap(err, "random number generator failure")
 		}
-		period := 24*time.Hour + time.Duration(time.Duration(offset.Int64())*time.Second)
+		period := 24*time.Hour + time.Duration(offset.Int64())*time.Second
 		ticker = time.NewTicker(period)
 		go func(db *badger.DB) {
 			for {
