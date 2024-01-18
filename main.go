@@ -514,6 +514,7 @@ func initRules(ctx context.Context) (rules.Service, error) {
 		standardrules.WithLogLevel(util.LogLevel("rules")),
 		standardrules.WithStoragePath(util.ResolvePath(viper.GetString("storage-path"))),
 		standardrules.WithAdminIPs(viper.GetStringSlice("server.rules.admin-ips")),
+		standardrules.WithPeriodicPruning(viper.GetBool("server.rules.periodic-pruning")),
 	)
 }
 

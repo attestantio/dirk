@@ -43,7 +43,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		log = log.Level(parameters.logLevel)
 	}
 
-	store, err := NewStore(ctx, parameters.storagePath)
+	store, err := NewStore(ctx, parameters.storagePath, parameters.periodicPruning)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,9 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 
 // Close closes the database for the persistent rules information.
 func (s *Service) Close(ctx context.Context) error {
-	s.store.gcTicker.Stop()
+	if s.store.gcTicker != nil {
+		s.store.gcTicker.Stop()
+	}
 	return s.store.Close(ctx)
 }
 

@@ -26,14 +26,14 @@ import (
 func TestService(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := standardrules.NewStore(ctx, "/does/not/exist")
+	_, err := standardrules.NewStore(ctx, "/does/not/exist", false)
 	assert.Contains(t, err.Error(), "Error Creating Dir")
 
 	tmpDir, err := os.MkdirTemp("", "")
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
-	_, err = standardrules.NewStore(ctx, tmpDir)
+	_, err = standardrules.NewStore(ctx, tmpDir, false)
 	assert.NoError(t, err)
 }
 
@@ -44,7 +44,7 @@ func TestStore(t *testing.T) {
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
-	service, err := standardrules.NewStore(ctx, tmpDir)
+	service, err := standardrules.NewStore(ctx, tmpDir, false)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -94,7 +94,7 @@ func TestBatchStore(t *testing.T) {
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
-	service, err := standardrules.NewStore(ctx, tmpDir)
+	service, err := standardrules.NewStore(ctx, tmpDir, false)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -183,7 +183,7 @@ func TestFetch(t *testing.T) {
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
-	service, err := standardrules.NewStore(ctx, tmpDir)
+	service, err := standardrules.NewStore(ctx, tmpDir, false)
 	require.NoError(t, err)
 
 	require.NoError(t, service.Store(context.Background(), []byte("key"), []byte("value")))
@@ -233,7 +233,7 @@ func TestFetchAll(t *testing.T) {
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
-	service, err := standardrules.NewStore(ctx, tmpDir)
+	service, err := standardrules.NewStore(ctx, tmpDir, false)
 	require.NoError(t, err)
 
 	keys := [][49]byte{
