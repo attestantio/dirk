@@ -1,4 +1,4 @@
-// Copyright © 2020, 2021 Attestant Limited.
+// Copyright © 2020 - 2023 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -43,7 +43,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		log = log.Level(parameters.logLevel)
 	}
 
-	store, err := NewStore(parameters.storagePath)
+	store, err := NewStore(ctx, parameters.storagePath)
 	if err != nil {
 		return nil, err
 	}
@@ -68,6 +68,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 
 // Close closes the database for the persistent rules information.
 func (s *Service) Close(ctx context.Context) error {
+	s.store.gcTicker.Stop()
 	return s.store.Close(ctx)
 }
 

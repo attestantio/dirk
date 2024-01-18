@@ -68,7 +68,7 @@ import (
 )
 
 // ReleaseVersion is the release version for the code.
-var ReleaseVersion = "1.2.1"
+var ReleaseVersion = "1.2.1-rc1"
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -82,7 +82,6 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to initialise majordomo")
 	}
 
-	// runCommands will not return if a command is run.
 	exit, exitCode := runCommands(ctx, majordomo)
 	if exit {
 		os.Exit(exitCode)
@@ -97,7 +96,7 @@ func main() {
 	}
 
 	logModules()
-	log.Info().Str("version", ReleaseVersion).Msg("Starting dirk")
+	log.Info().Str("version", ReleaseVersion).Str("commit_hash", util.CommitHash()).Msg("Starting dirk")
 
 	initProfiling()
 

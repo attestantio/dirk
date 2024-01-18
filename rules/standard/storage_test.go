@@ -1,4 +1,4 @@
-// Copyright © 2020, 2022 Attestant Limited.
+// Copyright © 2020 - 2024 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,23 +24,27 @@ import (
 )
 
 func TestService(t *testing.T) {
-	_, err := standardrules.NewStore("/does/not/exist")
+	ctx := context.Background()
+
+	_, err := standardrules.NewStore(ctx, "/does/not/exist")
 	assert.Contains(t, err.Error(), "Error Creating Dir")
 
 	tmpDir, err := os.MkdirTemp("", "")
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
-	_, err = standardrules.NewStore(tmpDir)
+	_, err = standardrules.NewStore(ctx, tmpDir)
 	assert.NoError(t, err)
 }
 
 func TestStore(t *testing.T) {
+	ctx := context.Background()
+
 	tmpDir, err := os.MkdirTemp("", "")
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
-	service, err := standardrules.NewStore(tmpDir)
+	service, err := standardrules.NewStore(ctx, tmpDir)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -84,11 +88,13 @@ func TestStore(t *testing.T) {
 }
 
 func TestBatchStore(t *testing.T) {
+	ctx := context.Background()
+
 	tmpDir, err := os.MkdirTemp("", "")
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
-	service, err := standardrules.NewStore(tmpDir)
+	service, err := standardrules.NewStore(ctx, tmpDir)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -171,11 +177,13 @@ func TestBatchStore(t *testing.T) {
 }
 
 func TestFetch(t *testing.T) {
+	ctx := context.Background()
+
 	tmpDir, err := os.MkdirTemp("", "")
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
-	service, err := standardrules.NewStore(tmpDir)
+	service, err := standardrules.NewStore(ctx, tmpDir)
 	require.NoError(t, err)
 
 	require.NoError(t, service.Store(context.Background(), []byte("key"), []byte("value")))
@@ -219,11 +227,13 @@ func TestFetch(t *testing.T) {
 }
 
 func TestFetchAll(t *testing.T) {
+	ctx := context.Background()
+
 	tmpDir, err := os.MkdirTemp("", "")
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
-	service, err := standardrules.NewStore(tmpDir)
+	service, err := standardrules.NewStore(ctx, tmpDir)
 	require.NoError(t, err)
 
 	keys := [][49]byte{

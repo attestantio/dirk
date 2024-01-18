@@ -15,6 +15,8 @@ package standard
 
 import (
 	"context"
+	"math/rand"
+	"time"
 
 	"github.com/attestantio/dirk/util/loggers"
 	badger "github.com/dgraph-io/badger/v2"
@@ -25,11 +27,12 @@ import (
 
 // Store holds key/value pairs in a badger database.
 type Store struct {
-	db *badger.DB
+	db       *badger.DB
+	gcTicker *time.Ticker
 }
 
 // NewStore creates a new badger store.
-func NewStore(base string) (*Store, error) {
+func NewStore(ctx context.Context, base string) (*Store, error) {
 	opt := badger.DefaultOptions(base)
 	opt.TableLoadingMode = options.LoadToRAM
 	opt.ValueLogLoadingMode = options.MemoryMap
@@ -40,18 +43,33 @@ func NewStore(base string) (*Store, error) {
 		return nil, err
 	}
 
-	// Garbage collect in the background on start.
+	// Garbage collect every day or two.
+	// Use a random offset to avoid multiple Dirk instances started simultaneously
+	// running this procedure at the same time.
+	period := 24*time.Hour + time.Duration(int(rand.Int31()%60*24))*time.Minute
+	ticker := time.NewTicker(period)
 	go func(db *badger.DB) {
 		for {
-			if err = db.RunValueLogGC(0.7); err != nil {
-				// Error occurs when there is nothing left to collect.
-				break
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				for {
+					log.Info().Msg("Running storage garbage collection")
+					if err = db.RunValueLogGC(0.7); err != nil {
+						// Error occurs when there is nothing left to collect.
+						log.Info().Msg("Completed storage garbage collection")
+						break
+					}
+				}
 			}
 		}
 	}(db)
+	log.Info().Stringer("period", period).Msg("Storage garbage collection routine scheduled")
 
 	return &Store{
-		db: db,
+		db:       db,
+		gcTicker: ticker,
 	}, nil
 }
 
