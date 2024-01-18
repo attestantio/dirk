@@ -46,6 +46,7 @@ func NewStore(ctx context.Context, base string) (*Store, error) {
 	// Garbage collect every day or two.
 	// Use a random offset to avoid multiple Dirk instances started simultaneously
 	// running this procedure at the same time.
+	//nolint:gosec
 	period := 24*time.Hour + time.Duration(int(rand.Int31()%60*24))*time.Minute
 	ticker := time.NewTicker(period)
 	go func(db *badger.DB) {
