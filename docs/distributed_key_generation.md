@@ -24,9 +24,9 @@ mkdir -p ${HOME}/dirk-multi/3/security
 The `wallets` directory of each instance needs to be populated with a wallet that can manage distributed keys:
 
 ```sh
-ethdo --basedir=${HOME}/dirk-multi/1/wallets wallet create --type=distributed --wallet=DistributedWallet
-ethdo --basedir=${HOME}/dirk-multi/2/wallets wallet create --type=distributed --wallet=DistributedWallet
-ethdo --basedir=${HOME}/dirk-multi/3/wallets wallet create --type=distributed --wallet=DistributedWallet
+ethdo --base-dir=${HOME}/dirk-multi/1/wallets wallet create --type=distributed --wallet=DistributedWallet
+ethdo --base-dir=${HOME}/dirk-multi/2/wallets wallet create --type=distributed --wallet=DistributedWallet
+ethdo --base-dir=${HOME}/dirk-multi/3/wallets wallet create --type=distributed --wallet=DistributedWallet
 ```
 
 The `security` directory of each instance needs to be populated with certificates.  Although all three instances are running on the same server they _cannot_ have the same name, hence we create three certificates (note that in a real deployment the Dirk instances should be on different servers for both security and availability purposes).  We assume that a certificate authority has already been created as per the [getting started instructions](getting_started.md#creating-certificates), so all that needs to be created is the server certificate:
@@ -275,8 +275,8 @@ ethdo signature sign \
   --client-cert ${HOME}/security/client1.crt \
   --client-key ${HOME}/security/client1.key \
   --account=DistributedWallet/1 \
-  --data=0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
-  --domain=0xf000000000000000000000000000000000000000000000000000000000000000
+  --data=0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f \
+  --domain=0xf000000000000000000000000000000000000000000000000000000000000000 \
   --verbose
 ```
 
