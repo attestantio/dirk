@@ -20,9 +20,10 @@ import (
 )
 
 type parameters struct {
-	logLevel    zerolog.Level
-	storagePath string
-	adminIPs    []string
+	logLevel        zerolog.Level
+	storagePath     string
+	adminIPs        []string
+	periodicPruning bool
 }
 
 // Parameter is the interface for service parameters.
@@ -54,6 +55,13 @@ func WithStoragePath(storagePath string) Parameter {
 func WithAdminIPs(adminIPs []string) Parameter {
 	return parameterFunc(func(p *parameters) {
 		p.adminIPs = adminIPs
+	})
+}
+
+// WithPeriodicPruning enables periodic pruning of the rules database.
+func WithPeriodicPruning(periodicPruning bool) Parameter {
+	return parameterFunc(func(p *parameters) {
+		p.periodicPruning = periodicPruning
 	})
 }
 
