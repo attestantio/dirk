@@ -129,6 +129,9 @@ At this point you also need a minimal configuration file so `dirk` knows which c
     "ca-cert": "file:///home/user/dirk/security/ca.crt",
     "server-cert": "file:///home/user/dirk/security/server.example.com.crt",
     "server-key": "file:///home/user/dirk/security/server.example.com.key"
+  },
+  "peers": {
+    "212483780": "server.example.com:9091"
   }
 }
 ```
@@ -168,6 +171,9 @@ The next step is to configure `dirk` to know which clients have access to which 
     "ca-cert": "file:///home/user/dirk/security/ca.crt",
     "server-cert": "file:///home/user/dirk/security/server.example.com.crt",
     "server-key": "file:///home/user/dirk/security/server.example.com.key"
+  },
+  "peers": {
+    "212483780": "server.example.com:9091"
   },
   "permissions": {
     "client1": {
