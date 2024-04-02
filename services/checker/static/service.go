@@ -101,7 +101,7 @@ func (s *Service) Check(_ context.Context, credentials *checker.Credentials, acc
 
 	antiOperation := fmt.Sprintf("~%s", operation)
 	for _, path := range paths {
-		if path.wallet.Match([]byte(walletName)) && path.account.Match([]byte(accountName)) {
+		if path.wallet.MatchString(walletName) && path.account.MatchString(accountName) {
 			for i := range path.operations {
 				if strings.EqualFold(path.operations[i], "none") || strings.EqualFold(path.operations[i], antiOperation) {
 					log.Trace().Str("result", "denied").Msg("Negative permission matched")
