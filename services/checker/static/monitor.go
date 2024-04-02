@@ -16,3 +16,5 @@ package static
 // noopMonitor is a monitor that does nothing, used in plae of nil if an
 // external monitor is not supplied.
 type noopMonitor struct{}
+
+func (*noopMonitor) PermissionsObtained(_ map[string]int) {}

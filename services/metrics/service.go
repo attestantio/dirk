@@ -27,7 +27,10 @@ type Service interface {
 }
 
 // CheckerMonitor monitors the checker service.
-type CheckerMonitor interface{}
+type CheckerMonitor interface {
+	// PermissionsObtained is called when permissions have been obtained for clients.
+	PermissionsObtained(clients map[string]int)
+}
 
 // SignerMonitor monitors the signer service.
 type SignerMonitor interface {

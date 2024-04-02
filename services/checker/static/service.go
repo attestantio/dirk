@@ -60,6 +60,12 @@ func New(_ context.Context, params ...Parameter) (*Service, error) {
 		access:  parameters.access,
 	}
 
+	perms := make(map[string]int)
+	for host := range s.access {
+		perms[host] = len(s.access[host])
+	}
+	s.monitor.PermissionsObtained(perms)
+
 	return s, nil
 }
 

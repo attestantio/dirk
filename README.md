@@ -38,7 +38,7 @@ docker pull attestant/dirk
 `dirk` is a standard Go module which can be installed with:
 
 ```sh
-go get github.com/attestantio/dirk
+go install github.com/attestantio/dirk@latest
 ```
 
 ## Usage
@@ -68,4 +68,4 @@ Contributions welcome. Please check out [the issues](https://github.com/attestan
 
 ## License
 
-[Apache-2.0](LICENSE) © 2020 Attestant Limited.
+[Apache-2.0](LICENSE) © 2020 - 2024 Attestant Limited.
