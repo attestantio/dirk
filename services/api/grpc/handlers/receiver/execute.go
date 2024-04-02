@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2024 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,13 +17,13 @@ import (
 	context "context"
 
 	"github.com/attestantio/dirk/services/api/grpc/interceptors"
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	pb "github.com/wealdtech/eth2-signer-api/pb/v1"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // Execute handles the Execute() grpc call.
-func (h *Handler) Execute(ctx context.Context, req *pb.ExecuteRequest) (*empty.Empty, error) {
+func (h *Handler) Execute(ctx context.Context, req *pb.ExecuteRequest) (*emptypb.Empty, error) {
 	senderID := h.senderID(ctx)
 	if senderID == 0 {
 		log.Warn().Interface("client", ctx.Value(&interceptors.ClientName{})).Msg("Failed to obtain participant ID of sender")
@@ -38,5 +38,5 @@ func (h *Handler) Execute(ctx context.Context, req *pb.ExecuteRequest) (*empty.E
 	}
 
 	log.Trace().Msg("Completed execution successfully")
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
