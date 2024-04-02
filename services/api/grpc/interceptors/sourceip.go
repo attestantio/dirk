@@ -28,7 +28,7 @@ type ExternalIP struct{}
 
 // SourceIPInterceptor adds the source IP address to incoming requests.
 func SourceIPInterceptor() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return func(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		grpcPeer, ok := peer.FromContext(ctx)
 		if !ok {
 			return nil, status.Error(codes.Internal, "Failure")

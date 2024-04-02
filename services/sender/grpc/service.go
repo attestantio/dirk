@@ -222,7 +222,7 @@ func (s *Service) obtainConnection(_ context.Context, address string) (*puddle.R
 	s.connectionPoolsMutex.Lock()
 	pool, exists := s.connectionPools[address]
 	if !exists {
-		constructor := func(ctx context.Context) (interface{}, error) {
+		constructor := func(_ context.Context) (interface{}, error) {
 			return grpc.Dial(address, []grpc.DialOption{
 				grpc.WithTransportCredentials(s.credentials),
 			}...)

@@ -28,7 +28,7 @@ type ClientName struct{}
 
 // ClientInfoInterceptor adds the client certificate common name to incoming requests.
 func ClientInfoInterceptor() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return func(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		grpcPeer, ok := peer.FromContext(ctx)
 		if !ok {
 			return nil, status.Error(codes.Internal, "Failure")
