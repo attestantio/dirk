@@ -15,6 +15,9 @@ package standard
 
 import (
 	"context"
+	"crypto/rand"
+	"math/big"
+	"time"
 
 	"github.com/attestantio/dirk/util/loggers"
 	badger "github.com/dgraph-io/badger/v2"
@@ -25,11 +28,15 @@ import (
 
 // Store holds key/value pairs in a badger database.
 type Store struct {
-	db *badger.DB
+	db       *badger.DB
+	gcTicker *time.Ticker
 }
 
 // NewStore creates a new badger store.
-func NewStore(base string) (*Store, error) {
+func NewStore(ctx context.Context,
+	base string,
+	periodicPruning bool,
+) (*Store, error) {
 	opt := badger.DefaultOptions(base)
 	opt.TableLoadingMode = options.LoadToRAM
 	opt.ValueLogLoadingMode = options.MemoryMap
@@ -40,18 +47,42 @@ func NewStore(base string) (*Store, error) {
 		return nil, err
 	}
 
-	// Garbage collect in the background on start.
-	go func(db *badger.DB) {
-		for {
-			if err = db.RunValueLogGC(0.7); err != nil {
-				// Error occurs when there is nothing left to collect.
-				break
-			}
+	var ticker *time.Ticker
+	if periodicPruning {
+		// Garbage collect every day or two.
+		// Use a random offset to avoid multiple Dirk instances started simultaneously
+		// running this procedure at the same time.
+		offset, err := rand.Int(rand.Reader, big.NewInt(86400))
+		if err != nil {
+			return nil, errors.Wrap(err, "random number generator failure")
 		}
-	}(db)
+		period := 24*time.Hour + time.Duration(offset.Int64())*time.Second
+		ticker = time.NewTicker(period)
+		go func(db *badger.DB) {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					for {
+						log.Trace().Msg("Running storage garbage collection")
+						if err = db.RunValueLogGC(0.7); err != nil {
+							// Error occurs when there is nothing left to collect.
+							log.Trace().Msg("Completed storage garbage collection")
+							break
+						}
+					}
+				}
+			}
+		}(db)
+		log.Info().Stringer("period", period).Msg("Storage garbage collection routine scheduled")
+	} else {
+		log.Info().Msg("Storage garbage collection routine not scheduled")
+	}
 
 	return &Store{
-		db: db,
+		db:       db,
+		gcTicker: ticker,
 	}, nil
 }
 

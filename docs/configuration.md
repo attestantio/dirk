@@ -26,6 +26,8 @@ server:
   rules:
     # admin-ips is a list of IP addresses from which requests for voluntary exists will be accepted.
     admin-ips: [ 1.2.3.4, 5.6.7.8 ]
+    # periodic-pruning will prune the rules storage if enabled every 1-2 days to keep the database size down.
+    periodic-pruning: true
 certificates:
   # server-cert is the majordomo URL to the server's certificate.
   server-cert: file:///home/me/dirk/security/certificates/myserver.example.com.crt
