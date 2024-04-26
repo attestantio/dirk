@@ -30,6 +30,8 @@ type Service struct {
 	accountManagerProcessTimer *prometheus.HistogramVec
 	accountManagerRequests     *prometheus.CounterVec
 
+	checkerPermissions *prometheus.GaugeVec
+
 	walletManagerProcessTimer *prometheus.HistogramVec
 	walletManagerRequests     *prometheus.CounterVec
 
@@ -60,6 +62,9 @@ func New(_ context.Context, params ...Parameter) (*Service, error) {
 
 	if err := s.setupAccountManagerMetrics(); err != nil {
 		return nil, errors.Wrap(err, "failed to set up account manager metrics")
+	}
+	if err := s.setupCheckerMetrics(); err != nil {
+		return nil, errors.Wrap(err, "failed to set up checker metrics")
 	}
 	if err := s.setupWalletManagerMetrics(); err != nil {
 		return nil, errors.Wrap(err, "failed to set up wallet manager metrics")

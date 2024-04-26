@@ -10,6 +10,12 @@ Health metrics provide a mechanism to confirm if Dirk is active and able to serv
   - `dirk_start_time_secs` is the Unix timestamp at which Dirk was started.  This value will remain the same throughout a run of Dirk; if it increments it implies that Dirk has restarted.
   - `dirk_ready` is a flag stating if Dirk is ready to serve requests.  This value is 1 if Dirk is ready to serve requests, otherwise 0.
 
+## Configuration
+Configuration metrics provide information about Dirk's configuration.
+
+`dirk_checker_permissions` number of individual permissions configured for each client.  This has one label:
+  - `client` is the name of the client which has these permissions
+
 ## Operations
 Operations metrics provide information about the number of operations taking place within Dirk.
 
