@@ -1,4 +1,4 @@
-// Copyright © 2020, 2022 Attestant Limited.
+// Copyright © 2020 - 2024 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -137,11 +137,13 @@ func initS3Store(ctx context.Context,
 		opts = append(opts, s3.WithPassphrase(passphrase))
 	}
 	if storeDefinition.S3 != nil {
-		opts = append(opts, s3.WithRegion(storeDefinition.S3.Region))
-		opts = append(opts, s3.WithID([]byte(storeDefinition.S3.ID)))
-		opts = append(opts, s3.WithBucket(storeDefinition.S3.Bucket))
-		opts = append(opts, s3.WithPath(storeDefinition.S3.Path))
-		opts = append(opts, s3.WithEndpoint(storeDefinition.S3.Endpoint))
+		opts = append(opts,
+			s3.WithRegion(storeDefinition.S3.Region),
+			s3.WithID([]byte(storeDefinition.S3.ID)),
+			s3.WithBucket(storeDefinition.S3.Bucket),
+			s3.WithPath(storeDefinition.S3.Path),
+			s3.WithEndpoint(storeDefinition.S3.Endpoint),
+		)
 	}
 	if storeDefinition.S3 != nil && storeDefinition.S3.Credentials != nil {
 		id, err := majordomo.Fetch(ctx, storeDefinition.S3.Credentials.ID)
