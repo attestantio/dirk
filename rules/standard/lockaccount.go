@@ -21,7 +21,7 @@ import (
 )
 
 // OnLockAccount is called when a request to lock an account needs to be approved.
-func (s *Service) OnLockAccount(ctx context.Context, _ *rules.ReqMetadata, _ *rules.LockAccountData) rules.Result {
+func (*Service) OnLockAccount(ctx context.Context, _ *rules.ReqMetadata, _ *rules.LockAccountData) rules.Result {
 	span, _ := opentracing.StartSpanFromContext(ctx, "rules.OnLockAccount")
 	defer span.Finish()
 

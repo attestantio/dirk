@@ -29,7 +29,7 @@ func New() *Service {
 }
 
 // Generate generates a new account.
-func (s *Service) Generate(_ context.Context,
+func (*Service) Generate(_ context.Context,
 	_ *checker.Credentials,
 	_ string,
 	_ []byte,
@@ -58,7 +58,7 @@ func (s *Service) Generate(_ context.Context,
 }
 
 // Unlock unlocks an account.
-func (s *Service) Unlock(_ context.Context,
+func (*Service) Unlock(_ context.Context,
 	_ *checker.Credentials,
 	_ string,
 	_ []byte,
@@ -70,7 +70,7 @@ func (s *Service) Unlock(_ context.Context,
 }
 
 // Lock locks an account.
-func (s *Service) Lock(_ context.Context,
+func (*Service) Lock(_ context.Context,
 	_ *checker.Credentials,
 	_ string,
 ) (

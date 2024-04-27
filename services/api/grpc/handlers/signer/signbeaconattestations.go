@@ -31,12 +31,14 @@ func (h *Handler) SignBeaconAttestations(ctx context.Context, req *pb.SignBeacon
 		log.Warn().Str("result", "denied").Msg("Request not specified")
 		res.Responses = make([]*pb.SignResponse, 1)
 		res.Responses[0] = &pb.SignResponse{State: pb.ResponseState_DENIED}
+
 		return res, nil
 	}
 	if len(req.GetRequests()) == 0 {
 		log.Warn().Str("result", "denied").Msg("Request empty")
 		res.Responses = make([]*pb.SignResponse, 1)
 		res.Responses[0] = &pb.SignResponse{State: pb.ResponseState_DENIED}
+
 		return res, nil
 	}
 
@@ -49,21 +51,25 @@ func (h *Handler) SignBeaconAttestations(ctx context.Context, req *pb.SignBeacon
 		if request == nil {
 			log.Warn().Str("result", "denied").Msg("Request nil")
 			res.Responses[i].State = pb.ResponseState_FAILED
+
 			return res, nil
 		}
 		if request.GetData() == nil {
 			log.Warn().Str("result", "denied").Msg("Request missing data")
 			res.Responses[i].State = pb.ResponseState_DENIED
+
 			return res, nil
 		}
 		if request.GetData().GetSource() == nil {
 			log.Warn().Str("result", "denied").Msg("Request source checkpoint not specified")
 			res.Responses[i].State = pb.ResponseState_DENIED
+
 			return res, nil
 		}
 		if request.GetData().GetTarget() == nil {
 			log.Warn().Str("result", "denied").Msg("Request target checkpoint not specified")
 			res.Responses[i].State = pb.ResponseState_DENIED
+
 			return res, nil
 		}
 	}

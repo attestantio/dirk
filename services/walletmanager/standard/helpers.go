@@ -59,5 +59,6 @@ func (s *Service) checkAccess(ctx context.Context, credentials *checker.Credenti
 	if s.checker.Check(ctx, credentials, accountName, action) {
 		return core.ResultSucceeded
 	}
+
 	return core.ResultDenied
 }

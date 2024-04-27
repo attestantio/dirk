@@ -58,30 +58,30 @@ func WithMonitor(monitor metrics.WalletManagerMonitor) Parameter {
 }
 
 // WithChecker sets the access checker for this module.
-func WithChecker(checker checker.Service) Parameter {
+func WithChecker(service checker.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.checker = checker
+		p.checker = service
 	})
 }
 
 // WithRuler sets the ruler for this module.
-func WithRuler(ruler ruler.Service) Parameter {
+func WithRuler(service ruler.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.ruler = ruler
+		p.ruler = service
 	})
 }
 
 // WithUnlocker sets the account unlocker for this module.
-func WithUnlocker(unlocker unlocker.Service) Parameter {
+func WithUnlocker(service unlocker.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.unlocker = unlocker
+		p.unlocker = service
 	})
 }
 
 // WithFetcher sets the account fetcher for this module.
-func WithFetcher(fetcher fetcher.Service) Parameter {
+func WithFetcher(service fetcher.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.fetcher = fetcher
+		p.fetcher = service
 	})
 }
 

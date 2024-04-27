@@ -20,6 +20,6 @@ import (
 )
 
 // OnUnlockWallet is called when a request to unlock a wallet needs to be approved.
-func (s *Service) OnUnlockWallet(_ context.Context, _ *rules.ReqMetadata, _ *rules.UnlockWalletData) rules.Result {
+func (*Service) OnUnlockWallet(_ context.Context, _ *rules.ReqMetadata, _ *rules.UnlockWalletData) rules.Result {
 	return rules.APPROVED
 }

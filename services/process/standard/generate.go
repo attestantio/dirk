@@ -27,7 +27,7 @@ import (
 	"github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
-	wallet "github.com/wealdtech/go-eth2-wallet"
+	e2wallet "github.com/wealdtech/go-eth2-wallet"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
 
@@ -55,12 +55,12 @@ func (s *Service) OnGenerate(ctx context.Context,
 
 	log := log.With().Str("account", account).Logger()
 	// Ensure we don't already have this account.
-	walletName, accountName, err := wallet.WalletAndAccountNames(account)
+	walletName, accountName, err := e2wallet.WalletAndAccountNames(account)
 	if err != nil {
 		log.Warn().Msg("Invalid account supplied")
 		return nil, nil, errors.Wrap(err, "invalid account")
 	}
-	wallet, err := wallet.OpenWallet(walletName, wallet.WithStore(s.stores[0]))
+	wallet, err := e2wallet.OpenWallet(walletName, e2wallet.WithStore(s.stores[0]))
 	if err != nil {
 		log.Warn().Err(err).Msg("Unknown wallet supplied")
 		return nil, nil, errors.Wrap(err, "unknown wallet")
@@ -90,12 +90,21 @@ func (s *Service) OnGenerate(ctx context.Context,
 			log.Error().Err(err).Msg("Failed to generate account")
 			return nil, nil, errors.New("failed account generation")
 		}
+
 		return pubKey, nil, err
 	}
+
 	return s.generateDistributed(ctx, wallet, account, passphrase, signingThreshold, numParticipants)
 }
 
-func (s *Service) generate(ctx context.Context, wallet e2wtypes.Wallet, accountName string, passphrase []byte) ([]byte, error) {
+func (s *Service) generate(ctx context.Context,
+	wallet e2wtypes.Wallet,
+	accountName string,
+	passphrase []byte,
+) (
+	[]byte,
+	error,
+) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "services.process.generate")
 	defer span.Finish()
 
@@ -222,7 +231,7 @@ func (s *Service) generateDistributed(ctx context.Context, wallet e2wtypes.Walle
 	for i := range pubKeys {
 		if !bytes.Equal(pubKeys[i], pubKeys[(i+1)%len(pubKeys)]) {
 			log.Error().Msg("pubkey mismatch")
-			return nil, nil, errors.New("Invalid generation")
+			return nil, nil, errors.New("invalid generation")
 		}
 	}
 
@@ -232,7 +241,7 @@ func (s *Service) generateDistributed(ctx context.Context, wallet e2wtypes.Walle
 	pubKey := bls.PublicKey{}
 	if err := pubKey.Deserialize(pubKeys[0]); err != nil {
 		log.Error().Err(err).Msg("Failed to deserialize public key")
-		return nil, nil, errors.New("Invalid generation")
+		return nil, nil, errors.New("invalid generation")
 	}
 	compositeSig := bls.Sign{}
 	for i := 0; i < len(participants)+1-int(signingThreshold); i++ {
@@ -241,19 +250,20 @@ func (s *Service) generateDistributed(ctx context.Context, wallet e2wtypes.Walle
 			sigs[j] = bls.Sign{}
 			if err := sigs[j].Deserialize(confirmationSigs[i+j]); err != nil {
 				log.Error().Err(err).Msg("Failed to deserialize confirmation signature")
-				return nil, nil, errors.New("Invalid generation")
+				return nil, nil, errors.New("invalid generation")
 			}
 		}
 		if err := compositeSig.Recover(sigs, ids); err != nil {
 			log.Error().Err(err).Msg("Failed to recover composite signature")
-			return nil, nil, errors.New("Invalid generation")
+			return nil, nil, errors.New("invalid generation")
 		}
 		if !compositeSig.VerifyByte(&pubKey, confirmationData) {
 			log.Error().Err(err).Msg("Failed to confirm composite signature")
-			return nil, nil, errors.New("Invalid generation")
+			return nil, nil, errors.New("invalid generation")
 		}
 	}
 
 	log.Trace().Str("account", account).Str("pubKey", fmt.Sprintf("%x", pubKeys[0])).Msg("Generated account")
+
 	return pubKeys[0], participants, nil
 }

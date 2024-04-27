@@ -88,6 +88,7 @@ func (s *Service) RunRules(ctx context.Context,
 			var lockKey [48]byte
 			copy(lockKey[:], rulesData[i].PubKey)
 			s.locker.Lock(lockKey)
+			//nolint:revive
 			defer s.locker.Unlock(lockKey)
 		}
 		s.locker.PostLock()
@@ -112,7 +113,7 @@ func (s *Service) runRules(ctx context.Context,
 	for i := range rulesData {
 		results[i] = rules.UNKNOWN
 	}
-	_, err := util.Scatter(len(rulesData), func(offset int, entries int, _ *sync.RWMutex) (interface{}, error) {
+	_, err := util.Scatter(len(rulesData), func(offset int, entries int, _ *sync.RWMutex) (any, error) {
 		for i := offset; i < offset+entries; i++ {
 			if rulesData[i] == nil {
 				continue
@@ -213,7 +214,8 @@ func (s *Service) runRules(ctx context.Context,
 				results[i] = rules.FAILED
 			}
 		}
-		return nil, nil
+
+		return make([]*util.ScatterResult, 0), nil
 	})
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to scatter rules")
@@ -235,7 +237,7 @@ func (s *Service) runRulesForMultipleBeaconAttestations(ctx context.Context,
 	metadatas := make([]*rules.ReqMetadata, len(rulesData))
 	reqData := make([]*rules.SignBeaconAttestationData, len(rulesData))
 
-	_, err := util.Scatter(len(rulesData), func(offset int, entries int, _ *sync.RWMutex) (interface{}, error) {
+	_, err := util.Scatter(len(rulesData), func(offset int, entries int, _ *sync.RWMutex) (any, error) {
 		for i := offset; i < offset+entries; i++ {
 			if rulesData[i].AccountName == "" {
 				log.Warn().Msg("Missing account")
@@ -262,7 +264,8 @@ func (s *Service) runRulesForMultipleBeaconAttestations(ctx context.Context,
 			}
 			reqData[i] = data
 		}
-		return nil, nil
+
+		return make([]*util.ScatterResult, 0), nil
 	})
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to scatter signing preparation")

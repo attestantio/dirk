@@ -116,5 +116,6 @@ func (s *Service) Check(_ context.Context, credentials *checker.Credentials, acc
 	}
 
 	log.Trace().Str("result", "denied").Msg("No matching rules")
+
 	return false
 }

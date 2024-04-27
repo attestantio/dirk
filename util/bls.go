@@ -27,5 +27,6 @@ func BLSID(id uint64) *bls.ID {
 	if err := res.SetLittleEndian(buf[:]); err != nil {
 		panic(err)
 	}
+
 	return &res
 }

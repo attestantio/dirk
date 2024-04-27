@@ -30,7 +30,7 @@ func New() *Service {
 }
 
 // ListAccounts lists accessible accounts given by the paths.
-func (s *Service) ListAccounts(_ context.Context,
+func (*Service) ListAccounts(_ context.Context,
 	_ *checker.Credentials,
 	_ []string,
 ) (

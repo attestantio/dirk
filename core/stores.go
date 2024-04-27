@@ -60,6 +60,7 @@ type S3StoreCredentials struct {
 func InitStores(ctx context.Context, majordomo majordomo.Service, storeDefinitions []*Store) ([]e2wtypes.Store, error) {
 	if len(storeDefinitions) == 0 {
 		log.Warn().Msg("No stores configured; using default")
+
 		return initDefaultStores(), nil
 	}
 	res := make([]e2wtypes.Store, 0, len(storeDefinitions))
@@ -89,6 +90,7 @@ func InitStores(ctx context.Context, majordomo majordomo.Service, storeDefinitio
 
 		res = append(res, store)
 	}
+
 	return res, nil
 }
 
@@ -113,6 +115,7 @@ func initFilesystemStore(ctx context.Context,
 		opts = append(opts, filesystem.WithLocation(storeDefinition.Location))
 	}
 	store := filesystem.New(opts...)
+
 	return store, nil
 }
 
@@ -156,6 +159,7 @@ func initS3Store(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
+
 	return store, nil
 }
 
@@ -166,6 +170,7 @@ func initScratchStore(_ context.Context,
 	log.Trace().Str("name", storeDefinition.Name).Msg("Adding scratch store")
 
 	store := scratch.New()
+
 	return store
 }
 
@@ -173,5 +178,6 @@ func initScratchStore(_ context.Context,
 func initDefaultStores() []e2wtypes.Store {
 	res := make([]e2wtypes.Store, 1)
 	res[0] = filesystem.New()
+
 	return res
 }

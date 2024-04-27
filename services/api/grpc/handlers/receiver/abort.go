@@ -27,15 +27,16 @@ func (h *Handler) Abort(ctx context.Context, req *pb.AbortRequest) (*emptypb.Emp
 	senderID := h.senderID(ctx)
 	if senderID == 0 {
 		log.Warn().Interface("client", ctx.Value(&interceptors.ClientName{})).Msg("Failed to obtain participant ID of sender")
-		return nil, errors.New("Unknown sender")
+		return nil, errors.New("unknown sender")
 	}
 	log.Debug().Uint64("sender_id", senderID).Msg("Aborting as per request from sender")
 
 	if err := h.process.OnAbort(ctx, senderID, req.GetAccount()); err != nil {
 		log.Error().Err(err).Msg("Failed to abort distributed key generation")
-		return nil, errors.New("Failed")
+		return nil, errors.New("failed")
 	}
 
 	log.Trace().Msg("Completed abort successfully")
+
 	return &emptypb.Empty{}, nil
 }

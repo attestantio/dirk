@@ -26,7 +26,7 @@ type RequestID struct{}
 
 // RequestIDInterceptor adds a request ID to incoming requests.
 func RequestIDInterceptor() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		// #nosec G404
 		newCtx := context.WithValue(ctx, &RequestID{}, fmt.Sprintf("%02x", rand.Int31()))
 		return handler(newCtx, req)

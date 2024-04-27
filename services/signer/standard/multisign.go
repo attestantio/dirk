@@ -50,6 +50,7 @@ func (s *Service) Multisign(ctx context.Context,
 		s.monitor.SignCompleted(started, "generic", core.ResultDenied)
 		results := make([]core.Result, 1)
 		results[0] = core.ResultDenied
+
 		return results, nil
 	}
 
@@ -63,6 +64,7 @@ func (s *Service) Multisign(ctx context.Context,
 		for i := range results {
 			results[i] = core.ResultDenied
 		}
+
 		return results, nil
 	}
 	span.SetAttributes(attribute.String("client", credentials.Client))
@@ -81,6 +83,7 @@ func (s *Service) Multisign(ctx context.Context,
 			log.Warn().Err(err).Str("result", "denied").Msg("Check failed")
 			s.monitor.SignCompleted(started, "generic", core.ResultDenied)
 			results[i] = core.ResultDenied
+
 			return results, nil
 		}
 
@@ -106,7 +109,7 @@ func (s *Service) Multisign(ctx context.Context,
 	span.SetAttributes(attribute.Int("requests", entries))
 	rulesData := make([]*ruler.RulesData, entries)
 	accounts := make([]e2wtypes.Account, entries)
-	_, err := util.Scatter(entries, func(offset int, entries int, _ *sync.RWMutex) (interface{}, error) {
+	_, err := util.Scatter(entries, func(offset int, entries int, _ *sync.RWMutex) (any, error) {
 		for i := offset; i < offset+entries; i++ {
 			var pubKey []byte
 			if len(pubKeys) > i {
@@ -122,6 +125,7 @@ func (s *Service) Multisign(ctx context.Context,
 			if checkRes != core.ResultSucceeded {
 				s.monitor.SignCompleted(started, "generic", checkRes)
 				results[i] = checkRes
+
 				continue
 			}
 			rulesData[i] = &ruler.RulesData{
@@ -132,7 +136,8 @@ func (s *Service) Multisign(ctx context.Context,
 			}
 			accounts[i] = account
 		}
-		return nil, nil
+
+		return make([]*util.ScatterResult, 0), nil
 	})
 	if err != nil {
 		log.Error().Err(err).Str("result", "failed").Msg("Failed to scatter check")
@@ -150,23 +155,26 @@ func (s *Service) Multisign(ctx context.Context,
 	log.Trace().Dur("elapsed", time.Since(started)).Msg("Completed rules")
 
 	// Carry out the signing.
-	_, err = util.Scatter(len(rulesResults), func(offset int, entries int, _ *sync.RWMutex) (interface{}, error) {
+	_, err = util.Scatter(len(rulesResults), func(offset int, entries int, _ *sync.RWMutex) (any, error) {
 		for i := offset; i < offset+entries; i++ {
 			switch rulesResults[i] {
 			case rules.UNKNOWN:
 				log.Debug().Str("result", "failed").Msg("Unknown result from rules")
 				s.monitor.SignCompleted(started, "generic", core.ResultFailed)
 				results[i] = core.ResultFailed
+
 				continue
 			case rules.DENIED:
 				log.Debug().Str("result", "denied").Msg("Denied by rules")
 				s.monitor.SignCompleted(started, "generic", core.ResultDenied)
 				results[i] = core.ResultDenied
+
 				continue
 			case rules.FAILED:
 				log.Error().Str("result", "failed").Msg("Rules check failed")
 				s.monitor.SignCompleted(started, "generic", core.ResultFailed)
 				results[i] = core.ResultFailed
+
 				continue
 			case rules.APPROVED:
 				// Nothing to do.
@@ -177,6 +185,7 @@ func (s *Service) Multisign(ctx context.Context,
 				log.Error().Err(err).Str("result", "failed").Msg("Failed to generate signing root")
 				s.monitor.SignCompleted(started, "generic", core.ResultFailed)
 				results[i] = core.ResultFailed
+
 				continue
 			}
 
@@ -186,6 +195,7 @@ func (s *Service) Multisign(ctx context.Context,
 				log.Error().Err(err).Str("result", "failed").Msg("Failed to sign")
 				s.monitor.SignCompleted(started, "generic", core.ResultFailed)
 				results[i] = core.ResultFailed
+
 				continue
 			}
 
@@ -194,7 +204,8 @@ func (s *Service) Multisign(ctx context.Context,
 			results[i] = core.ResultSucceeded
 			signatures[i] = signature
 		}
-		return nil, nil
+
+		return make([]*util.ScatterResult, 0), nil
 	})
 	if err != nil {
 		log.Error().Err(err).Str("result", "failed").Msg("Failed to scatter sign")
@@ -214,5 +225,6 @@ func checkSignData(data *rules.SignData) error {
 	if data.Domain == nil {
 		return errors.New("request missing domain")
 	}
+
 	return nil
 }

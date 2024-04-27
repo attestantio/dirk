@@ -42,6 +42,7 @@ func (s *Service) setupSignerMetrics() error {
 		Name:      "requests_total",
 		Help:      "The number of sign requests.",
 	}, []string{"request", "result"})
+
 	return prometheus.Register(s.signerRequests)
 }
 

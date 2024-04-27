@@ -44,9 +44,10 @@ func (h *Handler) Prepare(ctx context.Context, req *pb.PrepareRequest) (*emptypb
 	err := h.process.OnPrepare(ctx, senderID, req.GetAccount(), req.GetPassphrase(), req.GetThreshold(), participants)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to prepare for distributed key generation")
-		return nil, errors.New("Failed to prepare")
+		return nil, errors.New("failed to prepare")
 	}
 
 	log.Trace().Msg("Completed preparation successfully")
+
 	return &emptypb.Empty{}, nil
 }

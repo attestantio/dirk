@@ -71,6 +71,7 @@ func (s *Service) Close(ctx context.Context) error {
 	if s.store.gcTicker != nil {
 		s.store.gcTicker.Stop()
 	}
+
 	return s.store.Close(ctx)
 }
 

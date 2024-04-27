@@ -18,6 +18,7 @@ import "github.com/attestantio/dirk/services/process"
 // Processes is a map of local process services.
 var Processes map[uint64]process.Service
 
+//nolint:gochecknoinits
 func init() {
 	Processes = make(map[uint64]process.Service)
 }

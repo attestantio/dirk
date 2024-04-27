@@ -44,9 +44,9 @@ func WithLogLevel(logLevel zerolog.Level) Parameter {
 }
 
 // WithLister sets the lister service for the module.
-func WithLister(lister lister.Service) Parameter {
+func WithLister(service lister.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.lister = lister
+		p.lister = service
 	})
 }
 

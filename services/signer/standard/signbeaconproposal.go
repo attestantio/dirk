@@ -165,5 +165,6 @@ func (s *Service) SignBeaconProposal(
 
 	log.Trace().Str("result", "succeeded").Msg("Success")
 	s.monitor.SignCompleted(started, "proposal", core.ResultSucceeded)
+
 	return core.ResultSucceeded, signature
 }

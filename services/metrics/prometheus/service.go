@@ -91,6 +91,6 @@ func New(_ context.Context, params ...Parameter) (*Service, error) {
 }
 
 // Presenter returns the presenter for the events.
-func (s *Service) Presenter() string {
+func (*Service) Presenter() string {
 	return "prometheus"
 }

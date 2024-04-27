@@ -31,12 +31,14 @@ func (h *Handler) Multisign(ctx context.Context, req *pb.MultisignRequest) (*pb.
 		log.Warn().Str("result", "denied").Msg("Request not specified")
 		res.Responses = make([]*pb.SignResponse, 1)
 		res.Responses[0] = &pb.SignResponse{State: pb.ResponseState_DENIED}
+
 		return res, nil
 	}
 	if len(req.GetRequests()) == 0 {
 		log.Warn().Str("result", "denied").Msg("Request empty")
 		res.Responses = make([]*pb.SignResponse, 1)
 		res.Responses[0] = &pb.SignResponse{State: pb.ResponseState_DENIED}
+
 		return res, nil
 	}
 
@@ -49,16 +51,19 @@ func (h *Handler) Multisign(ctx context.Context, req *pb.MultisignRequest) (*pb.
 		if request == nil {
 			log.Warn().Str("result", "denied").Msg("Request nil")
 			res.Responses[i].State = pb.ResponseState_FAILED
+
 			return res, nil
 		}
 		if request.GetData() == nil {
 			log.Warn().Str("result", "denied").Msg("Request data not specified")
 			res.Responses[i].State = pb.ResponseState_DENIED
+
 			return res, nil
 		}
 		if request.GetDomain() == nil {
 			log.Warn().Str("result", "denied").Msg("Request domain not specified")
 			res.Responses[i].State = pb.ResponseState_DENIED
+
 			return res, nil
 		}
 	}

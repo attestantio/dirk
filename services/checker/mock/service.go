@@ -41,6 +41,7 @@ func New(logLevel zerolog.Level) (checker.Service, error) {
 			},
 		},
 	}
+
 	return static.New(context.Background(),
 		static.WithLogLevel(logLevel),
 		static.WithPermissions(permissions),

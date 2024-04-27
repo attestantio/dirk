@@ -33,5 +33,6 @@ func ResolvePath(path string) string {
 		}
 		baseDir = homeDir
 	}
+
 	return filepath.Join(baseDir, path)
 }

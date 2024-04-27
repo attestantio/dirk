@@ -42,6 +42,7 @@ func (s *Service) setupAccountManagerMetrics() error {
 		Name:      "requests_total",
 		Help:      "The number of account manager requests.",
 	}, []string{"request", "result"})
+
 	return prometheus.Register(s.accountManagerRequests)
 }
 

@@ -27,37 +27,37 @@ func NewFailing() rules.Service {
 }
 
 // Name provides the name of the service.
-func (s *failingService) Name() string {
+func (*failingService) Name() string {
 	return "failing"
 }
 
 // OnCreateAccount is called when a request to create an account needs to be approved.
-func (s *failingService) OnCreateAccount(_ context.Context, _ *rules.ReqMetadata, _ *rules.CreateAccountData) rules.Result {
+func (*failingService) OnCreateAccount(_ context.Context, _ *rules.ReqMetadata, _ *rules.CreateAccountData) rules.Result {
 	return rules.FAILED
 }
 
 // OnListAccounts is called when a request to list accounts needs to be approved.
-func (s *failingService) OnListAccounts(_ context.Context, _ *rules.ReqMetadata, _ *rules.AccessAccountData) rules.Result {
+func (*failingService) OnListAccounts(_ context.Context, _ *rules.ReqMetadata, _ *rules.AccessAccountData) rules.Result {
 	return rules.FAILED
 }
 
 // OnLockAccount is called when a request to lock an account needs to be approved.
-func (s *failingService) OnLockAccount(_ context.Context, _ *rules.ReqMetadata, _ *rules.LockAccountData) rules.Result {
+func (*failingService) OnLockAccount(_ context.Context, _ *rules.ReqMetadata, _ *rules.LockAccountData) rules.Result {
 	return rules.FAILED
 }
 
 // OnLockWallet is called when a request to lock a wallet needs to be approved.
-func (s *failingService) OnLockWallet(_ context.Context, _ *rules.ReqMetadata, _ *rules.LockWalletData) rules.Result {
+func (*failingService) OnLockWallet(_ context.Context, _ *rules.ReqMetadata, _ *rules.LockWalletData) rules.Result {
 	return rules.FAILED
 }
 
 // OnSignBeaconAttestation is called when a request to sign a beacon block attestation needs to be approved.
-func (s *failingService) OnSignBeaconAttestation(_ context.Context, _ *rules.ReqMetadata, _ *rules.SignBeaconAttestationData) rules.Result {
+func (*failingService) OnSignBeaconAttestation(_ context.Context, _ *rules.ReqMetadata, _ *rules.SignBeaconAttestationData) rules.Result {
 	return rules.FAILED
 }
 
 // OnSignBeaconAttestations is called when a request to sign multiple beacon block attestations needs to be approved.
-func (s *failingService) OnSignBeaconAttestations(_ context.Context,
+func (*failingService) OnSignBeaconAttestations(_ context.Context,
 	_ []*rules.ReqMetadata,
 	req []*rules.SignBeaconAttestationData,
 ) []rules.Result {
@@ -70,31 +70,31 @@ func (s *failingService) OnSignBeaconAttestations(_ context.Context,
 }
 
 // OnSignBeaconProposal is called when a request to sign a beacon block proposal needs to be approved.
-func (s *failingService) OnSignBeaconProposal(_ context.Context, _ *rules.ReqMetadata, _ *rules.SignBeaconProposalData) rules.Result {
+func (*failingService) OnSignBeaconProposal(_ context.Context, _ *rules.ReqMetadata, _ *rules.SignBeaconProposalData) rules.Result {
 	return rules.FAILED
 }
 
 // OnSign is called when a request to sign generic data needs to be approved.
-func (s *failingService) OnSign(_ context.Context, _ *rules.ReqMetadata, _ *rules.SignData) rules.Result {
+func (*failingService) OnSign(_ context.Context, _ *rules.ReqMetadata, _ *rules.SignData) rules.Result {
 	return rules.FAILED
 }
 
 // ExportSlashingProtection exports the slashing protection data.
-func (s *failingService) ExportSlashingProtection(_ context.Context) (map[[48]byte]*rules.SlashingProtection, error) {
-	return nil, nil
+func (*failingService) ExportSlashingProtection(_ context.Context) (map[[48]byte]*rules.SlashingProtection, error) {
+	return make(map[[48]byte]*rules.SlashingProtection), nil
 }
 
 // ImportSlashingProtection impports the slashing protection data.
-func (s *failingService) ImportSlashingProtection(_ context.Context, _ map[[48]byte]*rules.SlashingProtection) error {
+func (*failingService) ImportSlashingProtection(_ context.Context, _ map[[48]byte]*rules.SlashingProtection) error {
 	return nil
 }
 
 // OnUnlockAccount is called when a request to unlock an account needs to be approved.
-func (s *failingService) OnUnlockAccount(_ context.Context, _ *rules.ReqMetadata, _ *rules.UnlockAccountData) rules.Result {
+func (*failingService) OnUnlockAccount(_ context.Context, _ *rules.ReqMetadata, _ *rules.UnlockAccountData) rules.Result {
 	return rules.FAILED
 }
 
 // OnUnlockWallet is called when a request to unlock a wallet needs to be approved.
-func (s *failingService) OnUnlockWallet(_ context.Context, _ *rules.ReqMetadata, _ *rules.UnlockWalletData) rules.Result {
+func (*failingService) OnUnlockWallet(_ context.Context, _ *rules.ReqMetadata, _ *rules.UnlockWalletData) rules.Result {
 	return rules.FAILED
 }

@@ -54,16 +54,17 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		log = log.Level(parameters.logLevel)
 	}
 
-	credentials, err := composeCredentials(ctx, parameters.serverCert, parameters.serverKey, parameters.caCert)
+	transportCredentials, err := composeCredentials(ctx, parameters.serverCert, parameters.serverKey, parameters.caCert)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to compose client credentials")
 	}
 
 	service := &Service{
 		name:            parameters.name,
-		credentials:     credentials,
+		credentials:     transportCredentials,
 		connectionPools: make(map[string]*puddle.Pool),
 	}
+
 	return service, nil
 }
 
@@ -77,7 +78,7 @@ func (s *Service) Prepare(ctx context.Context,
 ) error {
 	connResource, err := s.obtainConnection(ctx, peer.ConnectAddress())
 	if err != nil {
-		return errors.Wrap(err, "Failed to obtain connection for Prepare()")
+		return errors.Wrap(err, "failed to obtain connection for Prepare()")
 	}
 	defer connResource.Release()
 	client := pb.NewDKGClient(connResource.Value().(*grpc.ClientConn))
@@ -97,8 +98,9 @@ func (s *Service) Prepare(ctx context.Context,
 		Participants: pbParticipants,
 	}
 	if _, err := client.Prepare(ctx, req); err != nil {
-		return errors.Wrap(err, "Failed to call Prepare()")
+		return errors.Wrap(err, "failed to call Prepare()")
 	}
+
 	return nil
 }
 
@@ -106,7 +108,7 @@ func (s *Service) Prepare(ctx context.Context,
 func (s *Service) Execute(ctx context.Context, peer *core.Endpoint, account string) error {
 	connResource, err := s.obtainConnection(ctx, peer.ConnectAddress())
 	if err != nil {
-		return errors.Wrap(err, "Failed to obtain connection for Execute()")
+		return errors.Wrap(err, "failed to obtain connection for Execute()")
 	}
 	defer connResource.Release()
 	client := pb.NewDKGClient(connResource.Value().(*grpc.ClientConn))
@@ -115,8 +117,9 @@ func (s *Service) Execute(ctx context.Context, peer *core.Endpoint, account stri
 		Account: account,
 	}
 	if _, err := client.Execute(ctx, req); err != nil {
-		return errors.Wrap(err, "Failed to call Execute()")
+		return errors.Wrap(err, "failed to call Execute()")
 	}
+
 	return nil
 }
 
@@ -124,7 +127,7 @@ func (s *Service) Execute(ctx context.Context, peer *core.Endpoint, account stri
 func (s *Service) Commit(ctx context.Context, peer *core.Endpoint, account string, confirmationData []byte) ([]byte, []byte, error) {
 	connResource, err := s.obtainConnection(ctx, peer.ConnectAddress())
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "Failed to obtain connection for Commit()")
+		return nil, nil, errors.Wrap(err, "failed to obtain connection for Commit()")
 	}
 	defer connResource.Release()
 	client := pb.NewDKGClient(connResource.Value().(*grpc.ClientConn))
@@ -135,8 +138,9 @@ func (s *Service) Commit(ctx context.Context, peer *core.Endpoint, account strin
 	}
 	res, err := client.Commit(ctx, req)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "Failed to call Commit()")
+		return nil, nil, errors.Wrap(err, "failed to call Commit()")
 	}
+
 	return res.GetPublicKey(), res.GetConfirmationSignature(), nil
 }
 
@@ -144,7 +148,7 @@ func (s *Service) Commit(ctx context.Context, peer *core.Endpoint, account strin
 func (s *Service) Abort(ctx context.Context, peer *core.Endpoint, account string) error {
 	connResource, err := s.obtainConnection(ctx, peer.ConnectAddress())
 	if err != nil {
-		return errors.Wrap(err, "Failed to obtain connection for Execute()")
+		return errors.Wrap(err, "failed to obtain connection for Execute()")
 	}
 	defer connResource.Release()
 	client := pb.NewDKGClient(connResource.Value().(*grpc.ClientConn))
@@ -153,8 +157,9 @@ func (s *Service) Abort(ctx context.Context, peer *core.Endpoint, account string
 		Account: account,
 	}
 	if _, err := client.Abort(ctx, req); err != nil {
-		return errors.Wrap(err, "Failed to call Abort()")
+		return errors.Wrap(err, "failed to call Abort()")
 	}
+
 	return nil
 }
 
@@ -162,7 +167,7 @@ func (s *Service) Abort(ctx context.Context, peer *core.Endpoint, account string
 func (s *Service) SendContribution(ctx context.Context, peer *core.Endpoint, account string, distributionSecret bls.SecretKey, verificationVector []bls.PublicKey) (bls.SecretKey, []bls.PublicKey, error) {
 	connResource, err := s.obtainConnection(ctx, peer.ConnectAddress())
 	if err != nil {
-		return bls.SecretKey{}, nil, errors.Wrap(err, "Failed to obtain connection for SendContribution()")
+		return bls.SecretKey{}, nil, errors.Wrap(err, "failed to obtain connection for SendContribution()")
 	}
 	defer connResource.Release()
 	client := pb.NewDKGClient(connResource.Value().(*grpc.ClientConn))
@@ -178,18 +183,18 @@ func (s *Service) SendContribution(ctx context.Context, peer *core.Endpoint, acc
 	}
 	res, err := client.Contribute(ctx, req)
 	if err != nil {
-		return bls.SecretKey{}, nil, errors.Wrap(err, "Failed to call Contribute()")
+		return bls.SecretKey{}, nil, errors.Wrap(err, "failed to call Contribute()")
 	}
 
 	resSecret := bls.SecretKey{}
 	if err := resSecret.Deserialize(res.GetSecret()); err != nil {
-		return bls.SecretKey{}, nil, errors.Wrap(err, "Returned invalid secret key")
+		return bls.SecretKey{}, nil, errors.Wrap(err, "returned invalid secret key")
 	}
 	resVVec := make([]bls.PublicKey, len(res.GetVerificationVector()))
 	for i, key := range res.GetVerificationVector() {
 		resVVec[i] = bls.PublicKey{}
 		if err := resVVec[i].Deserialize(key); err != nil {
-			return bls.SecretKey{}, nil, errors.Wrap(err, "Returned invalid verification vector")
+			return bls.SecretKey{}, nil, errors.Wrap(err, "returned invalid verification vector")
 		}
 	}
 
@@ -222,12 +227,12 @@ func (s *Service) obtainConnection(_ context.Context, address string) (*puddle.R
 	s.connectionPoolsMutex.Lock()
 	pool, exists := s.connectionPools[address]
 	if !exists {
-		constructor := func(_ context.Context) (interface{}, error) {
+		constructor := func(_ context.Context) (any, error) {
 			return grpc.Dial(address, []grpc.DialOption{
 				grpc.WithTransportCredentials(s.credentials),
 			}...)
 		}
-		destructor := func(val interface{}) {
+		destructor := func(val any) {
 			if err := val.(*grpc.ClientConn).Close(); err != nil {
 				log.Warn().Err(err).Msg("Failed to close client connection")
 			}
@@ -242,5 +247,6 @@ func (s *Service) obtainConnection(_ context.Context, address string) (*puddle.R
 	if err != nil {
 		return nil, err
 	}
+
 	return res, nil
 }

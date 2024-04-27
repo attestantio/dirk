@@ -24,11 +24,11 @@ type ScatterResult struct {
 	// Offset is the offset at which the worker started.
 	Offset int
 	// Extent is the user-defined result of running the scatter function.
-	Extent interface{}
+	Extent any
 }
 
 // Scatter scatters a computation across multiple goroutines, returning a set of per-worker results.
-func Scatter(inputLen int, work func(int, int, *sync.RWMutex) (interface{}, error)) ([]*ScatterResult, error) {
+func Scatter(inputLen int, work func(int, int, *sync.RWMutex) (any, error)) ([]*ScatterResult, error) {
 	if inputLen <= 0 {
 		return nil, errors.New("no data with which to work")
 	}
@@ -75,6 +75,7 @@ func Scatter(inputLen int, work func(int, int, *sync.RWMutex) (interface{}, erro
 			// and can cause other workers to write to the closed channel.
 		}
 	}
+
 	return results, err
 }
 

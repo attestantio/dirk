@@ -88,5 +88,6 @@ func (h *Handler) SignBeaconAttestation(ctx context.Context, req *pb.SignBeaconA
 	}
 
 	log.Trace().Str("result", "succeeded").Msg("Success")
+
 	return res, nil
 }

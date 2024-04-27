@@ -33,5 +33,6 @@ func GenerateCredentials(ctx context.Context) *checker.Credentials {
 	if ip, ok := ctx.Value(&interceptors.ExternalIP{}).(string); ok {
 		res.IP = ip
 	}
+
 	return res
 }

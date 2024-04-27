@@ -27,7 +27,7 @@ func (h *Handler) Contribute(ctx context.Context, req *pb.ContributeRequest) (*p
 	senderID := h.senderID(ctx)
 	if senderID == 0 {
 		log.Warn().Interface("client", ctx.Value(&interceptors.ClientName{})).Msg("Failed to obtain participant ID of sender")
-		return nil, errors.New("Unknown sender")
+		return nil, errors.New("unknown sender")
 	}
 
 	log := log.With().Str("account", req.GetAccount()).Uint64("peer", senderID).Logger()
@@ -35,14 +35,14 @@ func (h *Handler) Contribute(ctx context.Context, req *pb.ContributeRequest) (*p
 	secret := bls.SecretKey{}
 	if err := secret.Deserialize(req.GetSecret()); err != nil {
 		log.Warn().Err(err).Msg("Received secret key is invalid")
-		return nil, errors.New("Invalid secret key")
+		return nil, errors.New("invalid secret key")
 	}
 	vVec := make([]bls.PublicKey, len(req.GetVerificationVector()))
 	for i, key := range req.GetVerificationVector() {
 		vVec[i] = bls.PublicKey{}
 		if err := vVec[i].Deserialize(key); err != nil {
 			log.Warn().Err(err).Msg("Received verification vector is invalid")
-			return nil, errors.Wrap(err, "Invalid verification vector")
+			return nil, errors.Wrap(err, "invalid verification vector")
 		}
 	}
 	log.Trace().Msg("Received valid contribution")
@@ -50,7 +50,7 @@ func (h *Handler) Contribute(ctx context.Context, req *pb.ContributeRequest) (*p
 	retSecret, retVVec, err := h.process.OnContribute(ctx, senderID, req.GetAccount(), secret, vVec)
 	if err != nil {
 		log.Error().Err(err).Msg("Handle/generate contribution failed")
-		return nil, errors.Wrap(err, "Failed to handle contribution")
+		return nil, errors.Wrap(err, "failed to handle contribution")
 	}
 
 	resVVec := make([][]byte, len(retVVec))

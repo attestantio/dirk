@@ -29,5 +29,6 @@ func (h *Handler) senderID(ctx context.Context) uint64 {
 			}
 		}
 	}
+
 	return senderID
 }

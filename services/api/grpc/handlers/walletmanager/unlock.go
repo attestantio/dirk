@@ -48,5 +48,6 @@ func (h *Handler) Unlock(ctx context.Context, req *pb.UnlockWalletRequest) (*pb.
 			res.State = pb.ResponseState_UNKNOWN
 		}
 	}
+
 	return res, nil
 }

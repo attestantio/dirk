@@ -24,6 +24,7 @@ func (s *Service) setupCheckerMetrics() error {
 		Name:      "permissions",
 		Help:      "The clients with permissions configured.",
 	}, []string{"client"})
+
 	return prometheus.Register(s.checkerPermissions)
 }
 

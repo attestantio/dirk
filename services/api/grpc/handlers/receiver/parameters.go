@@ -46,16 +46,16 @@ func WithLogLevel(logLevel zerolog.Level) Parameter {
 }
 
 // WithPeers sets the peers service for the handler.
-func WithPeers(peers peers.Service) Parameter {
+func WithPeers(service peers.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.peers = peers
+		p.peers = service
 	})
 }
 
 // WithProcess sets the process service for the handler.
-func WithProcess(process process.Service) Parameter {
+func WithProcess(service process.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.process = process
+		p.process = service
 	})
 }
 

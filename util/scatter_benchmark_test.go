@@ -64,7 +64,7 @@ func BenchmarkHash(b *testing.B) {
 func BenchmarkHashMP(b *testing.B) {
 	output := make([][]byte, len(input))
 	for i := 0; i < b.N; i++ {
-		workerResults, err := util.Scatter(len(input), func(offset int, entries int, _ *sync.RWMutex) (interface{}, error) {
+		workerResults, err := util.Scatter(len(input), func(offset int, entries int, _ *sync.RWMutex) (any, error) {
 			return hash(input[offset : offset+entries]), nil
 		})
 		require.NoError(b, err)

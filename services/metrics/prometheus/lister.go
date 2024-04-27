@@ -40,6 +40,7 @@ func (s *Service) setupListerMetrics() error {
 		Name:      "requests_total",
 		Help:      "The number of account list requests.",
 	}, []string{"result"})
+
 	return prometheus.Register(s.listerRequests)
 }
 

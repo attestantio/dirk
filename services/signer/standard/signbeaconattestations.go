@@ -52,6 +52,7 @@ func (s *Service) SignBeaconAttestations(
 		s.monitor.SignCompleted(started, "attestation", core.ResultDenied)
 		results := make([]core.Result, 1)
 		results[0] = core.ResultDenied
+
 		return results, nil
 	}
 
@@ -65,6 +66,7 @@ func (s *Service) SignBeaconAttestations(
 		for i := range results {
 			results[i] = core.ResultDenied
 		}
+
 		return results, nil
 	}
 	span.SetAttributes(attribute.String("client", credentials.Client))
@@ -80,6 +82,7 @@ func (s *Service) SignBeaconAttestations(
 	if err := s.checkAttestationsData(data, accountNames, pubKeys, results); err != nil {
 		log.Warn().Str("result", "denied").Msgf("Attestations data check failed: %s", err.Error())
 		s.monitor.SignCompleted(started, "attestation", core.ResultDenied)
+
 		return results, nil
 	}
 
@@ -93,7 +96,7 @@ func (s *Service) SignBeaconAttestations(
 	span.SetAttributes(attribute.Int("requests", entries))
 	rulesData := make([]*ruler.RulesData, entries)
 	accounts := make([]e2wtypes.Account, entries)
-	_, err := util.Scatter(entries, func(offset int, entries int, _ *sync.RWMutex) (interface{}, error) {
+	_, err := util.Scatter(entries, func(offset int, entries int, _ *sync.RWMutex) (any, error) {
 		for i := offset; i < offset+entries; i++ {
 			var pubKey []byte
 			if len(pubKeys) > i {
@@ -109,6 +112,7 @@ func (s *Service) SignBeaconAttestations(
 			if checkRes != core.ResultSucceeded {
 				s.monitor.SignCompleted(started, "attestation", checkRes)
 				results[i] = checkRes
+
 				continue
 			}
 			rulesData[i] = &ruler.RulesData{
@@ -119,7 +123,8 @@ func (s *Service) SignBeaconAttestations(
 			}
 			accounts[i] = account
 		}
-		return nil, nil
+
+		return make([]*util.ScatterResult, 0), nil
 	})
 	if err != nil {
 		log.Error().Err(err).Str("result", "failed").Msg("Failed to scatter check")
@@ -127,6 +132,7 @@ func (s *Service) SignBeaconAttestations(
 	for i := range results {
 		if results[i] != core.ResultUnknown && results[i] != core.ResultSucceeded {
 			s.monitor.SignCompleted(started, "generic", results[i])
+
 			return results, nil
 		}
 	}
@@ -137,23 +143,26 @@ func (s *Service) SignBeaconAttestations(
 	log.Trace().Dur("elapsed", time.Since(started)).Msg("Completed rules")
 
 	// Carry out the signing.
-	_, err = util.Scatter(len(rulesResults), func(offset int, entries int, _ *sync.RWMutex) (interface{}, error) {
+	_, err = util.Scatter(len(rulesResults), func(offset int, entries int, _ *sync.RWMutex) (any, error) {
 		for i := offset; i < offset+entries; i++ {
 			switch rulesResults[i] {
 			case rules.UNKNOWN:
 				log.Debug().Int("index", i).Str("result", "failed").Msg("Unknown result from rules")
 				s.monitor.SignCompleted(started, "attestation", core.ResultFailed)
 				results[i] = core.ResultFailed
+
 				continue
 			case rules.DENIED:
 				log.Debug().Int("index", i).Str("result", "denied").Msg("Denied by rules")
 				s.monitor.SignCompleted(started, "attestation", core.ResultDenied)
 				results[i] = core.ResultDenied
+
 				continue
 			case rules.FAILED:
 				log.Error().Int("index", i).Str("result", "failed").Msg("Rules check failed")
 				s.monitor.SignCompleted(started, "attestation", core.ResultFailed)
 				results[i] = core.ResultFailed
+
 				continue
 			case rules.APPROVED:
 				// Nothing to do.
@@ -178,6 +187,7 @@ func (s *Service) SignBeaconAttestations(
 				log.Error().Err(err).Str("result", "failed").Msg("Failed to generate data root")
 				s.monitor.SignCompleted(started, "attestation", core.ResultFailed)
 				results[i] = core.ResultFailed
+
 				continue
 			}
 			signingRoot, err := generateSigningRoot(ctx, dataRoot[:], data[i].Domain)
@@ -185,6 +195,7 @@ func (s *Service) SignBeaconAttestations(
 				log.Error().Err(err).Str("result", "failed").Msg("Failed to generate signing root")
 				s.monitor.SignCompleted(started, "attestation", core.ResultFailed)
 				results[i] = core.ResultFailed
+
 				continue
 			}
 
@@ -194,6 +205,7 @@ func (s *Service) SignBeaconAttestations(
 				log.Error().Err(err).Str("result", "failed").Msg("Failed to sign")
 				s.monitor.SignCompleted(started, "attestation", core.ResultFailed)
 				results[i] = core.ResultFailed
+
 				continue
 			}
 
@@ -202,7 +214,8 @@ func (s *Service) SignBeaconAttestations(
 			results[i] = core.ResultSucceeded
 			signatures[i] = signature
 		}
-		return nil, nil
+
+		return make([]*util.ScatterResult, 0), nil
 	})
 	if err != nil {
 		log.Error().Err(err).Str("result", "failed").Msg("Failed to scatter sign")
@@ -268,5 +281,6 @@ func (*Service) checkAttestationsData(data []*rules.SignBeaconAttestationData,
 			e.Msg("Data to sign")
 		}
 	}
+
 	return nil
 }

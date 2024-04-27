@@ -20,6 +20,6 @@ import (
 )
 
 // OnLockAccount is called when a request to lock an account needs to be approved.
-func (s *Service) OnLockAccount(_ context.Context, _ *rules.ReqMetadata, _ *rules.LockAccountData) rules.Result {
+func (*Service) OnLockAccount(_ context.Context, _ *rules.ReqMetadata, _ *rules.LockAccountData) rules.Result {
 	return rules.APPROVED
 }

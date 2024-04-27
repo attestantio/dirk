@@ -26,6 +26,7 @@ func generateSigningRoot(_ context.Context, root []byte, domain []byte) ([32]byt
 		DataRoot: root,
 		Domain:   domain,
 	}
+
 	return signingData.HashTreeRoot()
 }
 
@@ -38,5 +39,6 @@ func signRoot(ctx context.Context, account e2wtypes.Account, root []byte) ([]byt
 	if err != nil {
 		return nil, err
 	}
+
 	return signature.Marshal(), nil
 }

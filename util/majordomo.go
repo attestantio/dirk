@@ -27,6 +27,7 @@ import (
 	standardmajordomo "github.com/wealdtech/go-majordomo/standard"
 )
 
+// InitMajordomo sets up the Majordomo service.
 func InitMajordomo(ctx context.Context) (majordomo.Service, error) {
 	majordomo, err := standardmajordomo.New(ctx,
 		standardmajordomo.WithLogLevel(LogLevel("majordomo")),

@@ -97,5 +97,6 @@ func (s *Service) Unlock(ctx context.Context,
 
 	log.Trace().Str("result", "succeeded").Msg("Success")
 	s.monitor.AccountManagerCompleted(started, "unlock", core.ResultSucceeded)
+
 	return core.ResultSucceeded, nil
 }

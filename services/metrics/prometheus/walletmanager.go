@@ -42,6 +42,7 @@ func (s *Service) setupWalletManagerMetrics() error {
 		Name:      "requests_total",
 		Help:      "The number of wallet manager requests.",
 	}, []string{"request", "result"})
+
 	return prometheus.Register(s.walletManagerRequests)
 }
 

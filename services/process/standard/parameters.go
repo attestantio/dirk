@@ -69,30 +69,30 @@ func WithMonitor(monitor metrics.ProcessMonitor) Parameter {
 }
 
 // WithChecker sets the checker for this module.
-func WithChecker(checker checker.Service) Parameter {
+func WithChecker(service checker.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.checker = checker
+		p.checker = service
 	})
 }
 
 // WithFetcher sets the account fetcher for this module.
-func WithFetcher(fetcher fetcher.Service) Parameter {
+func WithFetcher(service fetcher.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.fetcher = fetcher
+		p.fetcher = service
 	})
 }
 
 // WithSender sets the sender for this module.
-func WithSender(sender sender.Service) Parameter {
+func WithSender(service sender.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.sender = sender
+		p.sender = service
 	})
 }
 
 // WithUnlocker sets the unlocker for this module.
-func WithUnlocker(unlocker unlocker.Service) Parameter {
+func WithUnlocker(service unlocker.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.unlocker = unlocker
+		p.unlocker = service
 	})
 }
 
@@ -104,9 +104,9 @@ func WithEncryptor(encryptor e2wtypes.Encryptor) Parameter {
 }
 
 // WithPeers sets the peers for this module.
-func WithPeers(peers peers.Service) Parameter {
+func WithPeers(service peers.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.peers = peers
+		p.peers = service
 	})
 }
 

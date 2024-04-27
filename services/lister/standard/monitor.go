@@ -20,4 +20,4 @@ import "time"
 type noopMonitor struct{}
 
 // ListAccountsCompleted is called when a request for accounts has completed.
-func (n *noopMonitor) ListAccountsCompleted(_ time.Time) {}
+func (*noopMonitor) ListAccountsCompleted(_ time.Time) {}
