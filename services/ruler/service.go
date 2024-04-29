@@ -46,7 +46,7 @@ type RulesData struct {
 	WalletName  string
 	AccountName string
 	PubKey      []byte
-	Data        interface{}
+	Data        any
 }
 
 // Service provides an interface to check requests against a rules engine.

@@ -33,6 +33,6 @@ func (l *JaegerLogger) Error(msg string) {
 }
 
 // Infof logs information.
-func (l *JaegerLogger) Infof(msg string, args ...interface{}) {
+func (l *JaegerLogger) Infof(msg string, args ...any) {
 	l.log.Info().Msgf(msg, args...)
 }

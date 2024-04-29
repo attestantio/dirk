@@ -260,6 +260,7 @@ func populateCaches(ctx context.Context,
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	return wallets, walletAccounts, pubKeyPaths, nil
 }
 
@@ -296,5 +297,6 @@ func walletFromBytes(ctx context.Context, data []byte, store e2wtypes.Store, enc
 	default:
 		return nil, fmt.Errorf("unsupported wallet type %q", info.Type)
 	}
+
 	return wallet, err
 }

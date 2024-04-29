@@ -178,5 +178,6 @@ func (s *Service) SignBeaconAttestation(
 
 	log.Trace().Str("result", "succeeded").Msg("Success")
 	s.monitor.SignCompleted(started, "attestation", core.ResultSucceeded)
+
 	return core.ResultSucceeded, signature
 }

@@ -213,7 +213,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 			Operations: []string{"All"},
 		},
 	}
-	checker, err := staticchecker.New(ctx,
+	checkerSvc, err := staticchecker.New(ctx,
 		staticchecker.WithPermissions(permissions),
 	)
 	if err != nil {
@@ -250,7 +250,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 
 	lister, err := standardlister.New(ctx,
 		standardlister.WithFetcher(fetcher),
-		standardlister.WithChecker(checker),
+		standardlister.WithChecker(checkerSvc),
 		standardlister.WithRuler(ruler),
 	)
 	if err != nil {
@@ -259,7 +259,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 
 	signer, err := standardsigner.New(ctx,
 		standardsigner.WithUnlocker(unlocker),
-		standardsigner.WithChecker(checker),
+		standardsigner.WithChecker(checkerSvc),
 		standardsigner.WithFetcher(fetcher),
 		standardsigner.WithRuler(ruler),
 	)
@@ -285,7 +285,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 	}
 
 	process, err := standardprocess.New(ctx,
-		standardprocess.WithChecker(checker),
+		standardprocess.WithChecker(checkerSvc),
 		standardprocess.WithUnlocker(unlocker),
 		standardprocess.WithSender(sender),
 		standardprocess.WithFetcher(fetcher),
@@ -301,7 +301,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 
 	accountManager, err := standardaccountmanager.New(ctx,
 		standardaccountmanager.WithUnlocker(unlocker),
-		standardaccountmanager.WithChecker(checker),
+		standardaccountmanager.WithChecker(checkerSvc),
 		standardaccountmanager.WithFetcher(fetcher),
 		standardaccountmanager.WithRuler(ruler),
 		standardaccountmanager.WithProcess(process),
@@ -312,7 +312,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 
 	walletManager, err := standardwalletmanager.New(ctx,
 		standardwalletmanager.WithUnlocker(unlocker),
-		standardwalletmanager.WithChecker(checker),
+		standardwalletmanager.WithChecker(checkerSvc),
 		standardwalletmanager.WithFetcher(fetcher),
 		standardwalletmanager.WithRuler(ruler),
 	)

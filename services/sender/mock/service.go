@@ -40,6 +40,7 @@ func (s *Service) Prepare(ctx context.Context, recipient *core.Endpoint, account
 	if !exists {
 		return fmt.Errorf("unknown mock process %d", recipient.ID)
 	}
+
 	return process.OnPrepare(ctx, s.id, account, passphrase, threshold, participants)
 }
 
@@ -49,6 +50,7 @@ func (s *Service) Execute(ctx context.Context, recipient *core.Endpoint, account
 	if !exists {
 		return fmt.Errorf("unknown mock process %d", recipient.ID)
 	}
+
 	return process.OnExecute(ctx, s.id, account)
 }
 
@@ -58,6 +60,7 @@ func (s *Service) Commit(ctx context.Context, recipient *core.Endpoint, account 
 	if !exists {
 		return nil, nil, fmt.Errorf("unknown mock process %d", recipient.ID)
 	}
+
 	return process.OnCommit(ctx, s.id, account, confirmationData)
 }
 
@@ -67,6 +70,7 @@ func (s *Service) Abort(ctx context.Context, recipient *core.Endpoint, account s
 	if !exists {
 		return fmt.Errorf("unknown mock process %d", recipient.ID)
 	}
+
 	return process.OnAbort(ctx, s.id, account)
 }
 
@@ -76,5 +80,6 @@ func (s *Service) SendContribution(ctx context.Context, recipient *core.Endpoint
 	if !exists {
 		return bls.SecretKey{}, nil, fmt.Errorf("unknown mock process %d", recipient.ID)
 	}
+
 	return process.OnContribute(ctx, s.id, account, distributionSecret, verificationVector)
 }

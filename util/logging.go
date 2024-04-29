@@ -37,6 +37,7 @@ func LogLevel(path string) zerolog.Level {
 	if lastPeriod == -1 {
 		return LogLevel("")
 	}
+
 	return LogLevel(path[0:lastPeriod])
 }
 

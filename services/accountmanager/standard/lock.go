@@ -99,5 +99,6 @@ func (s *Service) Lock(ctx context.Context,
 
 	log.Trace().Str("result", "succeeded").Msg("Success")
 	s.monitor.AccountManagerCompleted(started, "lock", core.ResultSucceeded)
+
 	return core.ResultSucceeded, nil
 }

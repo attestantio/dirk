@@ -54,16 +54,16 @@ func WithMonitor(monitor metrics.RulerMonitor) Parameter {
 }
 
 // WithLocker sets the locker for this module.
-func WithLocker(locker locker.Service) Parameter {
+func WithLocker(service locker.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.locker = locker
+		p.locker = service
 	})
 }
 
 // WithRules sets the rules for this module.
-func WithRules(rules rules.Service) Parameter {
+func WithRules(service rules.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.rules = rules
+		p.rules = service
 	})
 }
 

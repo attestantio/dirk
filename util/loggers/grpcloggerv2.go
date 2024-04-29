@@ -30,68 +30,68 @@ func NewGRPCLoggerV2(log zerolog.Logger) *GRPCLoggerV2 {
 }
 
 // Info logs to INFO log. Arguments are handled in the manner of fmt.Print.
-func (l *GRPCLoggerV2) Info(args ...interface{}) {
+func (l *GRPCLoggerV2) Info(args ...any) {
 	l.log.Info().Msg(fmt.Sprint(args...))
 }
 
 // Infoln logs to INFO log. Arguments are handled in the manner of fmt.Println.
-func (l *GRPCLoggerV2) Infoln(args ...interface{}) {
+func (l *GRPCLoggerV2) Infoln(args ...any) {
 	l.Info(args...)
 }
 
 // Infof logs to INFO log. Arguments are handled in the manner of fmt.Printf.
-func (l *GRPCLoggerV2) Infof(format string, args ...interface{}) {
+func (l *GRPCLoggerV2) Infof(format string, args ...any) {
 	l.log.Info().Msgf(format, args...)
 }
 
 // Warning logs to WARNING log. Arguments are handled in the manner of fmt.Print.
-func (l *GRPCLoggerV2) Warning(args ...interface{}) {
+func (l *GRPCLoggerV2) Warning(args ...any) {
 	l.log.Warn().Msg(fmt.Sprint(args...))
 }
 
 // Warningln logs to WARNING log. Arguments are handled in the manner of fmt.Println.
-func (l *GRPCLoggerV2) Warningln(args ...interface{}) {
+func (l *GRPCLoggerV2) Warningln(args ...any) {
 	l.Warning(args...)
 }
 
 // Warningf logs to WARNING log. Arguments are handled in the manner of fmt.Printf.
-func (l *GRPCLoggerV2) Warningf(format string, args ...interface{}) {
+func (l *GRPCLoggerV2) Warningf(format string, args ...any) {
 	l.log.Warn().Msgf(format, args...)
 }
 
 // Error logs to ERROR log. Arguments are handled in the manner of fmt.Print.
-func (l *GRPCLoggerV2) Error(args ...interface{}) {
+func (l *GRPCLoggerV2) Error(args ...any) {
 	l.log.Error().Msg(fmt.Sprint(args...))
 }
 
 // Errorln logs to ERROR log. Arguments are handled in the manner of fmt.Println.
-func (l *GRPCLoggerV2) Errorln(args ...interface{}) {
+func (l *GRPCLoggerV2) Errorln(args ...any) {
 	l.Error(args...)
 }
 
 // Errorf logs to ERROR log. Arguments are handled in the manner of fmt.Printf.
-func (l *GRPCLoggerV2) Errorf(format string, args ...interface{}) {
+func (l *GRPCLoggerV2) Errorf(format string, args ...any) {
 	l.log.Error().Msgf(format, args...)
 }
 
 // Fatal logs to ERROR log. Arguments are handled in the manner of fmt.Print.
 // gRPC ensures that all Fatal logs will exit with os.Exit(1).
 // Implementations may also call os.Exit() with a non-zero exit code.
-func (l *GRPCLoggerV2) Fatal(args ...interface{}) {
+func (l *GRPCLoggerV2) Fatal(args ...any) {
 	l.log.Fatal().Msg(fmt.Sprint(args...))
 }
 
 // Fatalln logs to ERROR log. Arguments are handled in the manner of fmt.Println.
 // gRPC ensures that all Fatal logs will exit with os.Exit(1).
 // Implementations may also call os.Exit() with a non-zero exit code.
-func (l *GRPCLoggerV2) Fatalln(args ...interface{}) {
+func (l *GRPCLoggerV2) Fatalln(args ...any) {
 	l.Fatal(args...)
 }
 
 // Fatalf logs to ERROR log. Arguments are handled in the manner of fmt.Printf.
 // gRPC ensures that all Fatal logs will exit with os.Exit(1).
 // Implementations may also call os.Exit() with a non-zero exit code.
-func (l *GRPCLoggerV2) Fatalf(format string, args ...interface{}) {
+func (l *GRPCLoggerV2) Fatalf(format string, args ...any) {
 	l.log.Fatal().Msgf(format, args...)
 }
 

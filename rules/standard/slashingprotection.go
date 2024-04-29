@@ -92,5 +92,6 @@ func (s *Service) ImportSlashingProtection(ctx context.Context, protection map[[
 			}
 		}
 	}
+
 	return nil
 }

@@ -113,5 +113,6 @@ func verifyContribution(id uint64, secretShare bls.SecretKey, vVec []bls.PublicK
 	if err := vVecKey.Set(vVec, util.BLSID(id)); err != nil {
 		return false
 	}
+
 	return secretShare.GetPublicKey().IsEqual(&vVecKey)
 }

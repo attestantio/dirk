@@ -44,6 +44,7 @@ func (s *Service) SignGeneric(
 
 	if credentials == nil {
 		log.Error().Msg("No credentials supplied")
+
 		return core.ResultFailed, nil
 	}
 	span.SetAttributes(attribute.String("client", credentials.Client))
@@ -60,18 +61,21 @@ func (s *Service) SignGeneric(
 		log.Warn().Str("result", "denied").Msg("Request empty")
 		span.SetStatus(codes.Error, "Request empty")
 		s.monitor.SignCompleted(started, "generic", core.ResultDenied)
+
 		return core.ResultDenied, nil
 	}
 	if data.Data == nil {
 		log.Warn().Str("result", "denied").Msg("Request missing data")
 		span.SetStatus(codes.Error, "Request missing data")
 		s.monitor.SignCompleted(started, "generic", core.ResultDenied)
+
 		return core.ResultDenied, nil
 	}
 	if data.Domain == nil {
 		log.Warn().Str("result", "denied").Msg("Request missing domain")
 		span.SetStatus(codes.Error, "Request missing domain")
 		s.monitor.SignCompleted(started, "generic", core.ResultDenied)
+
 		return core.ResultDenied, nil
 	}
 
@@ -91,6 +95,7 @@ func (s *Service) SignGeneric(
 	if checkRes != core.ResultSucceeded {
 		s.monitor.SignCompleted(started, "generic", checkRes)
 		span.SetStatus(codes.Ok, "")
+
 		return checkRes, nil
 	}
 	accountName = fmt.Sprintf("%s/%s", wallet.Name(), account.Name())
@@ -112,16 +117,19 @@ func (s *Service) SignGeneric(
 		s.monitor.SignCompleted(started, "generic", core.ResultDenied)
 		span.SetStatus(codes.Ok, "")
 		log.Debug().Str("result", "denied").Msg("Denied by rules")
+
 		return core.ResultDenied, nil
 	case rules.FAILED:
 		s.monitor.SignCompleted(started, "generic", core.ResultFailed)
 		span.SetStatus(codes.Ok, "")
 		log.Error().Str("result", "failed").Msg("Rules check failed")
+
 		return core.ResultFailed, nil
 	case rules.UNKNOWN:
 		s.monitor.SignCompleted(started, "generic", core.ResultFailed)
 		span.SetStatus(codes.Ok, "")
 		log.Error().Str("result", "failed").Msg("Rules check indeterminate result")
+
 		return core.ResultFailed, nil
 	case rules.APPROVED:
 		// Nothing to do.
@@ -132,6 +140,7 @@ func (s *Service) SignGeneric(
 		log.Error().Err(err).Str("result", "failed").Msg("Failed to generate signing root")
 		span.SetStatus(codes.Error, "Failed to generate signing root")
 		s.monitor.SignCompleted(started, "generic", core.ResultFailed)
+
 		return core.ResultFailed, nil
 	}
 
@@ -141,11 +150,13 @@ func (s *Service) SignGeneric(
 		log.Error().Err(err).Str("result", "failed").Msg("Failed to sign")
 		span.SetStatus(codes.Error, "Failed to sign")
 		s.monitor.SignCompleted(started, "generic", core.ResultFailed)
+
 		return core.ResultFailed, nil
 	}
 
 	log.Trace().Str("result", "succeeded").Msg("Success")
 	span.SetStatus(codes.Ok, "")
 	s.monitor.SignCompleted(started, "generic", core.ResultSucceeded)
+
 	return core.ResultSucceeded, signature
 }

@@ -21,7 +21,7 @@ import (
 )
 
 // OnUnlockWallet is called when a request to unlock a wallet needs to be approved.
-func (s *Service) OnUnlockWallet(ctx context.Context, _ *rules.ReqMetadata, _ *rules.UnlockWalletData) rules.Result {
+func (*Service) OnUnlockWallet(ctx context.Context, _ *rules.ReqMetadata, _ *rules.UnlockWalletData) rules.Result {
 	span, _ := opentracing.StartSpanFromContext(ctx, "rules.OnUnlockWallet")
 	defer span.Finish()
 

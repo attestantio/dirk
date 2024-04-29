@@ -20,6 +20,6 @@ import (
 )
 
 // OnUnlockAccount is called when a request to unlock an account needs to be approved.
-func (s *Service) OnUnlockAccount(_ context.Context, _ *rules.ReqMetadata, _ *rules.UnlockAccountData) rules.Result {
+func (*Service) OnUnlockAccount(_ context.Context, _ *rules.ReqMetadata, _ *rules.UnlockAccountData) rules.Result {
 	return rules.APPROVED
 }

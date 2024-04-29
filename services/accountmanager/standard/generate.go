@@ -105,5 +105,6 @@ func (s *Service) Generate(ctx context.Context,
 	}
 
 	s.monitor.AccountManagerCompleted(started, "generate", core.ResultSucceeded)
+
 	return core.ResultSucceeded, pubKey, endpoints, nil
 }

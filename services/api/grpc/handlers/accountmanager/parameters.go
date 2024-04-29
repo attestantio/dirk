@@ -46,16 +46,16 @@ func WithLogLevel(logLevel zerolog.Level) Parameter {
 }
 
 // WithAccountManager sets the account manager service for the module.
-func WithAccountManager(accountManager accountmanager.Service) Parameter {
+func WithAccountManager(service accountmanager.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.accountManager = accountManager
+		p.accountManager = service
 	})
 }
 
 // WithProcess sets the process service for the module.
-func WithProcess(process process.Service) Parameter {
+func WithProcess(service process.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.process = process
+		p.process = service
 	})
 }
 

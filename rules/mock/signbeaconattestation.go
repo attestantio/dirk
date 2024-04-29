@@ -20,6 +20,6 @@ import (
 )
 
 // OnSignBeaconAttestation is called when a request to sign a beacon block attestation needs to be approved.
-func (s *Service) OnSignBeaconAttestation(_ context.Context, _ *rules.ReqMetadata, _ *rules.SignBeaconAttestationData) rules.Result {
+func (*Service) OnSignBeaconAttestation(_ context.Context, _ *rules.ReqMetadata, _ *rules.SignBeaconAttestationData) rules.Result {
 	return rules.APPROVED
 }

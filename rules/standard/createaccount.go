@@ -21,7 +21,7 @@ import (
 )
 
 // OnCreateAccount is called when a request to create an account needs to be approved.
-func (s *Service) OnCreateAccount(ctx context.Context, _ *rules.ReqMetadata, _ *rules.CreateAccountData) rules.Result {
+func (*Service) OnCreateAccount(ctx context.Context, _ *rules.ReqMetadata, _ *rules.CreateAccountData) rules.Result {
 	span, _ := opentracing.StartSpanFromContext(ctx, "rules.OnCreateAccount")
 	defer span.Finish()
 

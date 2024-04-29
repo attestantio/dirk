@@ -39,7 +39,7 @@ import (
 )
 
 // initTracing initialises the tracing system.
-func initTracing(ctx context.Context, majordomo majordomo.Service) error {
+func initTracing(ctx context.Context, majordomoSvc majordomo.Service) error {
 	if viper.GetString("tracing.address") == "" {
 		log.Debug().Msg("No tracing endpoint supplied; tracing not enabled")
 		return nil
@@ -51,7 +51,7 @@ func initTracing(ctx context.Context, majordomo majordomo.Service) error {
 	}
 	if viper.GetString("tracing.client-cert") != "" {
 		log.Trace().Msg("Using TLS tracing connection")
-		creds, err := credentialsFromCerts(ctx, majordomo, "tracing")
+		creds, err := credentialsFromCerts(ctx, majordomoSvc, "tracing")
 		if err != nil {
 			return errors.Wrap(err, "invalid TLS credentials")
 		}
@@ -111,21 +111,27 @@ func initTracing(ctx context.Context, majordomo majordomo.Service) error {
 	return nil
 }
 
-func credentialsFromCerts(ctx context.Context, majordomo majordomo.Service, base string) (credentials.TransportCredentials, error) {
+func credentialsFromCerts(ctx context.Context,
+	majordomoSvc majordomo.Service,
+	base string,
+) (
+	credentials.TransportCredentials,
+	error,
+) {
 	_, span := otel.Tracer("attestantio.vouch").Start(ctx, "credentialsFromCerts")
 	defer span.End()
 
-	clientCert, err := majordomo.Fetch(ctx, viper.GetString(fmt.Sprintf("%s.client-cert", base)))
+	clientCert, err := majordomoSvc.Fetch(ctx, viper.GetString(fmt.Sprintf("%s.client-cert", base)))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to obtain server certificate")
 	}
-	clientKey, err := majordomo.Fetch(ctx, viper.GetString(fmt.Sprintf("%s.client-key", base)))
+	clientKey, err := majordomoSvc.Fetch(ctx, viper.GetString(fmt.Sprintf("%s.client-key", base)))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to obtain server key")
 	}
 	var caCert []byte
 	if viper.GetString(fmt.Sprintf("%s.ca-cert", base)) != "" {
-		caCert, err = majordomo.Fetch(ctx, viper.GetString(fmt.Sprintf("%s.ca-cert", base)))
+		caCert, err = majordomoSvc.Fetch(ctx, viper.GetString(fmt.Sprintf("%s.ca-cert", base)))
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to obtain client CA certificate")
 		}

@@ -574,5 +574,6 @@ func SetupCerts(base string) error {
 	if err := os.WriteFile(filepath.Join(base, "client-test03.crt"), ClientTest03Crt, 0o600); err != nil {
 		return err
 	}
+
 	return os.WriteFile(filepath.Join(base, "client-test03.key"), ClientTest03Key, 0o600)
 }

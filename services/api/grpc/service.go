@@ -27,8 +27,8 @@ import (
 	"github.com/attestantio/dirk/services/api/grpc/interceptors"
 	"github.com/attestantio/dirk/services/metrics"
 	"github.com/attestantio/dirk/util/loggers"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpcctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	zerologger "github.com/rs/zerolog/log"
@@ -139,8 +139,8 @@ func (s *Service) createServer(name string, certPEMBlock []byte, keyPEMBlock []b
 	grpcOpts := []grpc.ServerOption{
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.UnaryInterceptor(
-			grpc_middleware.ChainUnaryServer(
-				grpc_ctxtags.UnaryServerInterceptor(grpc_ctxtags.WithFieldExtractor(grpc_ctxtags.CodeGenRequestFieldExtractor)),
+			grpcmiddleware.ChainUnaryServer(
+				grpcctxtags.UnaryServerInterceptor(grpcctxtags.WithFieldExtractor(grpcctxtags.CodeGenRequestFieldExtractor)),
 				interceptors.RequestIDInterceptor(),
 				interceptors.SourceIPInterceptor(),
 				interceptors.ClientInfoInterceptor(),
@@ -189,5 +189,6 @@ func (s *Service) serve(listenAddress string) error {
 			log.Error().Err(err).Msg("Could not start GRPC server")
 		}
 	}()
+
 	return nil
 }

@@ -30,7 +30,7 @@ func New() *Service {
 }
 
 // SignGeneric signs generic data.
-func (s *Service) SignGeneric(_ context.Context,
+func (*Service) SignGeneric(_ context.Context,
 	_ *checker.Credentials,
 	_ string,
 	_ []byte,
@@ -50,7 +50,7 @@ func (s *Service) SignGeneric(_ context.Context,
 }
 
 // Multisign signs multiple generic data.
-func (s *Service) Multisign(_ context.Context,
+func (*Service) Multisign(_ context.Context,
 	_ *checker.Credentials,
 	_ []string,
 	_ [][]byte,
@@ -70,7 +70,7 @@ func (s *Service) Multisign(_ context.Context,
 }
 
 // SignBeaconAttestation signs a beacon attestation.
-func (s *Service) SignBeaconAttestation(_ context.Context,
+func (*Service) SignBeaconAttestation(_ context.Context,
 	_ *checker.Credentials,
 	_ string,
 	_ []byte,
@@ -90,7 +90,7 @@ func (s *Service) SignBeaconAttestation(_ context.Context,
 }
 
 // SignBeaconAttestations signs multiple beacon attestations.
-func (s *Service) SignBeaconAttestations(_ context.Context,
+func (*Service) SignBeaconAttestations(_ context.Context,
 	_ *checker.Credentials,
 	_ []string,
 	_ [][]byte,
@@ -112,11 +112,12 @@ func (s *Service) SignBeaconAttestations(_ context.Context,
 			0xf9, 0x57, 0x50, 0xd9, 0x0e, 0x92, 0xb1, 0xef, 0x8a, 0x53, 0xd6, 0x3b, 0x3d, 0xf1, 0x91, 0x5a,
 		}
 	}
+
 	return results, signatures
 }
 
 // SignBeaconProposal signs a proposal for a beacon block.
-func (s *Service) SignBeaconProposal(_ context.Context,
+func (*Service) SignBeaconProposal(_ context.Context,
 	_ *checker.Credentials,
 	_ string,
 	_ []byte,

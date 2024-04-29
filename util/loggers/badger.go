@@ -41,25 +41,26 @@ func NewBadgerLogger(log zerolog.Logger) *BadgerLogger {
 	case zerolog.NoLevel, zerolog.Disabled:
 	}
 	log = log.With().Str("store", "badger").Logger()
+
 	return &BadgerLogger{log: log}
 }
 
 // Errorf logs to ERROR log. Arguments are handled in the manner of fmt.Printf.
-func (l *BadgerLogger) Errorf(format string, args ...interface{}) {
+func (l *BadgerLogger) Errorf(format string, args ...any) {
 	l.log.Error().Msgf(strings.TrimSpace(format), args...)
 }
 
 // Warningf logs to WARNING log. Arguments are handled in the manner of fmt.Printf.
-func (l *BadgerLogger) Warningf(format string, args ...interface{}) {
+func (l *BadgerLogger) Warningf(format string, args ...any) {
 	l.log.Warn().Msgf(strings.TrimSpace(format), args...)
 }
 
 // Infof logs to INFO log. Arguments are handled in the manner of fmt.Printf.
-func (l *BadgerLogger) Infof(format string, args ...interface{}) {
+func (l *BadgerLogger) Infof(format string, args ...any) {
 	l.log.Info().Msgf(strings.TrimSpace(format), args...)
 }
 
 // Debugf logs to DEBUG log. Arguments are handled in the manner of fmt.Printf.
-func (l *BadgerLogger) Debugf(format string, args ...interface{}) {
+func (l *BadgerLogger) Debugf(format string, args ...any) {
 	l.log.Debug().Msgf(strings.TrimSpace(format), args...)
 }

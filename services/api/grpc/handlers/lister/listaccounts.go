@@ -105,5 +105,6 @@ func (h *Handler) ListAccounts(ctx context.Context, req *pb.ListAccountsRequest)
 
 	res.State = pb.ResponseState_SUCCEEDED
 	log.Trace().Int("accounts", len(res.GetAccounts())).Int("distributedAccounts", len(res.GetDistributedAccounts())).Msg("Success")
+
 	return res, nil
 }

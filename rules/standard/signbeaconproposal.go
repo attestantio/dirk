@@ -40,6 +40,7 @@ func (s *signBeaconProposalState) Encode() []byte {
 		// Slot.
 		binary.LittleEndian.PutUint64(data[1:9], uint64(s.Slot))
 	}
+
 	return data
 }
 
@@ -58,6 +59,7 @@ func (s *signBeaconProposalState) Decode(data []byte) error {
 	default:
 		err = gob.NewDecoder(bytes.NewBuffer(data)).Decode(s)
 	}
+
 	return err
 }
 
@@ -70,6 +72,7 @@ func (s *Service) OnSignBeaconProposal(ctx context.Context, metadata *rules.ReqM
 	// The request must have the appropriate domain.
 	if !bytes.Equal(req.Domain[0:4], e2types.DomainBeaconProposer[:]) {
 		log.Warn().Msg("Not approving non-beacon proposal due to incorrect domain")
+
 		return rules.DENIED
 	}
 
@@ -77,6 +80,7 @@ func (s *Service) OnSignBeaconProposal(ctx context.Context, metadata *rules.ReqM
 	state, err := s.fetchSignBeaconProposalState(ctx, metadata.PubKey)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to fetch state for beacon proposal")
+
 		return rules.FAILED
 	}
 	slot := req.Slot
@@ -88,6 +92,7 @@ func (s *Service) OnSignBeaconProposal(ctx context.Context, metadata *rules.ReqM
 				Int64("previousSlot", state.Slot).
 				Uint64("slot", slot).
 				Msg("Request slot equal to or lower than previous signed slot")
+
 			return rules.DENIED
 		}
 	}
@@ -95,6 +100,7 @@ func (s *Service) OnSignBeaconProposal(ctx context.Context, metadata *rules.ReqM
 	state.Slot = int64(slot)
 	if err = s.storeSignBeaconProposalState(ctx, metadata.PubKey, state); err != nil {
 		log.Error().Err(err).Msg("Failed to store state for beacon proposal")
+
 		return rules.FAILED
 	}
 
@@ -108,19 +114,20 @@ func (s *Service) fetchSignBeaconProposalState(ctx context.Context, pubKey []byt
 	copy(key[len(pubKey):], actionSignBeaconProposal)
 	data, err := s.store.Fetch(ctx, key)
 	if err != nil {
-		if err.Error() == "not found" {
-			// No value; set it to -1.
-			state.Slot = -1
-		} else {
+		if err.Error() != "not found" {
 			return nil, err
 		}
+		// No value; set it to -1.
+		state.Slot = -1
 	} else {
 		err = state.Decode(data)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to decode state")
 		}
 	}
+
 	log.Trace().Int64("slot", state.Slot).Msg("Returning proposal state from store")
+
 	return state, nil
 }
 
@@ -135,5 +142,6 @@ func (s *Service) storeSignBeaconProposalState(ctx context.Context, pubKey []byt
 	}
 
 	log.Trace().Int64("slot", state.Slot).Msg("Stored proposal state to store")
+
 	return nil
 }

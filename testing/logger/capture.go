@@ -37,6 +37,7 @@ func NewLogCapture() *LogCapture {
 		entries: make([]string, 0),
 	}
 	zerologger.Logger = zerologger.Logger.Hook(c)
+
 	return c
 }
 

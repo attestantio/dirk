@@ -21,7 +21,7 @@ import (
 )
 
 // OnListAccounts is called when a request to list accounts needs to be approved.
-func (s *Service) OnListAccounts(ctx context.Context, _ *rules.ReqMetadata, _ *rules.AccessAccountData) rules.Result {
+func (*Service) OnListAccounts(ctx context.Context, _ *rules.ReqMetadata, _ *rules.AccessAccountData) rules.Result {
 	span, _ := opentracing.StartSpanFromContext(ctx, "rules.OnListAccounts")
 	defer span.Finish()
 

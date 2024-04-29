@@ -24,4 +24,4 @@ import (
 type noopMonitor struct{}
 
 // WalletManagerCompleted is called when an wallet manager process has completed.
-func (n *noopMonitor) WalletManagerCompleted(_ time.Time, _ string, _ core.Result) {}
+func (*noopMonitor) WalletManagerCompleted(_ time.Time, _ string, _ core.Result) {}

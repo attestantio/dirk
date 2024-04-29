@@ -77,12 +77,12 @@ func main() {
 		zerologger.Fatal().Err(err).Msg("Failed to fetch configuration")
 	}
 
-	majordomo, err := util.InitMajordomo(ctx)
+	majordomoSvc, err := util.InitMajordomo(ctx)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialise majordomo")
 	}
 
-	exit, exitCode := runCommands(ctx, majordomo)
+	exit, exitCode := runCommands(ctx, majordomoSvc)
 	if exit {
 		os.Exit(exitCode)
 	}
@@ -100,7 +100,7 @@ func main() {
 
 	initProfiling()
 
-	if err := initTracing(ctx, majordomo); err != nil {
+	if err := initTracing(ctx, majordomoSvc); err != nil {
 		log.Error().Err(err).Msg("Failed to initialise tracing")
 		return
 	}
@@ -124,7 +124,7 @@ func main() {
 	setRelease(ctx, ReleaseVersion)
 	setReady(ctx, false)
 
-	err = startServices(ctx, majordomo, monitor)
+	err = startServices(ctx, majordomoSvc, monitor)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to initialise services")
 		return
@@ -232,18 +232,19 @@ func initProfiling() {
 	}
 }
 
-func runCommands(ctx context.Context, majordomo majordomo.Service) (bool, int) {
+func runCommands(ctx context.Context, majordomoSvc majordomo.Service) (bool, int) {
 	if viper.GetBool("version") {
 		fmt.Fprintf(os.Stdout, "%s\n", ReleaseVersion)
 		return true, 0
 	}
 
 	if viper.GetBool("show-certificates") {
-		err := cmd.ShowCertificates(ctx, majordomo)
+		err := cmd.ShowCertificates(ctx, majordomoSvc)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "show-certificates failed: %v\n", err)
 			return true, 1
 		}
+
 		return true, 0
 	}
 
@@ -261,6 +262,7 @@ func runCommands(ctx context.Context, majordomo majordomo.Service) (bool, int) {
 			}
 		}
 		checker.DumpPermissions(permissions)
+
 		return true, 0
 	}
 
@@ -276,44 +278,44 @@ func runCommands(ctx context.Context, majordomo majordomo.Service) (bool, int) {
 	return false, 0
 }
 
-func startServices(ctx context.Context, majordomo majordomo.Service, monitor metrics.Service) error {
+func startServices(ctx context.Context, majordomoSvc majordomo.Service, monitor metrics.Service) error {
 	var err error
 
-	stores, err := initStores(ctx, majordomo)
+	stores, err := initStores(ctx, majordomoSvc)
 	if err != nil {
 		return err
 	}
 
-	unlocker, err := startUnlocker(ctx, majordomo, monitor)
+	unlockerSvc, err := startUnlocker(ctx, majordomoSvc, monitor)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialise local unlocker")
 	}
 
-	checker, err := startChecker(ctx, monitor)
+	checkerSvc, err := startChecker(ctx, monitor)
 	if err != nil {
 		return errors.Wrap(err, "failed to start permissions checker")
 	}
 
 	// Set up the fetcher.
-	fetcher, err := startFetcher(ctx, stores, monitor)
+	fetcherSvc, err := startFetcher(ctx, stores, monitor)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialise account fetcher")
 	}
 
 	// Set up the locker.
-	locker, err := startLocker(ctx, monitor)
+	lockerSvc, err := startLocker(ctx, monitor)
 	if err != nil {
 		return errors.Wrap(err, "failed to set up locker service")
 	}
 
 	// Set up the ruler.
-	ruler, err := startRuler(ctx, locker, monitor)
+	rulerSvc, err := startRuler(ctx, lockerSvc, monitor)
 	if err != nil {
 		return errors.Wrap(err, "failed to set up ruler service")
 	}
 
 	// Set up the lister.
-	lister, err := startLister(ctx, monitor, fetcher, checker, ruler)
+	listerSvc, err := startLister(ctx, monitor, fetcherSvc, checkerSvc, rulerSvc)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialise lister")
 	}
@@ -326,16 +328,16 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 	signer, err := standardsigner.New(ctx,
 		standardsigner.WithLogLevel(util.LogLevel("signer")),
 		standardsigner.WithMonitor(signerMonitor),
-		standardsigner.WithUnlocker(unlocker),
-		standardsigner.WithChecker(checker),
-		standardsigner.WithFetcher(fetcher),
-		standardsigner.WithRuler(ruler),
+		standardsigner.WithUnlocker(unlockerSvc),
+		standardsigner.WithChecker(checkerSvc),
+		standardsigner.WithFetcher(fetcherSvc),
+		standardsigner.WithRuler(rulerSvc),
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to create signer service")
 	}
 
-	peers, err := startPeers(ctx, monitor)
+	peersSvc, err := startPeers(ctx, monitor)
 	if err != nil {
 		return errors.Wrap(err, "failed to start peers service")
 	}
@@ -344,17 +346,17 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 	if monitor, isMonitor := monitor.(metrics.SenderMonitor); isMonitor {
 		senderMonitor = monitor
 	}
-	certPEMBlock, err := majordomo.Fetch(ctx, viper.GetString("certificates.server-cert"))
+	certPEMBlock, err := majordomoSvc.Fetch(ctx, viper.GetString("certificates.server-cert"))
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to obtain server certificate from %s", viper.GetString("certificates.server-cert")))
 	}
-	keyPEMBlock, err := majordomo.Fetch(ctx, viper.GetString("certificates.server-key"))
+	keyPEMBlock, err := majordomoSvc.Fetch(ctx, viper.GetString("certificates.server-key"))
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to obtain server key from %s", viper.GetString("certificates.server-key")))
 	}
 	var caPEMBlock []byte
 	if viper.GetString("certificates.ca-cert") != "" {
-		caPEMBlock, err = majordomo.Fetch(ctx, viper.GetString("certificates.ca-cert"))
+		caPEMBlock, err = majordomoSvc.Fetch(ctx, viper.GetString("certificates.ca-cert"))
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("failed to obtain CA certificate from %s", viper.GetString("certificates.ca-cert")))
 		}
@@ -392,7 +394,7 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 
 	var generationPassphrase []byte
 	if viper.GetString("process.generation-passphrase") != "" {
-		generationPassphrase, err = majordomo.Fetch(ctx, viper.GetString("process.generation-passphrase"))
+		generationPassphrase, err = majordomoSvc.Fetch(ctx, viper.GetString("process.generation-passphrase"))
 		if err != nil {
 			return errors.Wrap(err, "failed to obtain account generation passphrase for process")
 		}
@@ -401,11 +403,11 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 	process, err := standardprocess.New(ctx,
 		standardprocess.WithLogLevel(util.LogLevel("process")),
 		standardprocess.WithMonitor(processMonitor),
-		standardprocess.WithChecker(checker),
-		standardprocess.WithFetcher(fetcher),
-		standardprocess.WithUnlocker(unlocker),
+		standardprocess.WithChecker(checkerSvc),
+		standardprocess.WithFetcher(fetcherSvc),
+		standardprocess.WithUnlocker(unlockerSvc),
 		standardprocess.WithSender(sender),
-		standardprocess.WithPeers(peers),
+		standardprocess.WithPeers(peersSvc),
 		standardprocess.WithID(serverID),
 		standardprocess.WithStores(stores),
 		standardprocess.WithGenerationPassphrase(generationPassphrase),
@@ -422,10 +424,10 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 	accountManager, err := standardaccountmanager.New(ctx,
 		standardaccountmanager.WithLogLevel(util.LogLevel("accountmanager")),
 		standardaccountmanager.WithMonitor(accountManagerMonitor),
-		standardaccountmanager.WithUnlocker(unlocker),
-		standardaccountmanager.WithChecker(checker),
-		standardaccountmanager.WithFetcher(fetcher),
-		standardaccountmanager.WithRuler(ruler),
+		standardaccountmanager.WithUnlocker(unlockerSvc),
+		standardaccountmanager.WithChecker(checkerSvc),
+		standardaccountmanager.WithFetcher(fetcherSvc),
+		standardaccountmanager.WithRuler(rulerSvc),
 		standardaccountmanager.WithProcess(process),
 	)
 	if err != nil {
@@ -439,10 +441,10 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 	walletManager, err := standardwalletmanager.New(ctx,
 		standardwalletmanager.WithLogLevel(util.LogLevel("walletmanager")),
 		standardwalletmanager.WithMonitor(walletManagerMonitor),
-		standardwalletmanager.WithUnlocker(unlocker),
-		standardwalletmanager.WithChecker(checker),
-		standardwalletmanager.WithFetcher(fetcher),
-		standardwalletmanager.WithRuler(ruler),
+		standardwalletmanager.WithUnlocker(unlockerSvc),
+		standardwalletmanager.WithChecker(checkerSvc),
+		standardwalletmanager.WithFetcher(fetcherSvc),
+		standardwalletmanager.WithRuler(rulerSvc),
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to create wallet manager service")
@@ -457,11 +459,11 @@ func startServices(ctx context.Context, majordomo majordomo.Service, monitor met
 		grpcapi.WithLogLevel(util.LogLevel("api")),
 		grpcapi.WithMonitor(apiMonitor),
 		grpcapi.WithSigner(signer),
-		grpcapi.WithLister(lister),
+		grpcapi.WithLister(listerSvc),
 		grpcapi.WithProcess(process),
 		grpcapi.WithAccountManager(accountManager),
 		grpcapi.WithWalletManager(walletManager),
-		grpcapi.WithPeers(peers),
+		grpcapi.WithPeers(peersSvc),
 		grpcapi.WithName(viper.GetString("server.name")),
 		grpcapi.WithID(serverID),
 		grpcapi.WithServerCert(certPEMBlock),
@@ -491,6 +493,7 @@ func startMonitor(ctx context.Context) (metrics.Service, error) {
 			return nil, errors.Wrap(err, "failed to start metrics service")
 		}
 	}
+
 	return monitor, nil
 }
 
@@ -518,26 +521,33 @@ func initRules(ctx context.Context) (rules.Service, error) {
 	)
 }
 
-func initStores(ctx context.Context, majordomo majordomo.Service) ([]e2wtypes.Store, error) {
+func initStores(ctx context.Context, majordomoSvc majordomo.Service) ([]e2wtypes.Store, error) {
 	storesCfg := &core.Stores{}
 	if err := viper.Unmarshal(storesCfg); err != nil {
 		return nil, errors.Wrap(err, "failed to obtain stores configuration")
 	}
-	stores, err := core.InitStores(ctx, majordomo, storesCfg.Stores)
+	stores, err := core.InitStores(ctx, majordomoSvc, storesCfg.Stores)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialise stores")
 	}
 	if len(stores) == 0 {
 		return nil, errors.New("no stores")
 	}
+
 	return stores, nil
 }
 
-func startUnlocker(ctx context.Context, majordomo majordomo.Service, monitor metrics.Service) (unlocker.Service, error) {
+func startUnlocker(ctx context.Context,
+	majordomoSvc majordomo.Service,
+	monitor metrics.Service,
+) (
+	unlocker.Service,
+	error,
+) {
 	// Set up the unlocker.
 	walletPassphrases := make([]string, 0)
 	for _, key := range viper.GetStringSlice("unlocker.wallet-passphrases") {
-		value, err := majordomo.Fetch(ctx, key)
+		value, err := majordomoSvc.Fetch(ctx, key)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to obtain wallet passphrase for unlocker")
 		}
@@ -545,12 +555,13 @@ func startUnlocker(ctx context.Context, majordomo majordomo.Service, monitor met
 	}
 	accountPassphrases := make([]string, 0)
 	for _, key := range viper.GetStringSlice("unlocker.account-passphrases") {
-		value, err := majordomo.Fetch(ctx, key)
+		value, err := majordomoSvc.Fetch(ctx, key)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to obtain account passphrase for unlocker")
 		}
 		accountPassphrases = append(accountPassphrases, string(value))
 	}
+
 	return localunlocker.New(ctx,
 		localunlocker.WithLogLevel(util.LogLevel("unlocker")),
 		localunlocker.WithMonitor(monitor),
@@ -577,6 +588,7 @@ func startChecker(ctx context.Context, monitor metrics.Service) (checker.Service
 	if monitor, isMonitor := monitor.(metrics.CheckerMonitor); isMonitor {
 		checkerMonitor = monitor
 	}
+
 	return staticchecker.New(ctx,
 		staticchecker.WithLogLevel(util.LogLevel("checker")),
 		staticchecker.WithMonitor(checkerMonitor),
@@ -589,6 +601,7 @@ func startFetcher(ctx context.Context, stores []e2wtypes.Store, monitor metrics.
 	if monitor, isMonitor := monitor.(metrics.FetcherMonitor); isMonitor {
 		fetcherMonitor = monitor
 	}
+
 	return memfetcher.New(ctx,
 		memfetcher.WithLogLevel(util.LogLevel("fetcher")),
 		memfetcher.WithMonitor(fetcherMonitor),
@@ -601,14 +614,15 @@ func startLocker(ctx context.Context, monitor metrics.Service) (locker.Service, 
 	if monitor, isMonitor := monitor.(metrics.LockerMonitor); isMonitor {
 		lockerMonitor = monitor
 	}
+
 	return syncmaplocker.New(ctx,
 		syncmaplocker.WithLogLevel(util.LogLevel("locker")),
 		syncmaplocker.WithMonitor(lockerMonitor),
 	)
 }
 
-func startRuler(ctx context.Context, locker locker.Service, monitor metrics.Service) (ruler.Service, error) {
-	rules, err := initRules(ctx)
+func startRuler(ctx context.Context, lockerSvc locker.Service, monitor metrics.Service) (ruler.Service, error) {
+	rulesSvc, err := initRules(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to set up rules")
 	}
@@ -616,11 +630,12 @@ func startRuler(ctx context.Context, locker locker.Service, monitor metrics.Serv
 	if monitor, isMonitor := monitor.(metrics.RulerMonitor); isMonitor {
 		rulerMonitor = monitor
 	}
+
 	return goruler.New(ctx,
 		goruler.WithLogLevel(util.LogLevel("ruler")),
 		goruler.WithMonitor(rulerMonitor),
-		goruler.WithLocker(locker),
-		goruler.WithRules(rules),
+		goruler.WithLocker(lockerSvc),
+		goruler.WithRules(rulesSvc),
 	)
 }
 
@@ -639,6 +654,7 @@ func startPeers(ctx context.Context, monitor metrics.Service) (peers.Service, er
 	if monitor, isMonitor := monitor.(metrics.PeersMonitor); isMonitor {
 		peersMonitor = monitor
 	}
+
 	return staticpeers.New(ctx,
 		staticpeers.WithLogLevel(util.LogLevel("peers")),
 		staticpeers.WithMonitor(peersMonitor),
@@ -646,16 +662,25 @@ func startPeers(ctx context.Context, monitor metrics.Service) (peers.Service, er
 	)
 }
 
-func startLister(ctx context.Context, monitor metrics.Service, fetcher fetcher.Service, checker checker.Service, ruler ruler.Service) (lister.Service, error) {
+func startLister(ctx context.Context,
+	monitor metrics.Service,
+	fetcherSvc fetcher.Service,
+	checkerSvc checker.Service,
+	rulerSvc ruler.Service,
+) (
+	lister.Service,
+	error,
+) {
 	var listerMonitor metrics.ListerMonitor
 	if monitor, isMonitor := monitor.(metrics.ListerMonitor); isMonitor {
 		listerMonitor = monitor
 	}
+
 	return standardlister.New(ctx,
 		standardlister.WithLogLevel(util.LogLevel("lister")),
 		standardlister.WithMonitor(listerMonitor),
-		standardlister.WithFetcher(fetcher),
-		standardlister.WithChecker(checker),
-		standardlister.WithRuler(ruler),
+		standardlister.WithFetcher(fetcherSvc),
+		standardlister.WithChecker(checkerSvc),
+		standardlister.WithRuler(rulerSvc),
 	)
 }

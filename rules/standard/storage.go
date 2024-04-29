@@ -100,17 +100,20 @@ func (s *Store) FetchAll(_ context.Context) (map[[49]byte][]byte, error) {
 				value := make([]byte, len(v))
 				copy(value, v)
 				items[key] = value
+
 				return nil
 			})
 			if err != nil {
 				return err
 			}
 		}
+
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
+
 	return items, nil
 }
 
@@ -134,6 +137,7 @@ func (s *Store) Fetch(ctx context.Context, key []byte) ([]byte, error) {
 		err = item.Value(func(val []byte) error {
 			value = make([]byte, len(val))
 			copy(value, val)
+
 			return nil
 		})
 		if err != nil {
@@ -145,6 +149,7 @@ func (s *Store) Fetch(ctx context.Context, key []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return value, nil
 }
 

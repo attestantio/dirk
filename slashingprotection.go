@@ -80,6 +80,7 @@ func exportSlashingProtection(ctx context.Context) int {
 	} else {
 		fmt.Fprintln(os.Stdout, string(data))
 	}
+
 	return 0
 }
 
@@ -98,11 +99,11 @@ func fetchSlashingProtection(ctx context.Context) (*SlashingProtection, error) {
 		return nil, errors.New("genesis-validators-root must be 32 bytes")
 	}
 
-	rules, err := initRules(ctx)
+	rulesSvc, err := initRules(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to set up rules")
 	}
-	protection, err := rules.ExportSlashingProtection(ctx)
+	protection, err := rulesSvc.ExportSlashingProtection(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to obtain slashing protection")
 	}

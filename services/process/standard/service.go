@@ -87,7 +87,7 @@ func New(_ context.Context, params ...Parameter) (*Service, error) {
 
 // OnPrepare is called when we receive a request from the given participant to prepare for DKG.
 func (s *Service) OnPrepare(ctx context.Context,
-	sender uint64,
+	senderID uint64,
 	account string,
 	passphrase []byte,
 	threshold uint32,
@@ -95,13 +95,13 @@ func (s *Service) OnPrepare(ctx context.Context,
 ) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "services.process.OnPrepare")
 	defer span.Finish()
-	log.Trace().Uint64("sender_id", sender).Str("account", account).Msg("Preparing for distributed key generation")
+	log.Trace().Uint64("sender_id", senderID).Str("account", account).Msg("Preparing for distributed key generation")
 
 	s.generationsMu.Lock()
 	defer s.generationsMu.Unlock()
 
 	if _, err := s.getGeneration(ctx, account); err == nil {
-		log.Debug().Uint64("sender_id", sender).Str("account", account).Msg("Already in progress")
+		log.Debug().Uint64("sender_id", senderID).Str("account", account).Msg("Already in progress")
 		return ErrInProgress
 	}
 
@@ -117,7 +117,7 @@ func (s *Service) OnPrepare(ctx context.Context,
 	}
 
 	if err := s.contribution(ctx, s.generations[account]); err != nil {
-		log.Debug().Uint64("sender_id", sender).Str("account", account).Msg("Failed to generate our own contribution")
+		log.Debug().Uint64("sender_id", senderID).Str("account", account).Msg("Failed to generate our own contribution")
 		return errors.Wrap(err, "failed to generate own contribution")
 	}
 
@@ -125,10 +125,10 @@ func (s *Service) OnPrepare(ctx context.Context,
 }
 
 // OnExecute is called when we receive a request from the given participant to execute the given DKG.
-func (s *Service) OnExecute(ctx context.Context, sender uint64, account string) error {
+func (s *Service) OnExecute(ctx context.Context, senderID uint64, account string) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "services.process.OnExecute")
 	defer span.Finish()
-	log.Trace().Uint64("sender", sender).Str("account", account).Msg("Executing")
+	log.Trace().Uint64("sender", senderID).Str("account", account).Msg("Executing")
 
 	s.generationsMu.Lock()
 	defer s.generationsMu.Unlock()
@@ -138,6 +138,7 @@ func (s *Service) OnExecute(ctx context.Context, sender uint64, account string) 
 		if errors.Is(err, ErrNotFound) {
 			return ErrNotInProgress
 		}
+
 		return err
 	}
 
@@ -166,6 +167,7 @@ func (s *Service) OnExecute(ctx context.Context, sender uint64, account string) 
 			generation.sharedVVecs[id] = recipientVVec
 		}
 	}
+
 	return nil
 }
 
@@ -245,6 +247,7 @@ func (s *Service) OnCommit(ctx context.Context, _ uint64, account string, confir
 	sig := privateKey.SignByte(confirmationData)
 
 	delete(s.generations, account)
+
 	return aggregateVVec[0].Serialize(), sig.Serialize(), nil
 }
 
@@ -267,7 +270,16 @@ func (s *Service) OnAbort(ctx context.Context, _ uint64, account string) error {
 }
 
 // OnContribute is called when we need to swap contributions with another participant.
-func (s *Service) OnContribute(ctx context.Context, sender uint64, account string, secret bls.SecretKey, vVec []bls.PublicKey) (bls.SecretKey, []bls.PublicKey, error) {
+func (s *Service) OnContribute(ctx context.Context,
+	senderID uint64,
+	account string,
+	secret bls.SecretKey,
+	vVec []bls.PublicKey,
+) (
+	bls.SecretKey,
+	[]bls.PublicKey,
+	error,
+) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "services.process.OnContribute")
 	defer span.Finish()
 
@@ -280,16 +292,16 @@ func (s *Service) OnContribute(ctx context.Context, sender uint64, account strin
 	}
 
 	if !verifyContribution(generation.id, secret, vVec) {
-		log.Warn().Uint64("sender", sender).Str("account", account).Msg("Received invalid contribution")
-		return bls.SecretKey{}, nil, fmt.Errorf("invalid contribution from %d", sender)
+		log.Warn().Uint64("sender", senderID).Str("account", account).Msg("Received invalid contribution")
+		return bls.SecretKey{}, nil, fmt.Errorf("invalid contribution from %d", senderID)
 	}
 
 	// Store the contributed information.
-	generation.sharedSecrets[sender] = secret
-	generation.sharedVVecs[sender] = vVec
+	generation.sharedSecrets[senderID] = secret
+	generation.sharedVVecs[senderID] = vVec
 
 	// We return our unique generated secret for the sender, and our own verification vector.
-	return generation.distributionSecrets[sender], generation.sharedVVecs[generation.id], nil
+	return generation.distributionSecrets[senderID], generation.sharedVVecs[generation.id], nil
 }
 
 func (s *Service) storeDistributedKey(ctx context.Context,

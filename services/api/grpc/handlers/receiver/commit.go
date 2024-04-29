@@ -26,7 +26,7 @@ func (h *Handler) Commit(ctx context.Context, req *pb.CommitRequest) (*pb.Commit
 	senderID := h.senderID(ctx)
 	if senderID == 0 {
 		log.Warn().Interface("client", ctx.Value(&interceptors.ClientName{})).Msg("Failed to obtain participant ID of sender")
-		return nil, errors.New("Unknown sender")
+		return nil, errors.New("unknown sender")
 	}
 	log.Trace().Uint64("sender_id", senderID).Msg("Committing as per request from sender")
 
@@ -42,5 +42,6 @@ func (h *Handler) Commit(ctx context.Context, req *pb.CommitRequest) (*pb.Commit
 	}
 
 	log.Trace().Msg("Completed commit successfully")
+
 	return res, nil
 }

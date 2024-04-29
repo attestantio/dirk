@@ -62,5 +62,6 @@ func (h *Handler) Sign(ctx context.Context, req *pb.SignRequest) (*pb.SignRespon
 	}
 
 	log.Trace().Str("result", "succeeded").Msg("Success")
+
 	return res, nil
 }

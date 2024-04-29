@@ -33,7 +33,7 @@ type Account struct {
 
 // NewAccount creates a new account.
 func NewAccount(name string, passphrase []byte) *Account {
-	uuid, err := uuid.NewRandom()
+	id, err := uuid.NewRandom()
 	if err != nil {
 		panic(err)
 	}
@@ -41,8 +41,9 @@ func NewAccount(name string, passphrase []byte) *Account {
 	if err != nil {
 		panic(err)
 	}
+
 	return &Account{
-		id:         uuid,
+		id:         id,
 		privateKey: privateKey,
 		name:       name,
 		passphrase: passphrase,
@@ -66,7 +67,7 @@ func (a *Account) PublicKey() e2types.PublicKey {
 
 // Path provides the path for the account.
 // Can be empty if the account is not derived from a path.
-func (a *Account) Path() string {
+func (*Account) Path() string {
 	return ""
 }
 
@@ -82,6 +83,7 @@ func (a *Account) Unlock(_ context.Context, passphrase []byte) error {
 		a.unlocked = true
 		return nil
 	}
+
 	return errors.New("invalid passphrase")
 }
 
@@ -99,5 +101,6 @@ func (a *Account) Sign(ctx context.Context, data []byte) (e2types.Signature, err
 	if !unlocked {
 		return nil, errors.New("account is locked")
 	}
+
 	return a.Sign(ctx, data)
 }

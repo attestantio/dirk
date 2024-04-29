@@ -44,9 +44,9 @@ func WithLogLevel(logLevel zerolog.Level) Parameter {
 }
 
 // WithSigner sets the signer service for the module.
-func WithSigner(signer signer.Service) Parameter {
+func WithSigner(service signer.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.signer = signer
+		p.signer = service
 	})
 }
 

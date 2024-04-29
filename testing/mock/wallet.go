@@ -28,12 +28,13 @@ type Wallet struct {
 
 // NewWallet creates a new wallet.
 func NewWallet(name string) *Wallet {
-	uuid, err := uuid.NewRandom()
+	id, err := uuid.NewRandom()
 	if err != nil {
 		panic(err)
 	}
+
 	return &Wallet{
-		id:   uuid,
+		id:   id,
 		name: name,
 	}
 }
@@ -49,17 +50,17 @@ func (a *Wallet) Name() string {
 }
 
 // Type returns the type for the wallet.
-func (a *Wallet) Type() string {
+func (*Wallet) Type() string {
 	return "mock"
 }
 
 // Version returns the version for the wallet.
-func (a *Wallet) Version() uint {
+func (*Wallet) Version() uint {
 	return 1
 }
 
 // Accounts returns the accounts in the wallet.
-func (a *Wallet) Accounts(_ context.Context) <-chan e2wtypes.Account {
+func (*Wallet) Accounts(_ context.Context) <-chan e2wtypes.Account {
 	ch := make(chan e2wtypes.Account, 1024)
 	close(ch)
 	return ch

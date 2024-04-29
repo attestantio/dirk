@@ -22,6 +22,6 @@ func New() *Service {
 }
 
 // Name provides the name of the service.
-func (s *Service) Name() string {
+func (*Service) Name() string {
 	return "mock"
 }

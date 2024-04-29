@@ -89,6 +89,7 @@ func (s *Service) Peer(id uint64) (*core.Endpoint, error) {
 	if !exists {
 		return nil, ErrNotFound
 	}
+
 	return &core.Endpoint{
 		ID:   peer.ID,
 		Name: peer.Name,
@@ -106,6 +107,7 @@ func (s *Service) All() map[uint64]*core.Endpoint {
 			Port: peer.Port,
 		}
 	}
+
 	return res
 }
 
@@ -128,5 +130,6 @@ func (s *Service) Suitable(threshold uint32) ([]*core.Endpoint, error) {
 	if suitable < threshold {
 		return nil, errors.New("not enough suitable peers")
 	}
+
 	return res, nil
 }

@@ -31,21 +31,25 @@ func (h *Handler) SignBeaconProposal(ctx context.Context, req *pb.SignBeaconProp
 	if req == nil {
 		log.Warn().Str("result", "denied").Msg("Request not specified")
 		res.State = pb.ResponseState_DENIED
+
 		return res, nil
 	}
 	if req.GetData() == nil {
 		log.Warn().Str("result", "denied").Msg("Request data not specified")
 		res.State = pb.ResponseState_DENIED
+
 		return res, nil
 	}
 	if req.GetAccount() == "" && req.GetPublicKey() == nil {
 		log.Warn().Str("result", "denied").Msg("Neither accout nor public key specified")
 		res.State = pb.ResponseState_DENIED
+
 		return res, nil
 	}
 	if !strings.Contains(req.GetAccount(), "/") {
 		log.Warn().Str("result", "denied").Msg("Invalid account specified")
 		res.State = pb.ResponseState_DENIED
+
 		return res, nil
 	}
 
@@ -71,5 +75,6 @@ func (h *Handler) SignBeaconProposal(ctx context.Context, req *pb.SignBeaconProp
 	}
 
 	log.Trace().Str("result", "succeeded").Msg("Success")
+
 	return res, nil
 }

@@ -1247,7 +1247,7 @@ func TestRunRulesSignBeaconAttestationSoak(t *testing.T) {
 		}
 		// Run simultaneously (as near as we can manage).
 		var wg sync.WaitGroup
-		starter := make(chan interface{})
+		starter := make(chan any)
 		for i := 0; i < p; i++ {
 			wg.Add(1)
 			go func(index int) {
@@ -1349,7 +1349,7 @@ func TestRunRulesSignBeaconAttestationsSoak(t *testing.T) {
 		}
 		// Run simultaneously (as near as we can manage).
 		var wg sync.WaitGroup
-		starter := make(chan interface{})
+		starter := make(chan any)
 		for i := 0; i < p; i++ {
 			wg.Add(1)
 			go func(i int) {
@@ -1439,7 +1439,7 @@ func TestRunRulesSignBeaconProposalSoak(t *testing.T) {
 		}
 		// Run simultaneously (as near as we can manage).
 		var wg sync.WaitGroup
-		starter := make(chan interface{})
+		starter := make(chan any)
 		for i := 0; i < p; i++ {
 			wg.Add(1)
 			go func(index int) {

@@ -14,4 +14,4 @@
 package service
 
 // Service is the API service.
-type Service interface{}
+type Service any

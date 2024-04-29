@@ -20,6 +20,6 @@ import (
 )
 
 // OnCreateAccount is called when a request to create an account needs to be approved.
-func (s *Service) OnCreateAccount(_ context.Context, _ *rules.ReqMetadata, _ *rules.CreateAccountData) rules.Result {
+func (*Service) OnCreateAccount(_ context.Context, _ *rules.ReqMetadata, _ *rules.CreateAccountData) rules.Result {
 	return rules.APPROVED
 }

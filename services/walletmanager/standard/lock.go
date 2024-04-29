@@ -96,5 +96,6 @@ func (s *Service) Lock(ctx context.Context,
 
 	log.Trace().Str("result", "succeeded").Msg("Success")
 	s.monitor.WalletManagerCompleted(started, "lock", core.ResultSucceeded)
+
 	return core.ResultSucceeded, nil
 }

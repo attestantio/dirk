@@ -68,44 +68,44 @@ func WithMonitor(monitor metrics.APIMonitor) Parameter {
 }
 
 // WithLister sets the lister for this module.
-func WithLister(lister lister.Service) Parameter {
+func WithLister(service lister.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.lister = lister
+		p.lister = service
 	})
 }
 
 // WithProcess sets the process for this module.
-func WithProcess(process process.Service) Parameter {
+func WithProcess(service process.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.process = process
+		p.process = service
 	})
 }
 
 // WithSigner sets the signer for this module.
-func WithSigner(signer signer.Service) Parameter {
+func WithSigner(service signer.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.signer = signer
+		p.signer = service
 	})
 }
 
 // WithPeers sets the peers for this module.
-func WithPeers(peers peers.Service) Parameter {
+func WithPeers(service peers.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.peers = peers
+		p.peers = service
 	})
 }
 
 // WithWalletManager sets the wallet manager for this module.
-func WithWalletManager(walletManager walletmanager.Service) Parameter {
+func WithWalletManager(service walletmanager.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.walletManager = walletManager
+		p.walletManager = service
 	})
 }
 
 // WithAccountManager sets the account manager for this module.
-func WithAccountManager(accountManager accountmanager.Service) Parameter {
+func WithAccountManager(service accountmanager.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.accountManager = accountManager
+		p.accountManager = service
 	})
 }
 

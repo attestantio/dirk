@@ -42,6 +42,7 @@ func (h *Handler) Generate(ctx context.Context, req *pb.GenerateRequest) (*pb.Ge
 		log.Error().Err(err).Msg("Generate attempt resulted in error")
 		res.State = pb.ResponseState_FAILED
 		res.Message = err.Error()
+
 		return res, nil
 	}
 

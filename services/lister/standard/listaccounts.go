@@ -24,7 +24,7 @@ import (
 	"github.com/attestantio/dirk/rules"
 	"github.com/attestantio/dirk/services/checker"
 	"github.com/attestantio/dirk/services/ruler"
-	wallet "github.com/wealdtech/go-eth2-wallet"
+	e2wallet "github.com/wealdtech/go-eth2-wallet"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -39,6 +39,7 @@ func (s *Service) ListAccounts(ctx context.Context, credentials *checker.Credent
 
 	if credentials == nil {
 		log.Error().Msg("No credentials supplied")
+
 		return core.ResultFailed, nil
 	}
 	span.SetAttributes(attribute.String("client", credentials.Client))
@@ -53,13 +54,15 @@ func (s *Service) ListAccounts(ctx context.Context, credentials *checker.Credent
 	accounts := make([]e2wtypes.Account, 0)
 	for _, path := range paths {
 		log := log.With().Str("path", path).Logger()
-		walletName, accountPath, err := wallet.WalletAndAccountNames(path)
+		walletName, accountPath, err := e2wallet.WalletAndAccountNames(path)
 		if err != nil {
 			log.Warn().Err(err).Msg("Failed to obtain wallet and account names from path")
+
 			continue
 		}
 		if walletName == "" {
 			log.Warn().Msg("Empty wallet in path")
+
 			continue
 		}
 
@@ -74,6 +77,7 @@ func (s *Service) ListAccounts(ctx context.Context, credentials *checker.Credent
 			accountRegex, err = regexp.Compile(accountPath)
 			if err != nil {
 				log.Warn().Err(err).Msg("Invalid account regular expression")
+
 				continue
 			}
 		}
@@ -81,12 +85,14 @@ func (s *Service) ListAccounts(ctx context.Context, credentials *checker.Credent
 		wallet, err := s.fetcher.FetchWallet(ctx, path)
 		if err != nil {
 			log.Debug().Err(err).Msg("Failed to obtain wallet")
+
 			continue
 		}
 
 		walletAccounts, err := s.fetcher.FetchAccounts(ctx, wallet.Name())
 		if err != nil {
 			log.Debug().Err(err).Msg("Failed to obtain accounts")
+
 			continue
 		}
 
@@ -98,6 +104,7 @@ func (s *Service) ListAccounts(ctx context.Context, credentials *checker.Credent
 				checkRes := s.checkAccess(ctx, credentials, accountName, ruler.ActionAccessAccount)
 				if checkRes != core.ResultSucceeded {
 					log.Debug().Msg("Access refused")
+
 					continue
 				}
 				log.Trace().Msg("Access allowed")
@@ -107,6 +114,7 @@ func (s *Service) ListAccounts(ctx context.Context, credentials *checker.Credent
 				pubKeyProvider, isProvider := walletAccount.(e2wtypes.AccountPublicKeyProvider)
 				if !isProvider {
 					log.Warn().Msg("No public key available")
+
 					continue
 				}
 				pubKey = pubKeyProvider.PublicKey().Marshal()
@@ -142,5 +150,6 @@ func (s *Service) ListAccounts(ctx context.Context, credentials *checker.Credent
 	log.Trace().Str("result", "succeeded").Dur("elapsed", time.Since(started)).Int("accounts", len(accounts)).Msg("Success")
 	span.AddEvent("Obtained all accounts", trace.WithAttributes(attribute.Int("accounts", len(accounts))))
 	s.monitor.ListAccountsCompleted(started)
+
 	return core.ResultSucceeded, accounts
 }

@@ -46,16 +46,16 @@ func WithLogLevel(logLevel zerolog.Level) Parameter {
 }
 
 // WithWalletManager sets the wallet manager service for the module.
-func WithWalletManager(walletManager walletmanager.Service) Parameter {
+func WithWalletManager(service walletmanager.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.walletManager = walletManager
+		p.walletManager = service
 	})
 }
 
 // WithProcess sets the process service for the module.
-func WithProcess(process process.Service) Parameter {
+func WithProcess(service process.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.process = process
+		p.process = service
 	})
 }
 

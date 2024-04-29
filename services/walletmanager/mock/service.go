@@ -29,7 +29,7 @@ func New() *Service {
 }
 
 // Unlock unlocks a wallet.
-func (s *Service) Unlock(_ context.Context,
+func (*Service) Unlock(_ context.Context,
 	_ *checker.Credentials,
 	_ string,
 	_ []byte,
@@ -41,7 +41,7 @@ func (s *Service) Unlock(_ context.Context,
 }
 
 // Lock locks a wallet.
-func (s *Service) Lock(_ context.Context,
+func (*Service) Lock(_ context.Context,
 	_ *checker.Credentials,
 	_ string,
 ) (

@@ -78,6 +78,7 @@ func (s *Service) UnlockWallet(ctx context.Context, wallet e2wtypes.Wallet) (boo
 		if err != nil {
 			return false, err
 		}
+
 		return true, nil
 	}
 	for _, passphrase := range s.walletPassphrases {
@@ -85,6 +86,7 @@ func (s *Service) UnlockWallet(ctx context.Context, wallet e2wtypes.Wallet) (boo
 			return true, nil
 		}
 	}
+
 	return false, nil
 }
 
@@ -114,5 +116,6 @@ func (s *Service) UnlockAccount(ctx context.Context, wallet e2wtypes.Wallet, acc
 	}
 
 	monitorUnlockAccount(false, time.Since(started))
+
 	return false, nil
 }

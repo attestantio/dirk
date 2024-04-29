@@ -39,28 +39,28 @@ type SignerMonitor interface {
 }
 
 // FetcherMonitor monitors the fetcher service.
-type FetcherMonitor interface{}
+type FetcherMonitor any
 
 // LockerMonitor monitors the locker service.
-type LockerMonitor interface{}
+type LockerMonitor any
 
 // RulerMonitor monitors the ruler service.
-type RulerMonitor interface{}
+type RulerMonitor any
 
 // APIMonitor monitors the API service.
-type APIMonitor interface{}
+type APIMonitor any
 
 // PeersMonitor monitors the dirk peers service.
-type PeersMonitor interface{}
+type PeersMonitor any
 
 // ProcessMonitor monitors the process service.
-type ProcessMonitor interface{}
+type ProcessMonitor any
 
 // SenderMonitor monitors the sender service.
-type SenderMonitor interface{}
+type SenderMonitor any
 
 // ReceiverMonitor monitors the receiver service.
-type ReceiverMonitor interface{}
+type ReceiverMonitor any
 
 // ListerMonitor monitors the account lister service.
 type ListerMonitor interface {
@@ -81,4 +81,4 @@ type WalletManagerMonitor interface {
 }
 
 // ConfidantMonitor monitors the confidant service.
-type ConfidantMonitor interface{}
+type ConfidantMonitor any

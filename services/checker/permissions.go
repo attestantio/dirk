@@ -30,6 +30,7 @@ func DumpPermissions(perms map[string][]*Permissions) {
 	for client, perms := range perms {
 		if client == "" {
 			fmt.Fprintf(os.Stdout, "ERROR: client does not have a name\n")
+
 			continue
 		}
 		fmt.Fprintf(os.Stdout, "Permissions for %q:\n", client)

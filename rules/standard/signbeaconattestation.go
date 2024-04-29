@@ -42,6 +42,7 @@ func (s *signBeaconAttestationState) Encode() []byte {
 		// Target epoch.
 		binary.LittleEndian.PutUint64(data[9:17], uint64(s.TargetEpoch))
 	}
+
 	return data
 }
 
@@ -61,6 +62,7 @@ func (s *signBeaconAttestationState) Decode(data []byte) error {
 	default:
 		err = gob.NewDecoder(bytes.NewBuffer(data)).Decode(s)
 	}
+
 	return err
 }
 
@@ -99,13 +101,12 @@ func (s *Service) fetchSignBeaconAttestationState(ctx context.Context, pubKey []
 	copy(key[len(pubKey):], actionSignBeaconAttestation)
 	data, err := s.store.Fetch(ctx, key)
 	if err != nil {
-		if err.Error() == "not found" {
-			// No values; set them to -1.
-			state.SourceEpoch = -1
-			state.TargetEpoch = -1
-		} else {
+		if err.Error() != "not found" {
 			return nil, err
 		}
+		// No values; set them to -1.
+		state.SourceEpoch = -1
+		state.TargetEpoch = -1
 	} else {
 		err := state.Decode(data)
 		if err != nil {
@@ -113,6 +114,7 @@ func (s *Service) fetchSignBeaconAttestationState(ctx context.Context, pubKey []
 		}
 	}
 	log.Trace().Int64("source_epoch", state.SourceEpoch).Int64("target_epoch", state.TargetEpoch).Msg("Returning attestation state from store")
+
 	return state, nil
 }
 
@@ -127,5 +129,6 @@ func (s *Service) storeSignBeaconAttestationState(ctx context.Context, pubKey []
 	}
 
 	log.Trace().Int64("source_epoch", state.SourceEpoch).Int64("target_epoch", state.TargetEpoch).Msg("Stored attestation state to store")
+
 	return nil
 }

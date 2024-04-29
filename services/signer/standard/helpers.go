@@ -80,6 +80,7 @@ func (s *Service) checkAccess(ctx context.Context, credentials *checker.Credenti
 	if s.checker.Check(ctx, credentials, accountName, action) {
 		return core.ResultSucceeded
 	}
+
 	return core.ResultDenied
 }
 
@@ -125,5 +126,6 @@ func (s *Service) unlockAccount(ctx context.Context, wallet e2wtypes.Wallet, acc
 	}
 
 	log.Trace().Str("result", "succeeded").Msg("Account is unlocked")
+
 	return core.ResultSucceeded
 }
