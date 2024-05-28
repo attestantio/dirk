@@ -48,6 +48,7 @@ import (
 	prometheusmetrics "github.com/attestantio/dirk/services/metrics/prometheus"
 	"github.com/attestantio/dirk/services/peers"
 	staticpeers "github.com/attestantio/dirk/services/peers/static"
+	"github.com/attestantio/dirk/services/process"
 	standardprocess "github.com/attestantio/dirk/services/process/standard"
 	"github.com/attestantio/dirk/services/ruler"
 	goruler "github.com/attestantio/dirk/services/ruler/golang"
@@ -587,6 +588,60 @@ func startSender(ctx context.Context,
 	return senderSvc, nil
 }
 
+func startProcess(ctx context.Context,
+	monitor metrics.Service,
+	majordomoSvc majordomo.Service,
+	serverID uint64,
+	stores []e2wtypes.Store,
+	unlockerSvc unlocker.Service,
+	checkerSvc checker.Service,
+	fetcherSvc fetcher.Service,
+	peersSvc peers.Service,
+	certPEMBlock []byte,
+	keyPEMBlock []byte,
+	caPEMBlock []byte,
+) (
+	process.Service,
+	error,
+) {
+	sender, err := startSender(ctx, monitor, certPEMBlock, keyPEMBlock, caPEMBlock)
+	if err != nil {
+		return nil, err
+	}
+
+	var processMonitor metrics.ProcessMonitor
+	if monitor, isMonitor := monitor.(metrics.ProcessMonitor); isMonitor {
+		processMonitor = monitor
+	}
+
+	var generationPassphrase []byte
+	if viper.GetString("process.generation-passphrase") != "" {
+		generationPassphrase, err = majordomoSvc.Fetch(ctx, viper.GetString("process.generation-passphrase"))
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to obtain account generation passphrase for process")
+		}
+	}
+
+	processSvc, err := standardprocess.New(ctx,
+		standardprocess.WithLogLevel(util.LogLevel("process")),
+		standardprocess.WithMonitor(processMonitor),
+		standardprocess.WithChecker(checkerSvc),
+		standardprocess.WithFetcher(fetcherSvc),
+		standardprocess.WithUnlocker(unlockerSvc),
+		standardprocess.WithSender(sender),
+		standardprocess.WithPeers(peersSvc),
+		standardprocess.WithID(serverID),
+		standardprocess.WithStores(stores),
+		standardprocess.WithGenerationPassphrase(generationPassphrase),
+		standardprocess.WithGenerationTimeout(viper.GetDuration("process.generation-timeout")),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create process service")
+	}
+
+	return processSvc, nil
+}
+
 func startGrpcServer(ctx context.Context,
 	monitor metrics.Service,
 	majordomoSvc majordomo.Service,
@@ -626,39 +681,21 @@ func startGrpcServer(ctx context.Context,
 		return nil, err
 	}
 
-	sender, err := startSender(ctx, monitor, certPEMBlock, keyPEMBlock, caPEMBlock)
-	if err != nil {
-		return nil, err
-	}
-
-	var processMonitor metrics.ProcessMonitor
-	if monitor, isMonitor := monitor.(metrics.ProcessMonitor); isMonitor {
-		processMonitor = monitor
-	}
-
-	var generationPassphrase []byte
-	if viper.GetString("process.generation-passphrase") != "" {
-		generationPassphrase, err = majordomoSvc.Fetch(ctx, viper.GetString("process.generation-passphrase"))
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to obtain account generation passphrase for process")
-		}
-	}
-
-	processSvc, err := standardprocess.New(ctx,
-		standardprocess.WithLogLevel(util.LogLevel("process")),
-		standardprocess.WithMonitor(processMonitor),
-		standardprocess.WithChecker(checkerSvc),
-		standardprocess.WithFetcher(fetcherSvc),
-		standardprocess.WithUnlocker(unlockerSvc),
-		standardprocess.WithSender(sender),
-		standardprocess.WithPeers(peersSvc),
-		standardprocess.WithID(serverID),
-		standardprocess.WithStores(stores),
-		standardprocess.WithGenerationPassphrase(generationPassphrase),
-		standardprocess.WithGenerationTimeout(viper.GetDuration("process.generation-timeout")),
+	processSvc, err := startProcess(ctx,
+		monitor,
+		majordomoSvc,
+		serverID,
+		stores,
+		unlockerSvc,
+		checkerSvc,
+		fetcherSvc,
+		peersSvc,
+		certPEMBlock,
+		keyPEMBlock,
+		caPEMBlock,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create process service")
+		return nil, err
 	}
 
 	var accountManagerMonitor metrics.AccountManagerMonitor
@@ -698,7 +735,6 @@ func startGrpcServer(ctx context.Context,
 	if monitor, isMonitor := monitor.(metrics.APIMonitor); isMonitor {
 		apiMonitor = monitor
 	}
-
 	svc, err := grpcapi.New(ctx,
 		grpcapi.WithLogLevel(util.LogLevel("api")),
 		grpcapi.WithMonitor(apiMonitor),
