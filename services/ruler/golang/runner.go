@@ -88,7 +88,6 @@ func (s *Service) RunRules(ctx context.Context,
 			var lockKey [48]byte
 			copy(lockKey[:], rulesData[i].PubKey)
 			s.locker.Lock(lockKey)
-			//nolint:revive
 			defer s.locker.Unlock(lockKey)
 		}
 		s.locker.PostLock()

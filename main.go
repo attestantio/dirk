@@ -1,4 +1,4 @@
-// Copyright © 2020 - 2023 Attestant Limited.
+// Copyright © 2020 - 2024 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -51,7 +51,9 @@ import (
 	standardprocess "github.com/attestantio/dirk/services/process/standard"
 	"github.com/attestantio/dirk/services/ruler"
 	goruler "github.com/attestantio/dirk/services/ruler/golang"
+	"github.com/attestantio/dirk/services/sender"
 	sendergrpc "github.com/attestantio/dirk/services/sender/grpc"
+	"github.com/attestantio/dirk/services/signer"
 	standardsigner "github.com/attestantio/dirk/services/signer/standard"
 	"github.com/attestantio/dirk/services/unlocker"
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
@@ -279,8 +281,6 @@ func runCommands(ctx context.Context, majordomoSvc majordomo.Service) (bool, int
 }
 
 func startServices(ctx context.Context, majordomoSvc majordomo.Service, monitor metrics.Service) error {
-	var err error
-
 	stores, err := initStores(ctx, majordomoSvc)
 	if err != nil {
 		return err
@@ -314,165 +314,9 @@ func startServices(ctx context.Context, majordomoSvc majordomo.Service, monitor 
 		return errors.Wrap(err, "failed to set up ruler service")
 	}
 
-	// Set up the lister.
-	listerSvc, err := startLister(ctx, monitor, fetcherSvc, checkerSvc, rulerSvc)
+	_, err = startGrpcServer(ctx, monitor, majordomoSvc, stores, unlockerSvc, checkerSvc, fetcherSvc, rulerSvc)
 	if err != nil {
-		return errors.Wrap(err, "failed to initialise lister")
-	}
-
-	// Set up the signer.
-	var signerMonitor metrics.SignerMonitor
-	if monitor, isMonitor := monitor.(metrics.SignerMonitor); isMonitor {
-		signerMonitor = monitor
-	}
-	signer, err := standardsigner.New(ctx,
-		standardsigner.WithLogLevel(util.LogLevel("signer")),
-		standardsigner.WithMonitor(signerMonitor),
-		standardsigner.WithUnlocker(unlockerSvc),
-		standardsigner.WithChecker(checkerSvc),
-		standardsigner.WithFetcher(fetcherSvc),
-		standardsigner.WithRuler(rulerSvc),
-	)
-	if err != nil {
-		return errors.Wrap(err, "failed to create signer service")
-	}
-
-	peersSvc, err := startPeers(ctx, monitor)
-	if err != nil {
-		return errors.Wrap(err, "failed to start peers service")
-	}
-
-	var senderMonitor metrics.SenderMonitor
-	if monitor, isMonitor := monitor.(metrics.SenderMonitor); isMonitor {
-		senderMonitor = monitor
-	}
-	certPEMBlock, err := majordomoSvc.Fetch(ctx, viper.GetString("certificates.server-cert"))
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to obtain server certificate from %s", viper.GetString("certificates.server-cert")))
-	}
-	keyPEMBlock, err := majordomoSvc.Fetch(ctx, viper.GetString("certificates.server-key"))
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to obtain server key from %s", viper.GetString("certificates.server-key")))
-	}
-	var caPEMBlock []byte
-	if viper.GetString("certificates.ca-cert") != "" {
-		caPEMBlock, err = majordomoSvc.Fetch(ctx, viper.GetString("certificates.ca-cert"))
-		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("failed to obtain CA certificate from %s", viper.GetString("certificates.ca-cert")))
-		}
-	}
-	sender, err := sendergrpc.New(ctx,
-		sendergrpc.WithLogLevel(util.LogLevel("sender")),
-		sendergrpc.WithMonitor(senderMonitor),
-		sendergrpc.WithName(viper.GetString("server.name")),
-		sendergrpc.WithServerCert(certPEMBlock),
-		sendergrpc.WithServerKey(keyPEMBlock),
-		sendergrpc.WithCACert(caPEMBlock),
-	)
-	if err != nil {
-		return errors.Wrap(err, "failed to create sender service")
-	}
-
-	serverID, err := strconv.ParseUint(viper.GetString("server.id"), 10, 64)
-	if err != nil {
-		return errors.Wrap(err, "failed to obtain server ID")
-	}
-
-	endpoints := make(map[uint64]string)
-	for k, v := range viper.GetStringMapString("peers") {
-		peerID, err := strconv.ParseUint(k, 10, 64)
-		if err != nil {
-			log.Error().Err(err).Str("peer_id", k).Msg("Invalid peer ID")
-			continue
-		}
-		endpoints[peerID] = v
-	}
-	var processMonitor metrics.ProcessMonitor
-	if monitor, isMonitor := monitor.(metrics.ProcessMonitor); isMonitor {
-		processMonitor = monitor
-	}
-
-	var generationPassphrase []byte
-	if viper.GetString("process.generation-passphrase") != "" {
-		generationPassphrase, err = majordomoSvc.Fetch(ctx, viper.GetString("process.generation-passphrase"))
-		if err != nil {
-			return errors.Wrap(err, "failed to obtain account generation passphrase for process")
-		}
-	}
-
-	process, err := standardprocess.New(ctx,
-		standardprocess.WithLogLevel(util.LogLevel("process")),
-		standardprocess.WithMonitor(processMonitor),
-		standardprocess.WithChecker(checkerSvc),
-		standardprocess.WithFetcher(fetcherSvc),
-		standardprocess.WithUnlocker(unlockerSvc),
-		standardprocess.WithSender(sender),
-		standardprocess.WithPeers(peersSvc),
-		standardprocess.WithID(serverID),
-		standardprocess.WithStores(stores),
-		standardprocess.WithGenerationPassphrase(generationPassphrase),
-		standardprocess.WithGenerationTimeout(viper.GetDuration("process.generation-timeout")),
-	)
-	if err != nil {
-		return errors.Wrap(err, "failed to create process service")
-	}
-
-	var accountManagerMonitor metrics.AccountManagerMonitor
-	if monitor, isMonitor := monitor.(metrics.AccountManagerMonitor); isMonitor {
-		accountManagerMonitor = monitor
-	}
-	accountManager, err := standardaccountmanager.New(ctx,
-		standardaccountmanager.WithLogLevel(util.LogLevel("accountmanager")),
-		standardaccountmanager.WithMonitor(accountManagerMonitor),
-		standardaccountmanager.WithUnlocker(unlockerSvc),
-		standardaccountmanager.WithChecker(checkerSvc),
-		standardaccountmanager.WithFetcher(fetcherSvc),
-		standardaccountmanager.WithRuler(rulerSvc),
-		standardaccountmanager.WithProcess(process),
-	)
-	if err != nil {
-		return errors.Wrap(err, "failed to create account manager service")
-	}
-
-	var walletManagerMonitor metrics.WalletManagerMonitor
-	if monitor, isMonitor := monitor.(metrics.WalletManagerMonitor); isMonitor {
-		walletManagerMonitor = monitor
-	}
-	walletManager, err := standardwalletmanager.New(ctx,
-		standardwalletmanager.WithLogLevel(util.LogLevel("walletmanager")),
-		standardwalletmanager.WithMonitor(walletManagerMonitor),
-		standardwalletmanager.WithUnlocker(unlockerSvc),
-		standardwalletmanager.WithChecker(checkerSvc),
-		standardwalletmanager.WithFetcher(fetcherSvc),
-		standardwalletmanager.WithRuler(rulerSvc),
-	)
-	if err != nil {
-		return errors.Wrap(err, "failed to create wallet manager service")
-	}
-
-	// Initialise the API service.
-	var apiMonitor metrics.APIMonitor
-	if monitor, isMonitor := monitor.(metrics.APIMonitor); isMonitor {
-		apiMonitor = monitor
-	}
-	_, err = grpcapi.New(ctx,
-		grpcapi.WithLogLevel(util.LogLevel("api")),
-		grpcapi.WithMonitor(apiMonitor),
-		grpcapi.WithSigner(signer),
-		grpcapi.WithLister(listerSvc),
-		grpcapi.WithProcess(process),
-		grpcapi.WithAccountManager(accountManager),
-		grpcapi.WithWalletManager(walletManager),
-		grpcapi.WithPeers(peersSvc),
-		grpcapi.WithName(viper.GetString("server.name")),
-		grpcapi.WithID(serverID),
-		grpcapi.WithServerCert(certPEMBlock),
-		grpcapi.WithServerKey(keyPEMBlock),
-		grpcapi.WithCACert(caPEMBlock),
-		grpcapi.WithListenAddress(viper.GetString("server.listen-address")),
-	)
-	if err != nil {
-		return errors.Wrap(err, "failed to create API service")
+		return err
 	}
 
 	return nil
@@ -683,4 +527,223 @@ func startLister(ctx context.Context,
 		standardlister.WithChecker(checkerSvc),
 		standardlister.WithRuler(rulerSvc),
 	)
+}
+
+func startSigner(ctx context.Context,
+	monitor metrics.Service,
+	fetcherSvc fetcher.Service,
+	checkerSvc checker.Service,
+	unlockerSvc unlocker.Service,
+	rulerSvc ruler.Service,
+) (
+	signer.Service,
+	error,
+) {
+	var signerMonitor metrics.SignerMonitor
+	if monitor, isMonitor := monitor.(metrics.SignerMonitor); isMonitor {
+		signerMonitor = monitor
+	}
+	signer, err := standardsigner.New(ctx,
+		standardsigner.WithLogLevel(util.LogLevel("signer")),
+		standardsigner.WithMonitor(signerMonitor),
+		standardsigner.WithUnlocker(unlockerSvc),
+		standardsigner.WithChecker(checkerSvc),
+		standardsigner.WithFetcher(fetcherSvc),
+		standardsigner.WithRuler(rulerSvc),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create signer service")
+	}
+
+	return signer, nil
+}
+
+func startSender(ctx context.Context,
+	monitor metrics.Service,
+	certPEMBlock []byte,
+	keyPEMBlock []byte,
+	caPEMBlock []byte,
+) (
+	sender.Service,
+	error,
+) {
+	var senderMonitor metrics.SenderMonitor
+	if monitor, isMonitor := monitor.(metrics.SenderMonitor); isMonitor {
+		senderMonitor = monitor
+	}
+
+	senderSvc, err := sendergrpc.New(ctx,
+		sendergrpc.WithLogLevel(util.LogLevel("sender")),
+		sendergrpc.WithMonitor(senderMonitor),
+		sendergrpc.WithName(viper.GetString("server.name")),
+		sendergrpc.WithServerCert(certPEMBlock),
+		sendergrpc.WithServerKey(keyPEMBlock),
+		sendergrpc.WithCACert(caPEMBlock),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create sender service")
+	}
+
+	return senderSvc, nil
+}
+
+func startGrpcServer(ctx context.Context,
+	monitor metrics.Service,
+	majordomoSvc majordomo.Service,
+	stores []e2wtypes.Store,
+	unlockerSvc unlocker.Service,
+	checkerSvc checker.Service,
+	fetcherSvc fetcher.Service,
+	rulerSvc ruler.Service,
+) (
+	*grpcapi.Service,
+	error,
+) {
+	// Set up the lister.
+	listerSvc, err := startLister(ctx, monitor, fetcherSvc, checkerSvc, rulerSvc)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set up the signec.
+	signerSvc, err := startSigner(ctx, monitor, fetcherSvc, checkerSvc, unlockerSvc, rulerSvc)
+	if err != nil {
+		return nil, err
+	}
+
+	peersSvc, err := startPeers(ctx, monitor)
+	if err != nil {
+		return nil, err
+	}
+
+	serverID, err := strconv.ParseUint(viper.GetString("server.id"), 10, 64)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to obtain server ID")
+	}
+
+	certPEMBlock, keyPEMBlock, caPEMBlock, err := obtainCerts(ctx, majordomoSvc)
+	if err != nil {
+		return nil, err
+	}
+
+	sender, err := startSender(ctx, monitor, certPEMBlock, keyPEMBlock, caPEMBlock)
+	if err != nil {
+		return nil, err
+	}
+
+	var processMonitor metrics.ProcessMonitor
+	if monitor, isMonitor := monitor.(metrics.ProcessMonitor); isMonitor {
+		processMonitor = monitor
+	}
+
+	var generationPassphrase []byte
+	if viper.GetString("process.generation-passphrase") != "" {
+		generationPassphrase, err = majordomoSvc.Fetch(ctx, viper.GetString("process.generation-passphrase"))
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to obtain account generation passphrase for process")
+		}
+	}
+
+	processSvc, err := standardprocess.New(ctx,
+		standardprocess.WithLogLevel(util.LogLevel("process")),
+		standardprocess.WithMonitor(processMonitor),
+		standardprocess.WithChecker(checkerSvc),
+		standardprocess.WithFetcher(fetcherSvc),
+		standardprocess.WithUnlocker(unlockerSvc),
+		standardprocess.WithSender(sender),
+		standardprocess.WithPeers(peersSvc),
+		standardprocess.WithID(serverID),
+		standardprocess.WithStores(stores),
+		standardprocess.WithGenerationPassphrase(generationPassphrase),
+		standardprocess.WithGenerationTimeout(viper.GetDuration("process.generation-timeout")),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create process service")
+	}
+
+	var accountManagerMonitor metrics.AccountManagerMonitor
+	if monitor, isMonitor := monitor.(metrics.AccountManagerMonitor); isMonitor {
+		accountManagerMonitor = monitor
+	}
+	accountManager, err := standardaccountmanager.New(ctx,
+		standardaccountmanager.WithLogLevel(util.LogLevel("accountmanager")),
+		standardaccountmanager.WithMonitor(accountManagerMonitor),
+		standardaccountmanager.WithUnlocker(unlockerSvc),
+		standardaccountmanager.WithChecker(checkerSvc),
+		standardaccountmanager.WithFetcher(fetcherSvc),
+		standardaccountmanager.WithRuler(rulerSvc),
+		standardaccountmanager.WithProcess(processSvc),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create account manager service")
+	}
+
+	var walletManagerMonitor metrics.WalletManagerMonitor
+	if monitor, isMonitor := monitor.(metrics.WalletManagerMonitor); isMonitor {
+		walletManagerMonitor = monitor
+	}
+	walletManager, err := standardwalletmanager.New(ctx,
+		standardwalletmanager.WithLogLevel(util.LogLevel("walletmanager")),
+		standardwalletmanager.WithMonitor(walletManagerMonitor),
+		standardwalletmanager.WithUnlocker(unlockerSvc),
+		standardwalletmanager.WithChecker(checkerSvc),
+		standardwalletmanager.WithFetcher(fetcherSvc),
+		standardwalletmanager.WithRuler(rulerSvc),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create wallet manager service")
+	}
+
+	var apiMonitor metrics.APIMonitor
+	if monitor, isMonitor := monitor.(metrics.APIMonitor); isMonitor {
+		apiMonitor = monitor
+	}
+
+	svc, err := grpcapi.New(ctx,
+		grpcapi.WithLogLevel(util.LogLevel("api")),
+		grpcapi.WithMonitor(apiMonitor),
+		grpcapi.WithSigner(signerSvc),
+		grpcapi.WithLister(listerSvc),
+		grpcapi.WithProcess(processSvc),
+		grpcapi.WithAccountManager(accountManager),
+		grpcapi.WithWalletManager(walletManager),
+		grpcapi.WithPeers(peersSvc),
+		grpcapi.WithName(viper.GetString("server.name")),
+		grpcapi.WithID(serverID),
+		grpcapi.WithServerCert(certPEMBlock),
+		grpcapi.WithServerKey(keyPEMBlock),
+		grpcapi.WithCACert(caPEMBlock),
+		grpcapi.WithListenAddress(viper.GetString("server.listen-address")),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create API service")
+	}
+
+	return svc, nil
+}
+
+func obtainCerts(ctx context.Context,
+	majordomoSvc majordomo.Service,
+) (
+	[]byte,
+	[]byte,
+	[]byte,
+	error,
+) {
+	certPEMBlock, err := majordomoSvc.Fetch(ctx, viper.GetString("certificates.server-cert"))
+	if err != nil {
+		return nil, nil, nil, errors.Wrap(err, fmt.Sprintf("failed to obtain server certificate from %s", viper.GetString("certificates.server-cert")))
+	}
+	keyPEMBlock, err := majordomoSvc.Fetch(ctx, viper.GetString("certificates.server-key"))
+	if err != nil {
+		return nil, nil, nil, errors.Wrap(err, fmt.Sprintf("failed to obtain server key from %s", viper.GetString("certificates.server-key")))
+	}
+	var caPEMBlock []byte
+	if viper.GetString("certificates.ca-cert") != "" {
+		caPEMBlock, err = majordomoSvc.Fetch(ctx, viper.GetString("certificates.ca-cert"))
+		if err != nil {
+			return nil, nil, nil, errors.Wrap(err, fmt.Sprintf("failed to obtain CA certificate from %s", viper.GetString("certificates.ca-cert")))
+		}
+	}
+	return certPEMBlock, keyPEMBlock, caPEMBlock, nil
 }

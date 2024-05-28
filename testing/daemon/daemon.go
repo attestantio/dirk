@@ -1,4 +1,4 @@
-// Copyright © 2020, 2021 Attestant Limited.
+// Copyright © 2020 - 2024 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -112,6 +112,8 @@ var Wallet2Keys = [][]byte{
 // - full permissions for 'client-test03' to access 'Wallet 1' and 'Wallet 2'
 //
 // Returns the log capture for the daemon, along with the filesystem path for the wallets.
+//
+//nolint:maintidx
 func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[uint64]string) (*logger.LogCapture, string, error) {
 	capture := logger.NewLogCapture()
 	if err := e2types.InitBLS(); err != nil {
