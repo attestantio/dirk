@@ -26,6 +26,7 @@ import (
 	mockchecker "github.com/attestantio/dirk/services/checker/mock"
 	memfetcher "github.com/attestantio/dirk/services/fetcher/mem"
 	staticpeers "github.com/attestantio/dirk/services/peers/static"
+	"github.com/attestantio/dirk/services/process"
 	standardprocess "github.com/attestantio/dirk/services/process/standard"
 	mocksender "github.com/attestantio/dirk/services/sender/mock"
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
@@ -96,7 +97,7 @@ func TestNonInitiator(t *testing.T) {
 		standardprocess.WithGenerationTimeout(generationTimeout),
 	)
 	require.NoError(t, err)
-	mock.Processes[1] = process1
+	mock.Processes = map[uint64]process.Service{1: process1}
 
 	receiver1, err := receiverhandler.New(ctx,
 		receiverhandler.WithLogLevel(zerolog.Disabled),

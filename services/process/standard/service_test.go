@@ -85,7 +85,7 @@ func createProcessService(ctx context.Context, id uint64) (process.Service, erro
 		return nil, errors.Wrap(err, "failed to create memory fetcher")
 	}
 
-	process, err := standardprocess.New(ctx,
+	processSvc, err := standardprocess.New(ctx,
 		standardprocess.WithChecker(checkerSvc),
 		standardprocess.WithGenerationPassphrase([]byte("secret")),
 		standardprocess.WithGenerationTimeout(generationTimeout),
@@ -99,9 +99,12 @@ func createProcessService(ctx context.Context, id uint64) (process.Service, erro
 	if err != nil {
 		return nil, err
 	}
-	mock.Processes[id] = process
+	if mock.Processes == nil {
+		mock.Processes = make(map[uint64]process.Service)
+	}
+	mock.Processes[id] = processSvc
 
-	return process, nil
+	return processSvc, nil
 }
 
 func TestMain(m *testing.M) {
