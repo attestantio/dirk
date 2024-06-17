@@ -97,6 +97,11 @@ func (s *Service) OnPrepare(ctx context.Context,
 	defer span.Finish()
 	log.Trace().Uint64("sender_id", senderID).Str("account", account).Msg("Preparing for distributed key generation")
 
+	if len(s.generationPassphrase) == 0 {
+		log.Error().Msg("Instance does not have a generation passphrase; cannot continue")
+		return ErrNotCreated
+	}
+
 	s.generationsMu.Lock()
 	defer s.generationsMu.Unlock()
 
