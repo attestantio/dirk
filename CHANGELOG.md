@@ -2,6 +2,7 @@
   - run slashing protection database garbage collection periodically
   - add commit hash to log on startup
   - enable gzip compression
+  - disallow generation of distributed accounts without passphrases
 
 # Version 1.2.0
   - add Amazon Secrets Manager (ASM) confidant

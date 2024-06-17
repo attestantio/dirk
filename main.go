@@ -621,6 +621,9 @@ func startProcess(ctx context.Context,
 			return nil, errors.Wrap(err, "failed to obtain account generation passphrase for process")
 		}
 	}
+	if len(generationPassphrase) == 0 {
+		log.Warn().Msg("No generation password supplied; distributed key generation cannot take place")
+	}
 
 	processSvc, err := standardprocess.New(ctx,
 		standardprocess.WithLogLevel(util.LogLevel("process")),
