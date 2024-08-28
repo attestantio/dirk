@@ -215,6 +215,7 @@ func populateCaches(ctx context.Context,
 
 	var wg sync.WaitGroup
 	var err error
+	var errMu sync.Mutex
 	for _, store := range stores {
 		for walletBytes := range store.RetrieveWallets() {
 			wg.Add(1)
@@ -228,10 +229,15 @@ func populateCaches(ctx context.Context,
 				wg *sync.WaitGroup,
 			) {
 				defer wg.Done()
-				var wallet e2wtypes.Wallet
-				wallet, err = walletFromBytes(ctx, walletBytes, store, encryptor)
-				if err != nil {
-					log.Error().Err(err).Msg("failed to decode wallet")
+				wallet, localErr := walletFromBytes(ctx, walletBytes, store, encryptor)
+				if localErr != nil {
+					log.Error().Err(localErr).Msg("failed to decode wallet")
+					errMu.Lock()
+					if err == nil {
+						err = localErr
+					}
+					errMu.Unlock()
+
 					return
 				}
 				mu.Lock()

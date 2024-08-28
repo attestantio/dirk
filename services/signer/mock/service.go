@@ -101,7 +101,7 @@ func (*Service) SignBeaconAttestations(_ context.Context,
 ) {
 	results := make([]core.Result, len(data))
 	signatures := make([][]byte, len(data))
-	for i := 0; i < len(data); i++ {
+	for i := range len(data) {
 		results[i] = core.ResultSucceeded
 		signatures[i] = []byte{
 			0x90, 0x42, 0xa3, 0x1d, 0xb8, 0x1e, 0x14, 0x65, 0x98, 0xce, 0xd6, 0xe5, 0x6d, 0xff, 0x63, 0x11,

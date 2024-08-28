@@ -244,8 +244,8 @@ func (s *Service) generateDistributed(ctx context.Context, wallet e2wtypes.Walle
 		return nil, nil, errors.New("invalid generation")
 	}
 	compositeSig := bls.Sign{}
-	for i := 0; i < len(participants)+1-int(signingThreshold); i++ {
-		for j := 0; j < int(signingThreshold); j++ {
+	for i := range len(participants) + 1 - int(signingThreshold) {
+		for j := range int(signingThreshold) {
 			ids[j] = *util.BLSID(participants[i+j].ID)
 			sigs[j] = bls.Sign{}
 			if err := sigs[j].Deserialize(confirmationSigs[i+j]); err != nil {

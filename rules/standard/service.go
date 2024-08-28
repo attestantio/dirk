@@ -1,4 +1,4 @@
-// Copyright © 2020 - 2023 Attestant Limited.
+// Copyright © 2020 - 2024 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,12 +23,10 @@ import (
 
 // Service is the structure that keeps track of rules.
 type Service struct {
+	log      zerolog.Logger
 	store    *Store
 	adminIPs []string
 }
-
-// log is a module-wide log.
-var log zerolog.Logger
 
 // New creates new rules.
 func New(ctx context.Context, params ...Parameter) (*Service, error) {
@@ -38,17 +36,18 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 	}
 
 	// Set logging.
-	log = zerologger.With().Str("service", "rules").Str("impl", "standard").Logger()
+	log := zerologger.With().Str("service", "rules").Str("impl", "standard").Logger()
 	if parameters.logLevel != log.GetLevel() {
 		log = log.Level(parameters.logLevel)
 	}
 
-	store, err := NewStore(ctx, parameters.storagePath, parameters.periodicPruning)
+	store, err := NewStore(ctx, parameters.storagePath, parameters.periodicPruning, log)
 	if err != nil {
 		return nil, err
 	}
 
 	s := &Service{
+		log:      log,
 		store:    store,
 		adminIPs: parameters.adminIPs,
 	}

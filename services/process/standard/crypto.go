@@ -29,7 +29,7 @@ func (*Service) contribution(_ context.Context, generation *generation) error {
 	// Create arrays of m secret and public (verification) keys.
 	sks := make([]bls.SecretKey, threshold)
 	verificationKeys := make([]bls.PublicKey, threshold)
-	for i := uint32(0); i < threshold; i++ {
+	for i := range threshold {
 		sks[i] = bls.SecretKey{}
 		sks[i].SetByCSPRNG()
 		verificationKeys[i] = *sks[i].GetPublicKey()

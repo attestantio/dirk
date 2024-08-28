@@ -55,6 +55,7 @@ func (s *signBeaconProposalState) Decode(data []byte) error {
 		if len(data) != 9 {
 			return fmt.Errorf("invalid version 1 data size %d", len(data))
 		}
+		//nolint:gosec
 		s.Slot = int64(binary.LittleEndian.Uint64(data[1:9]))
 	default:
 		err = gob.NewDecoder(bytes.NewBuffer(data)).Decode(s)
@@ -67,7 +68,7 @@ func (s *signBeaconProposalState) Decode(data []byte) error {
 func (s *Service) OnSignBeaconProposal(ctx context.Context, metadata *rules.ReqMetadata, req *rules.SignBeaconProposalData) rules.Result {
 	span, _ := opentracing.StartSpanFromContext(ctx, "rules.OnSignBeaconProposal")
 	defer span.Finish()
-	log := log.With().Str("client", metadata.Client).Str("account", metadata.Account).Str("rule", "sign beacon proposal").Logger()
+	log := s.log.With().Str("client", metadata.Client).Str("account", metadata.Account).Str("rule", "sign beacon proposal").Logger()
 
 	// The request must have the appropriate domain.
 	if !bytes.Equal(req.Domain[0:4], e2types.DomainBeaconProposer[:]) {
@@ -85,9 +86,9 @@ func (s *Service) OnSignBeaconProposal(ctx context.Context, metadata *rules.ReqM
 	}
 	slot := req.Slot
 
-	if state.Slot != -1 {
+	if state.Slot >= 0 {
 		// The request slot must be greater than the previous request slot.
-		if int64(slot) <= state.Slot {
+		if slot <= uint64(state.Slot) {
 			log.Warn().
 				Int64("previousSlot", state.Slot).
 				Uint64("slot", slot).
@@ -97,6 +98,7 @@ func (s *Service) OnSignBeaconProposal(ctx context.Context, metadata *rules.ReqM
 		}
 	}
 
+	//nolint:gosec
 	state.Slot = int64(slot)
 	if err = s.storeSignBeaconProposalState(ctx, metadata.PubKey, state); err != nil {
 		log.Error().Err(err).Msg("Failed to store state for beacon proposal")
@@ -126,7 +128,7 @@ func (s *Service) fetchSignBeaconProposalState(ctx context.Context, pubKey []byt
 		}
 	}
 
-	log.Trace().Int64("slot", state.Slot).Msg("Returning proposal state from store")
+	s.log.Trace().Int64("slot", state.Slot).Msg("Returning proposal state from store")
 
 	return state, nil
 }
@@ -141,7 +143,7 @@ func (s *Service) storeSignBeaconProposalState(ctx context.Context, pubKey []byt
 		return err
 	}
 
-	log.Trace().Int64("slot", state.Slot).Msg("Stored proposal state to store")
+	s.log.Trace().Int64("slot", state.Slot).Msg("Stored proposal state to store")
 
 	return nil
 }
