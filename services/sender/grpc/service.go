@@ -228,7 +228,7 @@ func (s *Service) obtainConnection(_ context.Context, address string) (*puddle.R
 	pool, exists := s.connectionPools[address]
 	if !exists {
 		constructor := func(_ context.Context) (any, error) {
-			return grpc.Dial(address, []grpc.DialOption{
+			return grpc.NewClient(address, []grpc.DialOption{
 				grpc.WithTransportCredentials(s.credentials),
 			}...)
 		}

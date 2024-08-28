@@ -88,6 +88,7 @@ func (h *Handler) ListAccounts(ctx context.Context, req *pb.ListAccountsRequest)
 					pbAccount.Participants = append(pbAccount.GetParticipants(), &pb.Endpoint{
 						Id:   k,
 						Name: parts[0],
+						//nolint:gosec
 						Port: uint32(port),
 					})
 				}

@@ -24,6 +24,7 @@ import (
 	"github.com/dgraph-io/badger/v2/options"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 )
 
 // Store holds key/value pairs in a badger database.
@@ -36,6 +37,7 @@ type Store struct {
 func NewStore(ctx context.Context,
 	base string,
 	periodicPruning bool,
+	log zerolog.Logger,
 ) (*Store, error) {
 	opt := badger.DefaultOptions(base)
 	opt.TableLoadingMode = options.LoadToRAM

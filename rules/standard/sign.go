@@ -28,10 +28,10 @@ func (s *Service) OnSign(ctx context.Context, metadata *rules.ReqMetadata, req *
 	defer span.Finish()
 
 	if metadata == nil {
-		log.Warn().Msg("No metadata to evaluate request")
+		s.log.Warn().Msg("No metadata to evaluate request")
 		return rules.FAILED
 	}
-	log := log.With().Str("client", metadata.Client).Str("account", metadata.Account).Str("rule", "sign").Logger()
+	log := s.log.With().Str("client", metadata.Client).Str("account", metadata.Account).Str("rule", "sign").Logger()
 
 	if bytes.Equal(req.Domain[0:4], e2types.DomainBeaconAttester[:]) {
 		log.Warn().Msg("Not signing beacon attestation request with generic signer")

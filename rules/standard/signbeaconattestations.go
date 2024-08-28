@@ -37,7 +37,7 @@ func (s *Service) OnSignBeaconAttestations(ctx context.Context,
 	}
 
 	if len(req) != len(metadata) {
-		log.Error().Int("reqs", len(req)).Int("metadatas", len(metadata)).Msg("Mismatch between number of requests and number of metadata entries")
+		s.log.Error().Int("reqs", len(req)).Int("metadatas", len(metadata)).Msg("Mismatch between number of requests and number of metadata entries")
 		for i := range res {
 			res[i] = rules.FAILED
 		}
@@ -47,7 +47,7 @@ func (s *Service) OnSignBeaconAttestations(ctx context.Context,
 
 	for i := range metadata {
 		if metadata[i] == nil {
-			log.Error().Int("index", i).Msg("Nil metadata entry")
+			s.log.Error().Int("index", i).Msg("Nil metadata entry")
 			res[i] = rules.FAILED
 
 			return res
@@ -56,19 +56,19 @@ func (s *Service) OnSignBeaconAttestations(ctx context.Context,
 
 	for i := range req {
 		if req[i] == nil {
-			log.Error().Int("index", i).Msg("Nil req entry")
+			s.log.Error().Int("index", i).Msg("Nil req entry")
 			res[i] = rules.FAILED
 
 			return res
 		}
 		if req[i].Source == nil {
-			log.Error().Int("index", i).Msg("Nil req source")
+			s.log.Error().Int("index", i).Msg("Nil req source")
 			res[i] = rules.FAILED
 
 			return res
 		}
 		if req[i].Target == nil {
-			log.Error().Int("index", i).Msg("Nil req target")
+			s.log.Error().Int("index", i).Msg("Nil req target")
 			res[i] = rules.FAILED
 
 			return res
@@ -83,31 +83,31 @@ func (s *Service) OnSignBeaconAttestations(ctx context.Context,
 	// Fetch state from previous signings.
 	states, err := s.fetchSignBeaconAttestationStates(ctx, pubKeys)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to fetch state for beacon attestations")
+		s.log.Error().Err(err).Msg("Failed to fetch state for beacon attestations")
 		for i := range res {
 			res[i] = rules.FAILED
 		}
 
 		return res
 	}
-	log.Trace().Dur("elapsed", time.Since(started)).Msg("Fetched states")
+	s.log.Trace().Dur("elapsed", time.Since(started)).Msg("Fetched states")
 
 	// Run the rules.
 	for i := range req {
 		res[i] = s.runSignBeaconAttestationChecks(ctx, metadata[i], req[i], states[i])
 	}
-	log.Trace().Dur("elapsed", time.Since(started)).Msg("Checked rules")
+	s.log.Trace().Dur("elapsed", time.Since(started)).Msg("Checked rules")
 
 	// Update the state
 	if err = s.storeSignBeaconAttestationStates(ctx, pubKeys, states); err != nil {
-		log.Error().Err(err).Msg("Failed to store state for beacon attestations")
+		s.log.Error().Err(err).Msg("Failed to store state for beacon attestations")
 		for i := range res {
 			res[i] = rules.FAILED
 		}
 
 		return res
 	}
-	log.Trace().Dur("elapsed", time.Since(started)).Msg("Stored states")
+	s.log.Trace().Dur("elapsed", time.Since(started)).Msg("Stored states")
 
 	return res
 }
@@ -125,8 +125,8 @@ func (s *Service) fetchSignBeaconAttestationStates(ctx context.Context, pubKeys 
 	return states, nil
 }
 
-func (*Service) runSignBeaconAttestationChecks(_ context.Context, metadata *rules.ReqMetadata, req *rules.SignBeaconAttestationData, state *signBeaconAttestationState) rules.Result {
-	log := log.With().Str("client", metadata.Client).Str("account", metadata.Account).Str("rule", "sign beacon attestation").Logger()
+func (s *Service) runSignBeaconAttestationChecks(_ context.Context, metadata *rules.ReqMetadata, req *rules.SignBeaconAttestationData, state *signBeaconAttestationState) rules.Result {
+	log := s.log.With().Str("client", metadata.Client).Str("account", metadata.Account).Str("rule", "sign beacon attestation").Logger()
 
 	// The request must have the appropriate domain.
 	if !bytes.Equal(req.Domain[0:4], e2types.DomainBeaconAttester[:]) {
@@ -148,9 +148,9 @@ func (*Service) runSignBeaconAttestationChecks(_ context.Context, metadata *rule
 		return rules.DENIED
 	}
 
-	if state.TargetEpoch != -1 {
+	if state.TargetEpoch >= 0 {
 		// The request target epoch must be greater than the previous request target epoch.
-		if int64(targetEpoch) <= state.TargetEpoch {
+		if targetEpoch <= uint64(state.TargetEpoch) {
 			log.Warn().
 				Int64("previousTargetEpoch", state.TargetEpoch).
 				Uint64("targetEpoch", targetEpoch).
@@ -160,9 +160,9 @@ func (*Service) runSignBeaconAttestationChecks(_ context.Context, metadata *rule
 		}
 	}
 
-	if state.SourceEpoch != -1 {
+	if state.SourceEpoch >= 0 {
 		// The request source epoch must be greater than or equal to the previous request source epoch.
-		if int64(sourceEpoch) < state.SourceEpoch {
+		if sourceEpoch < uint64(state.SourceEpoch) {
 			log.Warn().
 				Int64("previousSourceEpoch", state.SourceEpoch).
 				Uint64("sourceEpoch", sourceEpoch).
@@ -172,7 +172,9 @@ func (*Service) runSignBeaconAttestationChecks(_ context.Context, metadata *rule
 		}
 	}
 
+	//nolint:gosec
 	state.SourceEpoch = int64(sourceEpoch)
+	//nolint:gosec
 	state.TargetEpoch = int64(targetEpoch)
 
 	return rules.APPROVED
@@ -198,7 +200,7 @@ func (s *Service) storeSignBeaconAttestationStates(ctx context.Context, pubKeys 
 	}
 
 	for _, state := range states {
-		log.Trace().Int64("source_epoch", state.SourceEpoch).Int64("target_epoch", state.TargetEpoch).Msg("Stored attestation state to store")
+		s.log.Trace().Int64("source_epoch", state.SourceEpoch).Int64("target_epoch", state.TargetEpoch).Msg("Stored attestation state to store")
 	}
 
 	return nil

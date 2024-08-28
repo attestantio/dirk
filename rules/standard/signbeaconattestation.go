@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2024 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -57,7 +57,9 @@ func (s *signBeaconAttestationState) Decode(data []byte) error {
 		if len(data) != 17 {
 			return fmt.Errorf("invalid version 1 data size %d", len(data))
 		}
+		//nolint:gosec
 		s.SourceEpoch = int64(binary.LittleEndian.Uint64(data[1:9]))
+		//nolint:gosec
 		s.TargetEpoch = int64(binary.LittleEndian.Uint64(data[9:17]))
 	default:
 		err = gob.NewDecoder(bytes.NewBuffer(data)).Decode(s)
@@ -70,7 +72,7 @@ func (s *signBeaconAttestationState) Decode(data []byte) error {
 func (s *Service) OnSignBeaconAttestation(ctx context.Context, metadata *rules.ReqMetadata, req *rules.SignBeaconAttestationData) rules.Result {
 	span, _ := opentracing.StartSpanFromContext(ctx, "rules.OnSignBeaconAttestation")
 	defer span.Finish()
-	log := log.With().Str("client", metadata.Client).Str("account", metadata.Account).Str("rule", "sign beacon attestation").Logger()
+	log := s.log.With().Str("client", metadata.Client).Str("account", metadata.Account).Str("rule", "sign beacon attestation").Logger()
 
 	// Fetch state from previous signings.
 	state, err := s.fetchSignBeaconAttestationState(ctx, metadata.PubKey)
@@ -84,7 +86,9 @@ func (s *Service) OnSignBeaconAttestation(ctx context.Context, metadata *rules.R
 		return res
 	}
 
+	//nolint:gosec
 	state.SourceEpoch = int64(req.Source.Epoch)
+	//nolint:gosec
 	state.TargetEpoch = int64(req.Target.Epoch)
 	if err = s.storeSignBeaconAttestationState(ctx, metadata.PubKey, state); err != nil {
 		log.Error().Err(err).Msg("Failed to store state for beacon attestation")
@@ -113,7 +117,7 @@ func (s *Service) fetchSignBeaconAttestationState(ctx context.Context, pubKey []
 			return nil, errors.Wrap(err, "failed to decode state")
 		}
 	}
-	log.Trace().Int64("source_epoch", state.SourceEpoch).Int64("target_epoch", state.TargetEpoch).Msg("Returning attestation state from store")
+	s.log.Trace().Int64("source_epoch", state.SourceEpoch).Int64("target_epoch", state.TargetEpoch).Msg("Returning attestation state from store")
 
 	return state, nil
 }
@@ -128,7 +132,7 @@ func (s *Service) storeSignBeaconAttestationState(ctx context.Context, pubKey []
 		return err
 	}
 
-	log.Trace().Int64("source_epoch", state.SourceEpoch).Int64("target_epoch", state.TargetEpoch).Msg("Stored attestation state to store")
+	s.log.Trace().Int64("source_epoch", state.SourceEpoch).Int64("target_epoch", state.TargetEpoch).Msg("Stored attestation state to store")
 
 	return nil
 }
