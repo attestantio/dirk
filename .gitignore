@@ -18,6 +18,9 @@ coverage.html
 # Vim
 *.sw?
 
+# IntelliJ and friends
+.idea/
+
 # Tags
 tags
 
