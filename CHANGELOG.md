@@ -3,6 +3,7 @@
   - add commit hash to log on startup
   - enable gzip compression
   - disallow generation of distributed accounts without passphrases
+  - allow use of keystore wallets
 
 # Version 1.2.0
   - add Amazon Secrets Manager (ASM) confidant

@@ -38,8 +38,10 @@ func (s *signBeaconAttestationState) Encode() []byte {
 
 	if s != nil {
 		// Source epoch.
+		//nolint:gosec
 		binary.LittleEndian.PutUint64(data[1:9], uint64(s.SourceEpoch))
 		// Target epoch.
+		//nolint:gosec
 		binary.LittleEndian.PutUint64(data[9:17], uint64(s.TargetEpoch))
 	}
 

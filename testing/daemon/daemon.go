@@ -135,7 +135,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 	if err := wallet1.(e2wtypes.WalletLocker).Unlock(ctx, nil); err != nil {
 		return nil, "", errors.Wrap(err, "failed to unlock wallet 1")
 	}
-	for i := range len(Wallet1Keys) {
+	for i := range Wallet1Keys {
 		_, err := wallet1.(e2wtypes.WalletAccountImporter).ImportAccount(ctx,
 			fmt.Sprintf("Account %d", i),
 			Wallet1Keys[i],
@@ -156,7 +156,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 	if err := wallet2.(e2wtypes.WalletLocker).Unlock(ctx, nil); err != nil {
 		return nil, "", errors.Wrap(err, "failed to unlock wallet 2")
 	}
-	for i := range len(Wallet2Keys) {
+	for i := range Wallet2Keys {
 		_, err := wallet2.(e2wtypes.WalletAccountImporter).ImportAccount(ctx,
 			fmt.Sprintf("Account %d", i),
 			Wallet2Keys[i],

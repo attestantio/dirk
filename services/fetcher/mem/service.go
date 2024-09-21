@@ -28,6 +28,7 @@ import (
 	e2wallet "github.com/wealdtech/go-eth2-wallet"
 	distributed "github.com/wealdtech/go-eth2-wallet-distributed"
 	hd "github.com/wealdtech/go-eth2-wallet-hd/v2"
+	keystore "github.com/wealdtech/go-eth2-wallet-keystore"
 	nd "github.com/wealdtech/go-eth2-wallet-nd/v2"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
@@ -300,6 +301,8 @@ func walletFromBytes(ctx context.Context, data []byte, store e2wtypes.Store, enc
 		wallet, err = hd.DeserializeWallet(ctx, data, store, encryptor)
 	case "distributed":
 		wallet, err = distributed.DeserializeWallet(ctx, data, store, encryptor)
+	case "keystore":
+		wallet, err = keystore.DeserializeWallet(ctx, data, store, encryptor)
 	default:
 		return nil, fmt.Errorf("unsupported wallet type %q", info.Type)
 	}
