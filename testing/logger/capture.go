@@ -65,10 +65,15 @@ func (c *LogCapture) AssertHasEntry(t *testing.T, msg string) {
 
 // Entries returns all log entries.
 func (c *LogCapture) Entries() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	return c.entries
 }
 
 // ClearEntries removes all log entries.
 func (c *LogCapture) ClearEntries() {
+	c.mu.Lock()
 	c.entries = make([]string, 0)
+	c.mu.Unlock()
 }
