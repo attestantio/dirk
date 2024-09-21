@@ -71,7 +71,6 @@ func New(_ context.Context, params ...Parameter) (*Service, error) {
 			servicePeers[id] = &core.Endpoint{
 				ID:   id,
 				Name: peerInfo[0],
-				//nolint:gosec
 				Port: uint32(port),
 			}
 		}

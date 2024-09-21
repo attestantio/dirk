@@ -38,6 +38,7 @@ func (s *signBeaconProposalState) Encode() []byte {
 
 	if s != nil {
 		// Slot.
+		//nolint:gosec
 		binary.LittleEndian.PutUint64(data[1:9], uint64(s.Slot))
 	}
 
@@ -88,6 +89,7 @@ func (s *Service) OnSignBeaconProposal(ctx context.Context, metadata *rules.ReqM
 
 	if state.Slot >= 0 {
 		// The request slot must be greater than the previous request slot.
+		//nolint:gosec
 		if slot <= uint64(state.Slot) {
 			log.Warn().
 				Int64("previousSlot", state.Slot).
