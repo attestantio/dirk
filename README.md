@@ -3,7 +3,7 @@
 [![Tag](https://img.shields.io/github/tag/attestantio/dirk.svg)](https://github.com/attestantio/dirk/releases/)
 [![License](https://img.shields.io/github/license/attestantio/dirk.svg)](LICENSE)
 [![GoDoc](https://godoc.org/github.com/attestantio/dirk?status.svg)](https://godoc.org/github.com/attestantio/dirk)
-[![Lint](https://github.com/attestantio/dirk/workflows/golangci-lint/badge.svg)](https://github.com/attestantio/dirk/actions/workflows/golangci-lint.yml)
+[![Lint](https://github.com/attestantio/dirk/actions/workflows/golangci-lint.yml/badge.svg)](https://github.com/attestantio/dirk/actions/workflows/golangci-lint.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/attestantio/dirk)](https://goreportcard.com/report/github.com/attestantio/dirk)
 
 An Ethereum 2 distributed remote keymanager, focused on security and long-term performance of signing operations.
