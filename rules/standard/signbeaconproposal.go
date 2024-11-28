@@ -89,7 +89,6 @@ func (s *Service) OnSignBeaconProposal(ctx context.Context, metadata *rules.ReqM
 
 	if state.Slot >= 0 {
 		// The request slot must be greater than the previous request slot.
-		//nolint:gosec
 		if slot <= uint64(state.Slot) {
 			log.Warn().
 				Int64("previousSlot", state.Slot).

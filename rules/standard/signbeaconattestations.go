@@ -150,7 +150,6 @@ func (s *Service) runSignBeaconAttestationChecks(_ context.Context, metadata *ru
 
 	if state.TargetEpoch >= 0 {
 		// The request target epoch must be greater than the previous request target epoch.
-		//nolint:gosec
 		if targetEpoch <= uint64(state.TargetEpoch) {
 			log.Warn().
 				Int64("previousTargetEpoch", state.TargetEpoch).
@@ -163,7 +162,6 @@ func (s *Service) runSignBeaconAttestationChecks(_ context.Context, metadata *ru
 
 	if state.SourceEpoch >= 0 {
 		// The request source epoch must be greater than or equal to the previous request source epoch.
-		//nolint:gosec
 		if sourceEpoch < uint64(state.SourceEpoch) {
 			log.Warn().
 				Int64("previousSourceEpoch", state.SourceEpoch).
