@@ -193,6 +193,7 @@ func fetchConfig() error {
 	viper.AutomaticEnv()
 
 	// Defaults.
+	viper.SetDefault("logging.timestamp.format", "2006-01-02T15:04:05.000Z07:00")
 	viper.SetDefault("storage-path", "storage")
 	viper.SetDefault("process.generation-timeout", 70*time.Second)
 
