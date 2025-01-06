@@ -38,7 +38,7 @@ func (h *Handler) Sign(ctx context.Context, req *pb.SignRequest) (*pb.SignRespon
 		res.State = pb.ResponseState_DENIED
 		return res, nil
 	}
-	if !strings.Contains(req.GetAccount(), "/") {
+	if req.GetPublicKey() == nil && !strings.Contains(req.GetAccount(), "/") {
 		log.Warn().Str("result", "denied").Msg("Invalid account specified")
 		res.State = pb.ResponseState_DENIED
 		return res, nil
