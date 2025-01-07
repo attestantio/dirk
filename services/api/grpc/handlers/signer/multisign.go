@@ -1,4 +1,4 @@
-// Copyright © 2021 Attestant Limited.
+// Copyright © 2021, 2025 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@ package signer
 
 import (
 	context "context"
+	"strings"
 
 	"github.com/attestantio/dirk/core"
 	"github.com/attestantio/dirk/rules"
@@ -47,23 +48,10 @@ func (h *Handler) Multisign(ctx context.Context, req *pb.MultisignRequest) (*pb.
 		res.Responses[i] = &pb.SignResponse{State: pb.ResponseState_UNKNOWN}
 	}
 
-	for i, request := range req.GetRequests() {
-		if request == nil {
-			log.Warn().Str("result", "denied").Msg("Request nil")
-			res.Responses[i].State = pb.ResponseState_FAILED
-
-			return res, nil
-		}
-		if request.GetData() == nil {
-			log.Warn().Str("result", "denied").Msg("Request data not specified")
-			res.Responses[i].State = pb.ResponseState_DENIED
-
-			return res, nil
-		}
-		if request.GetDomain() == nil {
-			log.Warn().Str("result", "denied").Msg("Request domain not specified")
-			res.Responses[i].State = pb.ResponseState_DENIED
-
+	validateMultisignRequests(ctx, req, res)
+	for i := range req.GetRequests() {
+		if res.GetResponses()[i].GetState() == pb.ResponseState_DENIED ||
+			res.GetResponses()[i].GetState() == pb.ResponseState_FAILED {
 			return res, nil
 		}
 	}
@@ -96,4 +84,42 @@ func (h *Handler) Multisign(ctx context.Context, req *pb.MultisignRequest) (*pb.
 	}
 
 	return res, nil
+}
+
+func validateMultisignRequests(_ context.Context,
+	req *pb.MultisignRequest,
+	res *pb.MultisignResponse,
+) {
+	for i, request := range req.GetRequests() {
+		if request == nil {
+			log.Warn().Str("result", "denied").Msg("Request nil")
+			res.Responses[i].State = pb.ResponseState_FAILED
+
+			return
+		}
+		if request.GetAccount() == "" && request.GetPublicKey() == nil {
+			log.Warn().Str("result", "denied").Msg("Neither account nor public key specified")
+			res.Responses[i].State = pb.ResponseState_DENIED
+
+			return
+		}
+		if request.GetAccount() != "" && !strings.Contains(request.GetAccount(), "/") {
+			log.Warn().Str("result", "denied").Msg("Invalid account specified")
+			res.Responses[i].State = pb.ResponseState_DENIED
+
+			return
+		}
+		if request.GetData() == nil {
+			log.Warn().Str("result", "denied").Msg("Request data not specified")
+			res.Responses[i].State = pb.ResponseState_DENIED
+
+			return
+		}
+		if request.GetDomain() == nil {
+			log.Warn().Str("result", "denied").Msg("Request domain not specified")
+			res.Responses[i].State = pb.ResponseState_DENIED
+
+			return
+		}
+	}
 }

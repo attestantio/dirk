@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2025 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,25 +15,31 @@ package signer_test
 
 import (
 	context "context"
+	"fmt"
 	"testing"
 
 	"github.com/attestantio/dirk/services/api/grpc/interceptors"
+	"github.com/attestantio/dirk/testing/logger"
 	"github.com/stretchr/testify/require"
 	pb "github.com/wealdtech/eth2-signer-api/pb/v1"
 )
 
 func TestSignBeaconAttestation(t *testing.T) {
 	tests := []struct {
-		name   string
-		client string
-		req    *pb.SignBeaconAttestationRequest
-		state  pb.ResponseState
-		err    string
+		name       string
+		client     string
+		req        *pb.SignBeaconAttestationRequest
+		state      pb.ResponseState
+		err        string
+		logEntries []map[string]any
 	}{
 		{
 			name:   "Empty",
 			client: "client1",
 			state:  pb.ResponseState_DENIED,
+			logEntries: []map[string]any{
+				{"message": "Request not specified"},
+			},
 		},
 		{
 			name:   "DataMissing",
@@ -50,6 +56,9 @@ func TestSignBeaconAttestation(t *testing.T) {
 				},
 			},
 			state: pb.ResponseState_DENIED,
+			logEntries: []map[string]any{
+				{"message": "Request data not specified"},
+			},
 		},
 		{
 			name:   "IDMissing",
@@ -82,6 +91,9 @@ func TestSignBeaconAttestation(t *testing.T) {
 				},
 			},
 			state: pb.ResponseState_DENIED,
+			logEntries: []map[string]any{
+				{"message": "Neither account nor public key specified"},
+			},
 		},
 		{
 			name:   "IDInvalid",
@@ -117,6 +129,56 @@ func TestSignBeaconAttestation(t *testing.T) {
 				},
 			},
 			state: pb.ResponseState_DENIED,
+			logEntries: []map[string]any{
+				{"message": "Invalid account specified"},
+			},
+		},
+		{
+			name:   "PubkeyInvalid",
+			client: "client1",
+			req: &pb.SignBeaconAttestationRequest{
+				Id: &pb.SignBeaconAttestationRequest_PublicKey{
+					PublicKey: []byte{},
+				},
+				Data: &pb.AttestationData{
+					Slot:           1,
+					CommitteeIndex: 0,
+					BeaconBlockRoot: []byte{
+						0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+						0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+						0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+						0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					},
+					Source: &pb.Checkpoint{
+						Epoch: 0,
+						Root: []byte{
+							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+						},
+					},
+					Target: &pb.Checkpoint{
+						Epoch: 0,
+						Root: []byte{
+							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+						},
+					},
+				},
+				Domain: []byte{
+					0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+			},
+			state: pb.ResponseState_DENIED,
+			logEntries: []map[string]any{
+				{"message": "Did not obtain account; denied"},
+			},
 		},
 		{
 			name:   "SourceCheckpointMissing",
@@ -152,6 +214,9 @@ func TestSignBeaconAttestation(t *testing.T) {
 				},
 			},
 			state: pb.ResponseState_DENIED,
+			logEntries: []map[string]any{
+				{"message": "Request source checkpoint not specified"},
+			},
 		},
 		{
 			name:   "TargetCheckpointMissing",
@@ -186,10 +251,13 @@ func TestSignBeaconAttestation(t *testing.T) {
 					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 				},
 			},
+			logEntries: []map[string]any{
+				{"message": "Request target checkpoint not specified"},
+			},
 			state: pb.ResponseState_DENIED,
 		},
 		{
-			name:   "Good",
+			name:   "GoodId",
 			client: "client1",
 			req: &pb.SignBeaconAttestationRequest{
 				Id: &pb.SignBeaconAttestationRequest_Account{
@@ -231,21 +299,81 @@ func TestSignBeaconAttestation(t *testing.T) {
 				},
 			},
 			state: pb.ResponseState_SUCCEEDED,
+			logEntries: []map[string]any{
+				{"message": "Success"},
+			},
+		},
+		{
+			name:   "GoodPubkey",
+			client: "client1",
+			req: &pb.SignBeaconAttestationRequest{
+				Id: &pb.SignBeaconAttestationRequest_PublicKey{
+					PublicKey: []byte{
+						0x94, 0x6e, 0x0f, 0x38, 0xa0, 0x23, 0xb9, 0xf1, 0xad, 0x94, 0x9c, 0xe2, 0xad, 0x85, 0x31, 0xc4,
+						0xdb, 0x53, 0x7e, 0x31, 0x34, 0x26, 0x59, 0x9c, 0x2d, 0x9a, 0xe8, 0xab, 0xee, 0xef, 0x7a, 0x43,
+						0x3d, 0x06, 0x67, 0x39, 0xf8, 0x16, 0xdd, 0x53, 0x7a, 0xdb, 0x2e, 0x4b, 0x84, 0x11, 0xcc, 0xcb,
+					},
+				},
+				Data: &pb.AttestationData{
+					Slot:           1,
+					CommitteeIndex: 0,
+					BeaconBlockRoot: []byte{
+						0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+						0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+						0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+						0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					},
+					Source: &pb.Checkpoint{
+						Epoch: 0,
+						Root: []byte{
+							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+						},
+					},
+					Target: &pb.Checkpoint{
+						Epoch: 0,
+						Root: []byte{
+							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+						},
+					},
+				},
+				Domain: []byte{
+					0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				},
+			},
+			state: pb.ResponseState_SUCCEEDED,
+			logEntries: []map[string]any{
+				{"message": "Success"},
+			},
 		},
 	}
 
-	handler, err := Setup()
-	require.Nil(t, err)
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			capture := logger.NewLogCapture()
+			handler, err := Setup()
+			require.Nil(t, err)
+
 			ctx := context.WithValue(context.Background(), &interceptors.ClientName{}, test.client)
 			resp, err := handler.SignBeaconAttestation(ctx, test.req)
 			if test.err == "" {
 				require.NoError(t, err)
-				require.Equal(t, resp.State, test.state)
+				require.Equal(t, test.state, resp.State)
 			} else {
 				require.EqualError(t, err, test.err)
+			}
+			for _, logEntry := range test.logEntries {
+				if !capture.HasLog(logEntry) {
+					require.Fail(t, fmt.Sprintf("Missing log entry %v in %v", logEntry, capture.Entries()))
+				}
 			}
 		})
 	}

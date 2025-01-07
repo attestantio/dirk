@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2025 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -34,11 +34,11 @@ func (h *Handler) SignBeaconAttestation(ctx context.Context, req *pb.SignBeaconA
 		return res, nil
 	}
 	if req.GetAccount() == "" && req.GetPublicKey() == nil {
-		log.Warn().Str("result", "denied").Msg("Neither accout nor public key specified")
+		log.Warn().Str("result", "denied").Msg("Neither account nor public key specified")
 		res.State = pb.ResponseState_DENIED
 		return res, nil
 	}
-	if !strings.Contains(req.GetAccount(), "/") {
+	if req.GetAccount() != "" && !strings.Contains(req.GetAccount(), "/") {
 		log.Warn().Str("result", "denied").Msg("Invalid account specified")
 		res.State = pb.ResponseState_DENIED
 		return res, nil
@@ -79,6 +79,7 @@ func (h *Handler) SignBeaconAttestation(ctx context.Context, req *pb.SignBeaconA
 	case core.ResultSucceeded:
 		res.State = pb.ResponseState_SUCCEEDED
 		res.Signature = signature
+		log.Trace().Str("result", "succeeded").Msg("Success")
 	case core.ResultDenied:
 		res.State = pb.ResponseState_DENIED
 	case core.ResultFailed:
@@ -86,8 +87,6 @@ func (h *Handler) SignBeaconAttestation(ctx context.Context, req *pb.SignBeaconA
 	case core.ResultUnknown:
 		res.State = pb.ResponseState_UNKNOWN
 	}
-
-	log.Trace().Str("result", "succeeded").Msg("Success")
 
 	return res, nil
 }
