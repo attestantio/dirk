@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2025 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,8 +14,7 @@
 package logger
 
 import (
-	"fmt"
-	"strings"
+	"encoding/json"
 	"sync"
 	"testing"
 
@@ -27,53 +26,112 @@ import (
 // LogCapture allows testing code to query log output.
 type LogCapture struct {
 	mu      sync.Mutex
-	entries []string
+	entries []map[string]any
+}
+
+// Write captures an individual log message.
+func (c *LogCapture) Write(p []byte) (int, error) {
+	entry := make(map[string]any)
+	err := json.Unmarshal(p, &entry)
+	if err != nil {
+		return -1, err
+	}
+	c.mu.Lock()
+	c.entries = append(c.entries, entry)
+	c.mu.Unlock()
+	return len(p), nil
 }
 
 // NewLogCapture captures logs for querying.
+// Logs are created in JSON format and without timestamps.
 func NewLogCapture() *LogCapture {
 	c := &LogCapture{
-		// entries: make([]*LogEntry, 0),
-		entries: make([]string, 0),
+		entries: make([]map[string]any, 0),
 	}
-	zerologger.Logger = zerologger.Logger.Hook(c)
-
+	logger := zerolog.New(c)
+	zerologger.Logger = logger
 	return c
-}
-
-// Run is the hook to capture log entries.  It also stops the entry from being printed.
-func (c *LogCapture) Run(e *zerolog.Event, _ zerolog.Level, msg string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.entries = append(c.entries, msg)
-	e.Discard()
 }
 
 // AssertHasEntry checks if there is a log entry with the given string.
 func (c *LogCapture) AssertHasEntry(t *testing.T, msg string) {
 	t.Helper()
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	for i := range c.entries {
-		if c.entries[i] == msg {
-			return
-		}
-	}
-	assert.Fail(t, fmt.Sprintf("Missing log message %q", msg), strings.Join(c.entries, "\n"))
+	assert.True(t, c.HasLog(map[string]any{
+		"message": msg,
+	}))
 }
 
-// Entries returns all log entries.
-func (c *LogCapture) Entries() []string {
+// HasLog returns true if there is a log entry with the matching fields.
+func (c *LogCapture) HasLog(fields map[string]any) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	var matched bool
+	for i := range c.entries {
+		matches := 0
+		for key, value := range fields {
+			if c.hasField(c.entries[i], key, value) {
+				matches++
+			}
+		}
+		if matches == len(fields) {
+			matched = true
+			break
+		}
+	}
+	return matched
+}
+
+// hasField returns true if the entry has a matching field.
+func (*LogCapture) hasField(entry map[string]any, key string, value any) bool {
+	for entryKey, entryValue := range entry {
+		if entryKey != key {
+			continue
+		}
+		switch v := value.(type) {
+		case bool:
+			return entryValue == v
+		case string:
+			return entryValue == v
+		case int:
+			return int(entryValue.(float64)) == v
+		case int8:
+			return int8(entryValue.(float64)) == v
+		case int16:
+			return int16(entryValue.(float64)) == v
+		case int32:
+			return int32(entryValue.(float64)) == v
+		case int64:
+			return int64(entryValue.(float64)) == v
+		case uint:
+			return uint(entryValue.(float64)) == v
+		case uint8:
+			return uint8(entryValue.(float64)) == v
+		case uint16:
+			return uint16(entryValue.(float64)) == v
+		case uint32:
+			return uint32(entryValue.(float64)) == v
+		case uint64:
+			return uint64(entryValue.(float64)) == v
+		case float32:
+			return float32(entryValue.(float64)) == v
+		case float64:
+			return entryValue.(float64) == v
+		default:
+			panic("unhandled type")
+		}
+	}
+
+	return false
+}
+
+// Entries returns all captures log entries.
+func (c *LogCapture) Entries() []map[string]any {
 	return c.entries
 }
 
-// ClearEntries removes all log entries.
+// ClearEntries removes all existing log entries.
 func (c *LogCapture) ClearEntries() {
-	c.mu.Lock()
-	c.entries = make([]string, 0)
-	c.mu.Unlock()
+	c.entries = make([]map[string]any, 0)
 }
