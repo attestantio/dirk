@@ -84,8 +84,6 @@ func (c *LogCapture) HasLog(fields map[string]any) bool {
 }
 
 // hasField returns true if the entry has a matching field.
-//
-//nolint:gocyclo
 func (*LogCapture) hasField(entry map[string]any, key string, value any) bool {
 	for entryKey, entryValue := range entry {
 		if entryKey != key {
@@ -93,61 +91,33 @@ func (*LogCapture) hasField(entry map[string]any, key string, value any) bool {
 		}
 		switch v := value.(type) {
 		case bool:
-			if entryValue == v {
-				return true
-			}
+			return entryValue == v
 		case string:
-			if entryValue == value.(string) {
-				return true
-			}
+			return entryValue == v
 		case int:
-			if int(entryValue.(float64)) == v {
-				return true
-			}
+			return int(entryValue.(float64)) == v
 		case int8:
-			if int8(entryValue.(float64)) == v {
-				return true
-			}
+			return int8(entryValue.(float64)) == v
 		case int16:
-			if int16(entryValue.(float64)) == v {
-				return true
-			}
+			return int16(entryValue.(float64)) == v
 		case int32:
-			if int32(entryValue.(float64)) == v {
-				return true
-			}
+			return int32(entryValue.(float64)) == v
 		case int64:
-			if int64(entryValue.(float64)) == v {
-				return true
-			}
+			return int64(entryValue.(float64)) == v
 		case uint:
-			if uint(entryValue.(float64)) == v {
-				return true
-			}
+			return uint(entryValue.(float64)) == v
 		case uint8:
-			if uint8(entryValue.(float64)) == v {
-				return true
-			}
+			return uint8(entryValue.(float64)) == v
 		case uint16:
-			if uint16(entryValue.(float64)) == v {
-				return true
-			}
+			return uint16(entryValue.(float64)) == v
 		case uint32:
-			if uint32(entryValue.(float64)) == v {
-				return true
-			}
+			return uint32(entryValue.(float64)) == v
 		case uint64:
-			if uint64(entryValue.(float64)) == v {
-				return true
-			}
+			return uint64(entryValue.(float64)) == v
 		case float32:
-			if float32(entryValue.(float64)) == v {
-				return true
-			}
+			return float32(entryValue.(float64)) == v
 		case float64:
-			if entryValue.(float64) == v {
-				return true
-			}
+			return entryValue.(float64) == v
 		default:
 			panic("unhandled type")
 		}
