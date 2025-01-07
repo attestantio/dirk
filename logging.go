@@ -32,6 +32,8 @@ func initLogging() error {
 	// local log level the local level is ignored.  It is then overridden for each module.
 	zerolog.SetGlobalLevel(zerolog.TraceLevel)
 
+	zerolog.TimeFieldFormat = viper.GetString("logging.timestamp.format")
+
 	// Change the output file.
 	if viper.GetString("log-file") != "" {
 		f, err := os.OpenFile(util.ResolvePath(viper.GetString("log-file")), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)

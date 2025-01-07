@@ -5,6 +5,7 @@
   - disallow generation of distributed accounts without passphrases
   - allow use of keystore wallets
   - fix issue where signing with a public key as identifier could fail
+  - use millisecond-precision timestamps in logs by default
 
 # Version 1.2.0
   - add Amazon Secrets Manager (ASM) confidant
