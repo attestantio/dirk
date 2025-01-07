@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2025 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@ package signer_test
 
 import (
 	context "context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -28,6 +29,7 @@ import (
 	standardsigner "github.com/attestantio/dirk/services/signer/standard"
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
 	"github.com/attestantio/dirk/testing/accounts"
+	"github.com/attestantio/dirk/testing/logger"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
@@ -45,16 +47,20 @@ func TestMain(m *testing.M) {
 
 func TestSign(t *testing.T) {
 	tests := []struct {
-		name   string
-		client string
-		req    *pb.SignRequest
-		state  pb.ResponseState
-		err    string
+		name       string
+		client     string
+		req        *pb.SignRequest
+		state      pb.ResponseState
+		err        string
+		logEntries []map[string]any
 	}{
 		{
 			name:   "Empty",
 			client: "client1",
 			state:  pb.ResponseState_DENIED,
+			logEntries: []map[string]any{
+				{"message": "Request not specified"},
+			},
 		},
 		{
 			name:   "IdEmpty",
@@ -69,6 +75,9 @@ func TestSign(t *testing.T) {
 					0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
 					0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x1e, 0x3f,
 				},
+			},
+			logEntries: []map[string]any{
+				{"message": "Neither account nor public key specified"},
 			},
 		},
 		{
@@ -88,9 +97,33 @@ func TestSign(t *testing.T) {
 					0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x1e, 0x3f,
 				},
 			},
+			logEntries: []map[string]any{
+				{"message": "Invalid account specified"},
+			},
 		},
 		{
-			name:   "Good",
+			name:   "PubkeyInvalid",
+			client: "client1",
+			state:  pb.ResponseState_DENIED,
+			req: &pb.SignRequest{
+				Id: &pb.SignRequest_PublicKey{
+					PublicKey: []byte{},
+				},
+				Data: []byte{
+					0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+					0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+				},
+				Domain: []byte{
+					0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+					0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x1e, 0x3f,
+				},
+			},
+			logEntries: []map[string]any{
+				{"message": "Did not obtain account; denied"},
+			},
+		},
+		{
+			name:   "GoodId",
 			client: "client1",
 			req: &pb.SignRequest{
 				Id: &pb.SignRequest_Account{
@@ -106,14 +139,43 @@ func TestSign(t *testing.T) {
 				},
 			},
 			state: pb.ResponseState_SUCCEEDED,
+			logEntries: []map[string]any{
+				{"message": "Success"},
+			},
+		},
+		{
+			name:   "GoodPubkey",
+			client: "client1",
+			req: &pb.SignRequest{
+				Id: &pb.SignRequest_PublicKey{
+					PublicKey: []byte{
+						0x94, 0x6e, 0x0f, 0x38, 0xa0, 0x23, 0xb9, 0xf1, 0xad, 0x94, 0x9c, 0xe2, 0xad, 0x85, 0x31, 0xc4,
+						0xdb, 0x53, 0x7e, 0x31, 0x34, 0x26, 0x59, 0x9c, 0x2d, 0x9a, 0xe8, 0xab, 0xee, 0xef, 0x7a, 0x43,
+						0x3d, 0x06, 0x67, 0x39, 0xf8, 0x16, 0xdd, 0x53, 0x7a, 0xdb, 0x2e, 0x4b, 0x84, 0x11, 0xcc, 0xcb,
+					},
+				},
+				Data: []byte{
+					0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+					0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+				},
+				Domain: []byte{
+					0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+					0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x1e, 0x3f,
+				},
+			},
+			state: pb.ResponseState_SUCCEEDED,
+			logEntries: []map[string]any{
+				{"message": "Success"},
+			},
 		},
 	}
 
-	handler, err := Setup()
-	require.Nil(t, err)
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			capture := logger.NewLogCapture()
+			handler, err := Setup()
+			require.Nil(t, err)
+
 			ctx := context.WithValue(context.Background(), &interceptors.ClientName{}, test.client)
 			resp, err := handler.Sign(ctx, test.req)
 			if test.err == "" {
@@ -121,6 +183,11 @@ func TestSign(t *testing.T) {
 				require.Equal(t, test.state, resp.State)
 			} else {
 				require.EqualError(t, err, test.err)
+			}
+			for _, logEntry := range test.logEntries {
+				if !capture.HasLog(logEntry) {
+					require.Fail(t, fmt.Sprintf("Missing log entry %v in %v", logEntry, capture.Entries()))
+				}
 			}
 		})
 	}

@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020, 2025 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@ package signer
 
 import (
 	context "context"
+	"strings"
 
 	"github.com/attestantio/dirk/core"
 	"github.com/attestantio/dirk/rules"
@@ -51,6 +52,18 @@ func (h *Handler) SignBeaconAttestations(ctx context.Context, req *pb.SignBeacon
 		if request == nil {
 			log.Warn().Str("result", "denied").Msg("Request nil")
 			res.Responses[i].State = pb.ResponseState_FAILED
+
+			return res, nil
+		}
+		if request.GetAccount() == "" && request.GetPublicKey() == nil {
+			log.Warn().Str("result", "denied").Msg("Neither account nor public key specified")
+			res.Responses[i].State = pb.ResponseState_DENIED
+
+			return res, nil
+		}
+		if request.GetAccount() != "" && !strings.Contains(request.GetAccount(), "/") {
+			log.Warn().Str("result", "denied").Msg("Invalid account specified")
+			res.Responses[i].State = pb.ResponseState_DENIED
 
 			return res, nil
 		}
