@@ -48,41 +48,10 @@ func (h *Handler) SignBeaconAttestations(ctx context.Context, req *pb.SignBeacon
 		res.Responses[i] = &pb.SignResponse{State: pb.ResponseState_UNKNOWN}
 	}
 
-	for i, request := range req.GetRequests() {
-		if request == nil {
-			log.Warn().Str("result", "denied").Msg("Request nil")
-			res.Responses[i].State = pb.ResponseState_FAILED
-
-			return res, nil
-		}
-		if request.GetAccount() == "" && request.GetPublicKey() == nil {
-			log.Warn().Str("result", "denied").Msg("Neither account nor public key specified")
-			res.Responses[i].State = pb.ResponseState_DENIED
-
-			return res, nil
-		}
-		if request.GetAccount() != "" && !strings.Contains(request.GetAccount(), "/") {
-			log.Warn().Str("result", "denied").Msg("Invalid account specified")
-			res.Responses[i].State = pb.ResponseState_DENIED
-
-			return res, nil
-		}
-		if request.GetData() == nil {
-			log.Warn().Str("result", "denied").Msg("Request missing data")
-			res.Responses[i].State = pb.ResponseState_DENIED
-
-			return res, nil
-		}
-		if request.GetData().GetSource() == nil {
-			log.Warn().Str("result", "denied").Msg("Request source checkpoint not specified")
-			res.Responses[i].State = pb.ResponseState_DENIED
-
-			return res, nil
-		}
-		if request.GetData().GetTarget() == nil {
-			log.Warn().Str("result", "denied").Msg("Request target checkpoint not specified")
-			res.Responses[i].State = pb.ResponseState_DENIED
-
+	validateSignBeaconAttestationsRequests(ctx, req, res)
+	for i := range req.GetRequests() {
+		if res.GetResponses()[i].GetState() == pb.ResponseState_DENIED ||
+			res.GetResponses()[i].GetState() == pb.ResponseState_FAILED {
 			return res, nil
 		}
 	}
@@ -125,4 +94,48 @@ func (h *Handler) SignBeaconAttestations(ctx context.Context, req *pb.SignBeacon
 	}
 
 	return res, nil
+}
+
+func validateSignBeaconAttestationsRequests(_ context.Context,
+	req *pb.SignBeaconAttestationsRequest,
+	res *pb.MultisignResponse,
+) {
+	for i, request := range req.GetRequests() {
+		if request == nil {
+			log.Warn().Str("result", "denied").Msg("Request nil")
+			res.Responses[i].State = pb.ResponseState_FAILED
+
+			return
+		}
+		if request.GetAccount() == "" && request.GetPublicKey() == nil {
+			log.Warn().Str("result", "denied").Msg("Neither account nor public key specified")
+			res.Responses[i].State = pb.ResponseState_DENIED
+
+			return
+		}
+		if request.GetAccount() != "" && !strings.Contains(request.GetAccount(), "/") {
+			log.Warn().Str("result", "denied").Msg("Invalid account specified")
+			res.Responses[i].State = pb.ResponseState_DENIED
+
+			return
+		}
+		if request.GetData() == nil {
+			log.Warn().Str("result", "denied").Msg("Request missing data")
+			res.Responses[i].State = pb.ResponseState_DENIED
+
+			return
+		}
+		if request.GetData().GetSource() == nil {
+			log.Warn().Str("result", "denied").Msg("Request source checkpoint not specified")
+			res.Responses[i].State = pb.ResponseState_DENIED
+
+			return
+		}
+		if request.GetData().GetTarget() == nil {
+			log.Warn().Str("result", "denied").Msg("Request target checkpoint not specified")
+			res.Responses[i].State = pb.ResponseState_DENIED
+
+			return
+		}
+	}
 }
