@@ -76,8 +76,12 @@ var ReleaseVersion = "1.2.1-rc.1"
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	if err := fetchConfig(); err != nil {
+	exit, err := fetchConfig()
+	if err != nil {
 		zerologger.Fatal().Err(err).Msg("Failed to fetch configuration")
+	}
+	if exit {
+		os.Exit(0)
 	}
 
 	majordomoSvc, err := util.InitMajordomo(ctx)
@@ -155,7 +159,8 @@ func main() {
 }
 
 // fetchConfig fetches configuration from various sources.
-func fetchConfig() error {
+// If this returns true then the calling code should exit.
+func fetchConfig() (bool, error) {
 	pflag.String("base-dir", "", "base directory for configuration files")
 	pflag.String("log-level", "info", "minimum level of messsages to log")
 	pflag.String("log-file", "", "redirect log output to a file")
@@ -170,7 +175,12 @@ func fetchConfig() error {
 	pflag.String("slashing-protection-file", "", "location of slashing protection file for import or export")
 	pflag.Parse()
 	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
-		return errors.Wrap(err, "failed to bind pflags to viper")
+		return false, errors.Wrap(err, "failed to bind pflags to viper")
+	}
+
+	if viper.GetBool("version") {
+		fmt.Fprintf(os.Stdout, "%s\n", ReleaseVersion)
+		return true, nil
 	}
 
 	if viper.GetString("base-dir") != "" {
@@ -181,7 +191,7 @@ func fetchConfig() error {
 		// Home directory.
 		home, err := homedir.Dir()
 		if err != nil {
-			return errors.Wrap(err, "failed to obtain home directory")
+			return false, errors.Wrap(err, "failed to obtain home directory")
 		}
 		viper.AddConfigPath(home)
 		viper.SetConfigName(".dirk")
@@ -206,16 +216,16 @@ func fetchConfig() error {
 			// get very far anyway.
 			if viper.GetString("server.name") == "" {
 				// Assume the underlying issue is that the configuration file is missing.
-				return errors.Wrap(err, "could not find the configuration file")
+				return false, errors.Wrap(err, "could not find the configuration file")
 			}
 		case errors.As(err, &viper.ConfigParseError{}):
-			return errors.Wrap(err, "could not parse the configuration file")
+			return false, errors.Wrap(err, "could not parse the configuration file")
 		default:
-			return errors.Wrap(err, "failed to obtain configuration")
+			return false, errors.Wrap(err, "failed to obtain configuration")
 		}
 	}
 
-	return nil
+	return false, nil
 }
 
 // initProfiling initialises the profiling server.
@@ -237,11 +247,6 @@ func initProfiling() {
 }
 
 func runCommands(ctx context.Context, majordomoSvc majordomo.Service) (bool, int) {
-	if viper.GetBool("version") {
-		fmt.Fprintf(os.Stdout, "%s\n", ReleaseVersion)
-		return true, 0
-	}
-
 	if viper.GetBool("show-certificates") {
 		err := cmd.ShowCertificates(ctx, majordomoSvc)
 		if err != nil {

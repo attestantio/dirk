@@ -148,14 +148,11 @@ linters:
   # Disable specific linter
   # https://golangci-lint.run/usage/linters/#disabled-by-default
   disable:
-    - contextcheck
     - cyclop
     - depguard
     - dupl
     - err113
-    - exhaustive
     - exhaustruct
-    - exportloopref
     - forcetypeassert
     - funlen
     - gci
@@ -163,15 +160,11 @@ linters:
     - gocognit
     - goconst
     - ireturn
-    - inamedparam
     - lll
     - mnd
-    - musttag
-    - nestif
-    - nilnil
     - nlreturn
     - perfsprint
-    - promlinter
+    - tenv
     - varnamelen
     - wrapcheck
     - wsl
