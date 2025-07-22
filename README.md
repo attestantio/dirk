@@ -60,7 +60,7 @@ The following documentation is available:
 
 ## Maintainers
 
-Jim McDonald: [@mcdee](https://github.com/mcdee).
+Chris Berry: [@bez625](https://github.com/Bez625).
 
 ## Contribute
 
