@@ -14,15 +14,19 @@
 package standard
 
 import (
+	"time"
+
 	"github.com/rs/zerolog"
 	"github.com/wealdtech/go-majordomo"
 )
 
 type parameters struct {
-	logLevel   zerolog.Level
-	majordomo  majordomo.Service
-	certPEMURI string
-	certKeyURI string
+	logLevel        zerolog.Level
+	majordomo       majordomo.Service
+	reloadThreshold time.Duration
+	reloadInterval  time.Duration
+	certPEMURI      string
+	certKeyURI      string
 }
 
 // Parameter is the interface for service parameters.
@@ -47,6 +51,20 @@ func WithLogLevel(logLevel zerolog.Level) Parameter {
 func WithMajordomo(service majordomo.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
 		p.majordomo = service
+	})
+}
+
+// WithReloadThreshold sets the reload threshold for the module.
+func WithReloadThreshold(reloadThreshold time.Duration) Parameter {
+	return parameterFunc(func(p *parameters) {
+		p.reloadThreshold = reloadThreshold
+	})
+}
+
+// WithReloadInterval sets the reload interval for the module.
+func WithReloadInterval(reloadInterval time.Duration) Parameter {
+	return parameterFunc(func(p *parameters) {
+		p.reloadInterval = reloadInterval
 	})
 }
 

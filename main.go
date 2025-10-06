@@ -208,6 +208,8 @@ func fetchConfig() (bool, error) {
 	viper.SetDefault("logging.timestamp.format", "2006-01-02T15:04:05.000Z07:00")
 	viper.SetDefault("storage-path", "storage")
 	viper.SetDefault("process.generation-timeout", 70*time.Second)
+	viper.SetDefault("certificates.reload-interval", 10*time.Minute)
+	viper.SetDefault("certificates.reload-threshold", 24*time.Hour)
 
 	if err := viper.ReadInConfig(); err != nil {
 		switch {
@@ -504,6 +506,8 @@ func startCertManager(ctx context.Context, majordomoSvc majordomo.Service) (cert
 		standardcertmanager.WithMajordomo(majordomoSvc),
 		standardcertmanager.WithCertPEMURI(viper.GetString("certificates.server-cert")),
 		standardcertmanager.WithCertKeyURI(viper.GetString("certificates.server-key")),
+		standardcertmanager.WithReloadThreshold(viper.GetDuration("certificates.reload-threshold")),
+		standardcertmanager.WithReloadInterval(viper.GetDuration("certificates.reload-interval")),
 	)
 }
 

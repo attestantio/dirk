@@ -16,6 +16,7 @@ package standard
 import (
 	"context"
 	"crypto/tls"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -26,12 +27,16 @@ import (
 )
 
 type Service struct {
-	ctx        context.Context
-	majordomo  majordomo.Service
-	certPEMURI string
-	certKeyURI string
+	ctx             context.Context
+	majordomo       majordomo.Service
+	reloadThreshold time.Duration
+	reloadInterval  time.Duration
+	certPEMURI      string
+	certKeyURI      string
 
-	currentCert atomic.Pointer[tls.Certificate]
+	lastReloadAttemptTime time.Time
+	currentCertMutext     sync.RWMutex
+	currentCert           atomic.Pointer[tls.Certificate]
 }
 
 // module-wide log.
@@ -76,16 +81,88 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 	log.Info().Str("issued_to", cert.Subject.CommonName).Str("issued_by", cert.Issuer.CommonName).Time("valid_until", cert.NotAfter).Msg("Server certificate loaded")
 
 	out := &Service{
-		ctx:        ctx,
-		majordomo:  parameters.majordomo,
-		certPEMURI: parameters.certPEMURI,
-		certKeyURI: parameters.certKeyURI,
+		ctx:             ctx,
+		majordomo:       parameters.majordomo,
+		certPEMURI:      parameters.certPEMURI,
+		certKeyURI:      parameters.certKeyURI,
+		reloadThreshold: parameters.reloadThreshold,
+		reloadInterval:  parameters.reloadInterval,
 	}
 	out.currentCert.Store(&serverCert)
 	return out, nil
 }
 
+func (s *Service) TryReloadCertificate() {
+	if !s.currentCertMutext.TryLock() {
+		// Certificate is already being reloaded; do nothing.
+		return
+	}
+	defer s.currentCertMutext.Unlock()
+
+	s.lastReloadAttemptTime = time.Now()
+
+	ctx := s.ctx
+	if s.reloadInterval > 0 {
+		var cancel context.CancelFunc
+		// Give up on the reload if it takes longer than the reload interval.
+		ctx, cancel = context.WithDeadline(s.ctx, s.lastReloadAttemptTime.Add(s.reloadInterval))
+		defer cancel()
+	}
+
+	certPEMBlock, err := s.majordomo.Fetch(ctx, s.certPEMURI)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to obtain server certificate during reload")
+		return
+	}
+	certKeyBlock, err := s.majordomo.Fetch(ctx, s.certKeyURI)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to obtain server key during reload")
+		return
+	}
+
+	// Load the certificate pair.
+	serverCert, err := tls.X509KeyPair(certPEMBlock, certKeyBlock)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to load certificate pair during reload")
+		return
+	}
+	if len(serverCert.Certificate) == 0 {
+		log.Warn().Msg("Certificate file does not contain a certificate")
+		return
+	}
+	cert := serverCert.Leaf
+	newExpiry := cert.NotAfter
+	if newExpiry.Before(time.Now()) {
+		log.Warn().Time("expiry", newExpiry).Msg("Server certificate expired")
+		return
+	}
+
+	if time.Until(newExpiry) < s.reloadThreshold {
+		log.Warn().Time("expiry", newExpiry).Msg("Server certificate will expire before reload threshold, not using it")
+		return
+	}
+
+	log.Info().Str("issued_to", cert.Subject.CommonName).Str("issued_by", cert.Issuer.CommonName).Time("valid_until", newExpiry).Msg("Server certificate loaded")
+
+	s.currentCert.Store(&serverCert)
+}
+
 // Return the certificate.
 func (s *Service) GetCertificate(_ *tls.ClientHelloInfo) (*tls.Certificate, error) {
-	return s.currentCert.Load(), nil
+	currentCert := s.currentCert.Load()
+	expiry := currentCert.Leaf.NotAfter
+	if time.Until(expiry) > s.reloadThreshold {
+		// Certificate is not due to expire soon; use the existing certificate.
+		return currentCert, nil
+	}
+
+	if time.Since(s.lastReloadAttemptTime) < s.reloadInterval {
+		// Certificate is due to expire soon but we attempted to reload it too recently; use the existing certificate.
+		return currentCert, nil
+	}
+
+	// Reload the certificate asynchronously.
+	go s.TryReloadCertificate()
+	// Use the existing certificate.
+	return currentCert, nil
 }
