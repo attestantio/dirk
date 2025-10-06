@@ -25,6 +25,7 @@ import (
 	standardrules "github.com/attestantio/dirk/rules/standard"
 	standardaccountmanager "github.com/attestantio/dirk/services/accountmanager/standard"
 	grpcapi "github.com/attestantio/dirk/services/api/grpc"
+	standardcertmanager "github.com/attestantio/dirk/services/certmanager/standard"
 	"github.com/attestantio/dirk/services/checker"
 	staticchecker "github.com/attestantio/dirk/services/checker/static"
 	memfetcher "github.com/attestantio/dirk/services/fetcher/mem"
@@ -39,7 +40,9 @@ import (
 	standardwalletmanager "github.com/attestantio/dirk/services/walletmanager/standard"
 	"github.com/attestantio/dirk/testing/logger"
 	"github.com/attestantio/dirk/testing/resources"
+	"github.com/attestantio/dirk/util"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	e2types "github.com/wealdtech/go-eth2-types/v2"
 	distributed "github.com/wealdtech/go-eth2-wallet-distributed"
 	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
@@ -115,6 +118,10 @@ var Wallet2Keys = [][]byte{
 //
 //nolint:maintidx
 func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[uint64]string) (*logger.LogCapture, string, error) {
+	majordomo, err := util.InitMajordomo(ctx)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed to initialise majordomo")
+	}
 	capture := logger.NewLogCapture()
 	if err := e2types.InitBLS(); err != nil {
 		return nil, "", errors.Wrap(err, "failed to initialise BLS")
@@ -276,10 +283,16 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		return nil, "", errors.Wrap(err, "failed to create static peers")
 	}
 
+	certManager, err := standardcertmanager.New(ctx,
+		standardcertmanager.WithLogLevel(zerolog.Disabled),
+		standardcertmanager.WithMajordomo(majordomo),
+		standardcertmanager.WithCertPEMURI("file://"+resources.CertPaths[id]),
+		standardcertmanager.WithCertKeyURI("file://"+resources.KeyPaths[id]),
+	)
+
 	sender, err := sendergrpc.New(ctx,
 		sendergrpc.WithName(fmt.Sprintf("signer-test%02d", id)),
-		sendergrpc.WithServerCert(resources.SignerCerts[id]),
-		sendergrpc.WithServerKey(resources.SignerKeys[id]),
+		sendergrpc.WithCertManager(certManager),
 		sendergrpc.WithCACert(resources.CACrt),
 	)
 	if err != nil {
@@ -331,8 +344,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		grpcapi.WithPeers(peers),
 		grpcapi.WithName(fmt.Sprintf("signer-test%02d", id)),
 		grpcapi.WithID(id),
-		grpcapi.WithServerCert(resources.SignerCerts[id]),
-		grpcapi.WithServerKey(resources.SignerKeys[id]),
+		grpcapi.WithCertManager(certManager),
 		grpcapi.WithCACert(resources.CACrt),
 		grpcapi.WithListenAddress(fmt.Sprintf("0.0.0.0:%d", port)),
 	)
