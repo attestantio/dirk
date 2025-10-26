@@ -17,7 +17,7 @@ import "crypto/tls"
 
 // Service is the tls certificate manager service.
 type Service interface {
-	// Gets the certificate, reloading it if configured to do so
+	// GetCertificate gets the certificate, reloading it if configured to do so
 	// and necessary.
 	GetCertificate(*tls.ClientHelloInfo) (*tls.Certificate, error)
 }
