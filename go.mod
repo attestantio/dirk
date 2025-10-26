@@ -1,8 +1,8 @@
 module github.com/attestantio/dirk
 
-go 1.22.0
+go 1.25
 
-toolchain go1.22.4
+toolchain go1.25.3
 
 require (
 	github.com/attestantio/go-eth2-client v0.21.11
