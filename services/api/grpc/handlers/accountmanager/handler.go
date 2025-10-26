@@ -27,6 +27,7 @@ import (
 // Handler is the account manager handler.
 type Handler struct {
 	pb.UnimplementedAccountManagerServer
+
 	accountManager accountmanager.Service
 	process        process.Service
 }

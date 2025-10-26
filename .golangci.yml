@@ -25,10 +25,13 @@ linters:
     - lll
     - mnd
     - nlreturn
+    - noinlineerr
     - perfsprint
+    - revive
     - varnamelen
     - wrapcheck
     - wsl
+    - wsl_v5
   settings:
     goheader:
       values:

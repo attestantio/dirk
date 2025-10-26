@@ -26,6 +26,7 @@ import (
 // Handler is the lister handler.
 type Handler struct {
 	pb.UnimplementedListerServer
+
 	lister lister.Service
 }
 

@@ -118,7 +118,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 	}
 	pb.RegisterDKGServer(s.grpcServer, receiverHandler)
 
-	err = s.serve(parameters.listenAddress)
+	err = s.serve(ctx, parameters.listenAddress)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start API server")
 	}
@@ -177,15 +177,16 @@ func (s *Service) createServer(name string, certPEMBlock []byte, keyPEMBlock []b
 }
 
 // Serve serves the GRPC server.
-func (s *Service) serve(listenAddress string) error {
-	conn, err := net.Listen("tcp", listenAddress)
+func (s *Service) serve(ctx context.Context, listenAddress string) error {
+	var lc net.ListenConfig
+	listener, err := lc.Listen(ctx, "tcp", listenAddress)
 	if err != nil {
 		return err
 	}
 	log.Info().Str("address", listenAddress).Msg("Listening")
 
 	go func() {
-		if err := s.grpcServer.Serve(conn); err != nil {
+		if err := s.grpcServer.Serve(listener); err != nil {
 			log.Error().Err(err).Msg("Could not start GRPC server")
 		}
 	}()

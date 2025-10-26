@@ -26,6 +26,7 @@ import (
 // Handler is the signer handler, allowing access to signer functions through grpc.
 type Handler struct {
 	pb.UnimplementedSignerServer
+
 	signer signer.Service
 }
 

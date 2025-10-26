@@ -29,6 +29,17 @@ type LogCapture struct {
 	entries []map[string]any
 }
 
+// NewLogCapture captures logs for querying.
+// Logs are created in JSON format and without timestamps.
+func NewLogCapture() *LogCapture {
+	c := &LogCapture{
+		entries: make([]map[string]any, 0),
+	}
+	logger := zerolog.New(c)
+	zerologger.Logger = logger
+	return c
+}
+
 // Write captures an individual log message.
 func (c *LogCapture) Write(p []byte) (int, error) {
 	entry := make(map[string]any)
@@ -40,17 +51,6 @@ func (c *LogCapture) Write(p []byte) (int, error) {
 	c.entries = append(c.entries, entry)
 	c.mu.Unlock()
 	return len(p), nil
-}
-
-// NewLogCapture captures logs for querying.
-// Logs are created in JSON format and without timestamps.
-func NewLogCapture() *LogCapture {
-	c := &LogCapture{
-		entries: make([]map[string]any, 0),
-	}
-	logger := zerolog.New(c)
-	zerologger.Logger = logger
-	return c
 }
 
 // AssertHasEntry checks if there is a log entry with the given string.
@@ -81,6 +81,16 @@ func (c *LogCapture) HasLog(fields map[string]any) bool {
 		}
 	}
 	return matched
+}
+
+// Entries returns all captures log entries.
+func (c *LogCapture) Entries() []map[string]any {
+	return c.entries
+}
+
+// ClearEntries removes all existing log entries.
+func (c *LogCapture) ClearEntries() {
+	c.entries = make([]map[string]any, 0)
 }
 
 // hasField returns true if the entry has a matching field.
@@ -124,14 +134,4 @@ func (*LogCapture) hasField(entry map[string]any, key string, value any) bool {
 	}
 
 	return false
-}
-
-// Entries returns all captures log entries.
-func (c *LogCapture) Entries() []map[string]any {
-	return c.entries
-}
-
-// ClearEntries removes all existing log entries.
-func (c *LogCapture) ClearEntries() {
-	c.entries = make([]map[string]any, 0)
 }
