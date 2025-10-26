@@ -154,7 +154,7 @@ func (s *Service) TryReloadCertificate() {
 	s.currentCert.Store(&serverCert)
 }
 
-// Return the certificate.
+// GetCertificate returns the certificate.
 func (s *Service) GetCertificate(_ *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	currentCert := s.currentCert.Load()
 	expiry := currentCert.Leaf.NotAfter
