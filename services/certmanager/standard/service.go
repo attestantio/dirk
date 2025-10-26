@@ -157,7 +157,12 @@ func (s *Service) TryReloadCertificate() {
 // GetCertificate returns the certificate.
 func (s *Service) GetCertificate(_ *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	currentCert := s.currentCert.Load()
-	expiry := currentCert.Leaf.NotAfter
+	cert, err := x509.ParseCertificate(currentCert.Certificate[0])
+	if err != nil || cert == nil {
+		log.Warn().Msg("Failed to parse certificate")
+		return nil, errors.New("Could not parse certificate")
+	}
+	expiry := cert.NotAfter
 	if time.Until(expiry) > s.reloadThreshold {
 		// Certificate is not due to expire soon; use the existing certificate.
 		return currentCert, nil
