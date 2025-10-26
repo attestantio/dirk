@@ -133,7 +133,11 @@ func (s *Service) TryReloadCertificate() {
 		log.Warn().Msg("Certificate file does not contain a certificate")
 		return
 	}
-	cert := serverCert.Leaf
+	cert, err := x509.ParseCertificate(serverCert.Certificate[0])
+	if err != nil || cert == nil {
+		log.Warn().Msg("Failed to parse certificate")
+		return
+	}
 	newExpiry := cert.NotAfter
 	if newExpiry.Before(time.Now()) {
 		log.Warn().Time("expiry", newExpiry).Msg("Server certificate expired")
