@@ -73,7 +73,10 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 	if len(serverCert.Certificate) == 0 {
 		return nil, errors.New("certificate file does not contain a certificate")
 	}
-	cert := serverCert.Leaf
+	cert, err := x509.ParseCertificate(serverCert.Certificate[0])
+	if err != nil || cert == nil {
+		return nil, errors.Wrap(err, "failed to parse server certificate")
+	}
 	if cert.NotAfter.Before(time.Now()) {
 		log.Warn().Time("expiry", cert.NotAfter).Msg("Server certificate expired")
 	}
