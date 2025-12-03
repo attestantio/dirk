@@ -43,7 +43,7 @@ func TestRules(t *testing.T) {
 		{
 			name: "PathDisallowed",
 			path: "/",
-			err:  `Cannot write pid file "/LOCK": open /LOCK: permission denied`,
+			err:  `Cannot write pid file "/LOCK": open /LOCK: read-only file system`,
 		},
 		{
 			name: "PathBad",
