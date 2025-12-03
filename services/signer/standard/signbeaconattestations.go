@@ -88,7 +88,7 @@ func (s *Service) SignBeaconAttestations(
 
 	log.Trace().Dur("elapsed", time.Since(started)).Msg("Data checked")
 
-	// We could have either or both of account names and/or entries, so take the longer
+	// We could have either or both of account names and/or entries, so take the longer.
 	entries := len(pubKeys)
 	if len(accountNames) > entries {
 		entries = len(accountNames)

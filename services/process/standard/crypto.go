@@ -105,7 +105,7 @@ func (*Service) contribution(_ context.Context, generation *generation) error {
 // 	generation.distributionSecrets = secrets
 //
 // 	return nil
-// }
+// } //nolint:godot .
 
 // verifyContribution verifies another participant's contribution.
 func verifyContribution(id uint64, secretShare bls.SecretKey, vVec []bls.PublicKey) bool {

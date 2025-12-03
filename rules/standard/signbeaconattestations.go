@@ -98,7 +98,7 @@ func (s *Service) OnSignBeaconAttestations(ctx context.Context,
 	}
 	s.log.Trace().Dur("elapsed", time.Since(started)).Msg("Checked rules")
 
-	// Update the state
+	// Update the state.
 	if err = s.storeSignBeaconAttestationStates(ctx, pubKeys, states); err != nil {
 		s.log.Error().Err(err).Msg("Failed to store state for beacon attestations")
 		for i := range res {
