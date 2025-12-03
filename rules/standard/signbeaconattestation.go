@@ -38,10 +38,8 @@ func (s *signBeaconAttestationState) Encode() []byte {
 
 	if s != nil {
 		// Source epoch.
-		//nolint:gosec
 		binary.LittleEndian.PutUint64(data[1:9], uint64(s.SourceEpoch))
 		// Target epoch.
-		//nolint:gosec
 		binary.LittleEndian.PutUint64(data[9:17], uint64(s.TargetEpoch))
 	}
 
@@ -59,9 +57,7 @@ func (s *signBeaconAttestationState) Decode(data []byte) error {
 		if len(data) != 17 {
 			return fmt.Errorf("invalid version 1 data size %d", len(data))
 		}
-		//nolint:gosec
 		s.SourceEpoch = int64(binary.LittleEndian.Uint64(data[1:9]))
-		//nolint:gosec
 		s.TargetEpoch = int64(binary.LittleEndian.Uint64(data[9:17]))
 	default:
 		err = gob.NewDecoder(bytes.NewBuffer(data)).Decode(s)
@@ -88,9 +84,7 @@ func (s *Service) OnSignBeaconAttestation(ctx context.Context, metadata *rules.R
 		return res
 	}
 
-	//nolint:gosec
 	state.SourceEpoch = int64(req.Source.Epoch)
-	//nolint:gosec
 	state.TargetEpoch = int64(req.Target.Epoch)
 	if err = s.storeSignBeaconAttestationState(ctx, metadata.PubKey, state); err != nil {
 		log.Error().Err(err).Msg("Failed to store state for beacon attestation")

@@ -38,7 +38,6 @@ func (s *signBeaconProposalState) Encode() []byte {
 
 	if s != nil {
 		// Slot.
-		//nolint:gosec
 		binary.LittleEndian.PutUint64(data[1:9], uint64(s.Slot))
 	}
 
@@ -56,7 +55,6 @@ func (s *signBeaconProposalState) Decode(data []byte) error {
 		if len(data) != 9 {
 			return fmt.Errorf("invalid version 1 data size %d", len(data))
 		}
-		//nolint:gosec
 		s.Slot = int64(binary.LittleEndian.Uint64(data[1:9]))
 	default:
 		err = gob.NewDecoder(bytes.NewBuffer(data)).Decode(s)
@@ -99,7 +97,6 @@ func (s *Service) OnSignBeaconProposal(ctx context.Context, metadata *rules.ReqM
 		}
 	}
 
-	//nolint:gosec
 	state.Slot = int64(slot)
 	if err = s.storeSignBeaconProposalState(ctx, metadata.PubKey, state); err != nil {
 		log.Error().Err(err).Msg("Failed to store state for beacon proposal")
