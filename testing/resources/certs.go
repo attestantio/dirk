@@ -14,6 +14,7 @@
 package resources
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -524,56 +525,35 @@ var SignerKeys = map[uint64][]byte{
 	5: SignerTest05Key,
 }
 
+var CertPaths map[uint64]string
+var KeyPaths map[uint64]string
+
 // SetupCerts sets up a number of certificates on-disk in the provided location.
 func SetupCerts(base string) error {
+	CertPaths = make(map[uint64]string)
+	KeyPaths = make(map[uint64]string)
+	for id := range SignerCerts {
+		CertPaths[id] = filepath.Join(base, fmt.Sprintf("signer-test%02d.crt", id))
+	}
+	for id := range SignerKeys {
+		KeyPaths[id] = filepath.Join(base, fmt.Sprintf("signer-test%02d.key", id))
+	}
+
 	if err := os.WriteFile(filepath.Join(base, "ca.crt"), CACrt, 0o600); err != nil {
 		return err
 	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test01.crt"), SignerTest01Crt, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test01.key"), SignerTest01Key, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test02.crt"), SignerTest02Crt, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test02.key"), SignerTest02Key, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test03.crt"), SignerTest03Crt, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test03.key"), SignerTest03Key, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test04.crt"), SignerTest04Crt, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test04.key"), SignerTest04Key, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test05.crt"), SignerTest05Crt, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test05.key"), SignerTest05Key, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "client-test01.crt"), ClientTest01Crt, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "client-test01.key"), ClientTest01Key, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "client-test02.crt"), ClientTest02Crt, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "client-test02.key"), ClientTest02Key, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "client-test03.crt"), ClientTest03Crt, 0o600); err != nil {
-		return err
+
+	for id := range SignerCerts {
+		if err := os.WriteFile(CertPaths[id], SignerCerts[id], 0o600); err != nil {
+			return err
+		}
 	}
 
-	return os.WriteFile(filepath.Join(base, "client-test03.key"), ClientTest03Key, 0o600)
+	for id := range SignerKeys {
+		if err := os.WriteFile(KeyPaths[id], SignerKeys[id], 0o600); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

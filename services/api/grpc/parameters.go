@@ -15,6 +15,7 @@ package grpc
 
 import (
 	"github.com/attestantio/dirk/services/accountmanager"
+	"github.com/attestantio/dirk/services/certmanager"
 	"github.com/attestantio/dirk/services/lister"
 	"github.com/attestantio/dirk/services/metrics"
 	"github.com/attestantio/dirk/services/peers"
@@ -34,11 +35,10 @@ type parameters struct {
 	walletManager  walletmanager.Service
 	lister         lister.Service
 	signer         signer.Service
+	certManager    certmanager.Service
 	name           string
 	listenAddress  string
 	id             uint64
-	serverCert     []byte
-	serverKey      []byte
 	caCert         []byte
 }
 
@@ -130,17 +130,10 @@ func WithListenAddress(listenAddress string) Parameter {
 	})
 }
 
-// WithServerCert sets the server certificate for this module.
-func WithServerCert(serverCert []byte) Parameter {
+// WithCertManager sets the cert manager for this module.
+func WithCertManager(service certmanager.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.serverCert = serverCert
-	})
-}
-
-// WithServerKey sets the server key for this module.
-func WithServerKey(serverKey []byte) Parameter {
-	return parameterFunc(func(p *parameters) {
-		p.serverKey = serverKey
+		p.certManager = service
 	})
 }
 
@@ -193,11 +186,15 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	if parameters.listenAddress == "" {
 		return nil, errors.New("no listen address specified")
 	}
-	if len(parameters.serverCert) == 0 {
-		return nil, errors.New("no server certificate specified")
+	if parameters.certManager == nil {
+		return nil, errors.New("no cert manager specified")
 	}
-	if len(parameters.serverKey) == 0 {
-		return nil, errors.New("no server key specified")
+	cert, err := parameters.certManager.GetCertificate(nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get server certificate")
+	}
+	if len(cert.Certificate) == 0 {
+		return nil, errors.New("no server certificate specified")
 	}
 
 	return &parameters, nil

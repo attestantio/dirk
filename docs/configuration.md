@@ -36,6 +36,12 @@ certificates:
   # ca-cert is the certificate of the CA that issued the client certificates.  If not present Dirk will use
   # the standard CA certificates supplied with the server.
   ca-cert: file:///home/me/dirk/security/certificates/ca.crt
+  # reload-threshold defines what duration before certificate expiry to being attempting to
+  # load new server certificates from server-cert and server-key URLs.
+  reload-threshold: '24h'
+  # reload-interval defines how often to attempt to reload certificates, once reload-threshold
+  # has been reached
+  reload-interval: '10m'
 # storage-path is the path where information created by the slashing protection system is stored.  If not
 # supplied it will default to using the 'storage' directory in the user's home directory.
 storage-path: /home/me/dirk/protection
@@ -121,6 +127,7 @@ Modules levels are used for each module, overriding the global log level.  The a
 
   - **accountmanager** operations on accounts such as locking and unlocking existing accounts, and generating new accounts
   - **api** operations from the external API
+  - **certmanager** loads and reloads ssl certificates
   - **checker** checks client access to operations
   - **fetcher** fetches wallets and accounts from Ethereum 2 stores
   - **lister** lists accounts that match a given path specification
