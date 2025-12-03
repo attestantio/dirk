@@ -27,6 +27,7 @@ import (
 // Handler is the receiver handler, receiving requests in the distributed key generation process.
 type Handler struct {
 	pb.UnimplementedDKGServer
+
 	process process.Service
 	peers   peers.Service
 }

@@ -26,6 +26,7 @@ import (
 // Handler is the handler for GRPC requests to the wallet manager.
 type Handler struct {
 	pb.UnimplementedWalletManagerServer
+
 	walletManager walletmanager.Service
 }
 
