@@ -16,6 +16,7 @@ package standard_test
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	standardrules "github.com/attestantio/dirk/rules/standard"
@@ -34,21 +35,22 @@ func TestRules(t *testing.T) {
 		path     string
 		logLevel zerolog.Level
 		validIPs []string
-		err      string
+		err      []string
 	}{
 		{
 			name: "PathEmpty",
-			err:  `problem with parameters: no storage path specified`,
+			err:  []string{`problem with parameters: no storage path specified`},
 		},
 		{
 			name: "PathDisallowed",
 			path: "/",
-			err:  `Cannot write pid file "/LOCK": open /LOCK: read-only file system`,
+			err:  []string{`Cannot write pid file "/LOCK": open /LOCK: read-only file system`},
 		},
 		{
 			name: "PathBad",
 			path: "/no/such/path",
-			err:  `Error Creating Dir: "/no/such/path": mkdir /no/such/path: no such file or directory`,
+			err: []string{`Error Creating Dir: "/no/such/path": mkdir /no/such/path: no such file or directory`,
+				`Cannot write pid file "/LOCK": open /LOCK: permission denied`}, // Different errors on different OSes
 		},
 		{
 			name:     "PathGood",
@@ -64,8 +66,9 @@ func TestRules(t *testing.T) {
 				standardrules.WithStoragePath(test.path),
 				standardrules.WithAdminIPs(test.validIPs),
 			)
-			if test.err != "" {
-				assert.EqualError(t, err, test.err)
+			if len(test.err) > 0 {
+				found := strings.ContainsAny(err.Error(), strings.Join(test.err, ","))
+				assert.True(t, found, "error should contain one of: %s", strings.Join(test.err, ","))
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, res)
