@@ -1,4 +1,4 @@
-FROM golang:1.25-bookworm as builder
+FROM golang:1.25-trixie as builder
 
 WORKDIR /app
 
