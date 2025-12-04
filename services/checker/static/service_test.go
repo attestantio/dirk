@@ -23,6 +23,7 @@ import (
 	"github.com/attestantio/dirk/services/metrics"
 	"github.com/attestantio/dirk/services/metrics/prometheus"
 	"github.com/attestantio/dirk/services/ruler"
+	"github.com/attestantio/dirk/testing/logger"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -297,6 +298,171 @@ func TestLists(t *testing.T) {
 					assert.Equal(t, test.results[i], result)
 				})
 			}
+		})
+	}
+}
+
+func TestCheckLogging(t *testing.T) {
+	logCapture := logger.NewLogCapture()
+
+	service, err := static.New(context.Background(),
+		static.WithLogLevel(zerolog.TraceLevel),
+		static.WithPermissions(map[string][]*checker.Permissions{
+			"test-client": {
+				{
+					Path:       "TestWallet",
+					Operations: []string{"Sign"},
+				},
+			},
+		}),
+	)
+	require.Nil(t, err)
+
+	tests := []struct {
+		name           string
+		credentials    *checker.Credentials
+		account        string
+		operation      string
+		expectedResult bool
+		expectedFields map[string]any // Expected log fields
+	}{
+		{
+			name: "Client with SAN DNS identity",
+			credentials: &checker.Credentials{
+				Client:               "test-client",
+				ClientIdentitySource: "san-dns",
+				ClientCertificateSANs: &checker.CertificateSANs{
+					DNSNames:       []string{"validator.example.com", "backup.example.com"},
+					IPAddresses:    []string{"192.168.1.1"},
+					EmailAddresses: []string{"admin@example.com"},
+				},
+			},
+			account:        "TestWallet/account1",
+			operation:      "Sign",
+			expectedResult: true,
+			expectedFields: map[string]any{
+				"client":                 "test-client",
+				"client_identity_source": "san-dns",
+				"cert_dns_names":         []any{"validator.example.com", "backup.example.com"},
+				"cert_ip_addresses":      []any{"192.168.1.1"},
+				"cert_email_addresses":   []any{"admin@example.com"},
+				"result":                 "succeeded",
+			},
+		},
+		{
+			name: "Client with SAN IP identity",
+			credentials: &checker.Credentials{
+				Client:               "test-client",
+				ClientIdentitySource: "san-ip",
+				ClientCertificateSANs: &checker.CertificateSANs{
+					DNSNames:       []string{},
+					IPAddresses:    []string{"10.0.0.1", "::1"},
+					EmailAddresses: []string{},
+				},
+			},
+			account:        "TestWallet/account1",
+			operation:      "Sign",
+			expectedResult: true,
+			expectedFields: map[string]any{
+				"client":                 "test-client",
+				"client_identity_source": "san-ip",
+				"cert_ip_addresses":      []any{"10.0.0.1", "::1"},
+				"result":                 "succeeded",
+			},
+		},
+		{
+			name: "Client with SAN Email identity",
+			credentials: &checker.Credentials{
+				Client:               "test-client",
+				ClientIdentitySource: "san-email",
+				ClientCertificateSANs: &checker.CertificateSANs{
+					DNSNames:       []string{},
+					IPAddresses:    []string{},
+					EmailAddresses: []string{"service@example.com"},
+				},
+			},
+			account:        "TestWallet/account1",
+			operation:      "Sign",
+			expectedResult: true,
+			expectedFields: map[string]any{
+				"client":                 "test-client",
+				"client_identity_source": "san-email",
+				"cert_email_addresses":   []any{"service@example.com"},
+				"result":                 "succeeded",
+			},
+		},
+		{
+			name: "Client with CN identity (legacy)",
+			credentials: &checker.Credentials{
+				Client:               "test-client",
+				ClientIdentitySource: "cn",
+				ClientCertificateSANs: &checker.CertificateSANs{
+					DNSNames:       []string{},
+					IPAddresses:    []string{},
+					EmailAddresses: []string{},
+				},
+			},
+			account:        "TestWallet/account1",
+			operation:      "Sign",
+			expectedResult: true,
+			expectedFields: map[string]any{
+				"client":                 "test-client",
+				"client_identity_source": "cn",
+				"result":                 "succeeded",
+			},
+		},
+		{
+			name: "Client with no SAN information",
+			credentials: &checker.Credentials{
+				Client:                "test-client",
+				ClientIdentitySource:  "san-dns",
+				ClientCertificateSANs: nil,
+			},
+			account:        "TestWallet/account1",
+			operation:      "Sign",
+			expectedResult: true,
+			expectedFields: map[string]any{
+				"client":                 "test-client",
+				"client_identity_source": "san-dns",
+				"result":                 "succeeded",
+			},
+		},
+		{
+			name: "Access denied logs",
+			credentials: &checker.Credentials{
+				Client:               "unknown-client",
+				ClientIdentitySource: "san-dns",
+				ClientCertificateSANs: &checker.CertificateSANs{
+					DNSNames: []string{"denied.example.com"},
+				},
+			},
+			account:        "TestWallet/account1",
+			operation:      "Sign",
+			expectedResult: false,
+			expectedFields: map[string]any{
+				"client":                 "unknown-client",
+				"client_identity_source": "san-dns",
+				"cert_dns_names":         []any{"denied.example.com"},
+				"result":                 "denied",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Clear log entries before each test
+			logCapture.ClearEntries()
+
+			// Perform the check
+			result := service.Check(context.Background(), test.credentials, test.account, test.operation)
+
+			// Verify the result
+			assert.Equal(t, test.expectedResult, result)
+
+			// Verify that the expected log fields are present
+			assert.True(t, logCapture.HasLog(test.expectedFields),
+				"Expected log fields not found in captured logs. Fields: %+v, Entries: %+v",
+				test.expectedFields, logCapture.Entries())
 		})
 	}
 }

@@ -128,6 +128,20 @@ func (*LogCapture) hasField(entry map[string]any, key string, value any) bool {
 			return float32(entryValue.(float64)) == v
 		case float64:
 			return entryValue.(float64) == v
+		case []any:
+			// Handle slice comparison.
+			if entrySlice, ok := entryValue.([]any); ok {
+				if len(v) != len(entrySlice) {
+					return false
+				}
+				for i, expected := range v {
+					if i >= len(entrySlice) || expected != entrySlice[i] {
+						return false
+					}
+				}
+				return true
+			}
+			return false
 		default:
 			panic("unhandled type")
 		}
