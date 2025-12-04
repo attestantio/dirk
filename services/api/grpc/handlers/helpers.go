@@ -30,6 +30,17 @@ func GenerateCredentials(ctx context.Context) *checker.Credentials {
 	if client, ok := ctx.Value(&interceptors.ClientName{}).(string); ok {
 		res.Client = client
 	}
+	if identitySource, ok := ctx.Value(&interceptors.ClientIdentitySource{}).(string); ok {
+		res.ClientIdentitySource = identitySource
+	}
+	if certSANs, ok := ctx.Value(&interceptors.ClientCertificateSANs{}).(*interceptors.CertificateSANs); ok {
+		// Convert from interceptors type to checker type
+		res.ClientCertificateSANs = &checker.CertificateSANs{
+			DNSNames:       certSANs.DNSNames,
+			IPAddresses:    certSANs.IPAddresses,
+			EmailAddresses: certSANs.EmailAddresses,
+		}
+	}
 	if ip, ok := ctx.Value(&interceptors.ExternalIP{}).(string); ok {
 		res.IP = ip
 	}
