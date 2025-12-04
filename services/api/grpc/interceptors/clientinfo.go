@@ -93,22 +93,22 @@ type CertificateSANs struct {
 
 // extractClientIdentity extracts the client identity from an x509 certificate.
 func extractClientIdentity(cert *x509.Certificate) (string, string) {
-	// Priority 1: DNS names from SAN (RFC 6125 compliant)
+	// Priority 1: DNS names from SAN (RFC 6125 compliant).
 	if len(cert.DNSNames) > 0 && cert.DNSNames[0] != "" {
 		return cert.DNSNames[0], "san-dns"
 	}
 
-	// Priority 2: IP addresses from SAN
+	// Priority 2: IP addresses from SAN.
 	if len(cert.IPAddresses) > 0 {
 		return cert.IPAddresses[0].String(), "san-ip"
 	}
 
-	// Priority 3: Email addresses from SAN
+	// Priority 3: Email addresses from SAN.
 	if len(cert.EmailAddresses) > 0 && cert.EmailAddresses[0] != "" {
 		return cert.EmailAddresses[0], "san-email"
 	}
 
-	// Priority 4: CN fallback for backward compatibility with legacy certificates
+	// Priority 4: CN fallback for backward compatibility with legacy certificates.
 	if cert.Subject.CommonName != "" {
 		return cert.Subject.CommonName, "cn"
 	}

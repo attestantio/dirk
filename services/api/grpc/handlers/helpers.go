@@ -34,7 +34,7 @@ func GenerateCredentials(ctx context.Context) *checker.Credentials {
 		res.ClientIdentitySource = identitySource
 	}
 	if certSANs, ok := ctx.Value(&interceptors.ClientCertificateSANs{}).(*interceptors.CertificateSANs); ok {
-		// Convert from interceptors type to checker type
+		// Convert from interceptors type to checker type.
 		res.ClientCertificateSANs = &checker.CertificateSANs{
 			DNSNames:       certSANs.DNSNames,
 			IPAddresses:    certSANs.IPAddresses,

@@ -82,14 +82,14 @@ func (s *Service) Check(_ context.Context, credentials *checker.Credentials, acc
 		return false
 	}
 
-	// Build logger with client identity information
+	// Build logger with client identity information.
 	logContext := log.With().
 		Str("account", account).
 		Str("operation", operation).
 		Str("client", credentials.Client).
 		Str("client_identity_source", credentials.ClientIdentitySource)
 
-	// Add all available identities from certificate SANs for audit trail
+	// Add all available identities from certificate SANs for audit trail.
 	if credentials.ClientCertificateSANs != nil {
 		if len(credentials.ClientCertificateSANs.DNSNames) > 0 {
 			logContext = logContext.Strs("cert_dns_names", credentials.ClientCertificateSANs.DNSNames)

@@ -129,7 +129,7 @@ func (*LogCapture) hasField(entry map[string]any, key string, value any) bool {
 		case float64:
 			return entryValue.(float64) == v
 		case []any:
-			// Handle slice comparison
+			// Handle slice comparison.
 			if entrySlice, ok := entryValue.([]any); ok {
 				if len(v) != len(entrySlice) {
 					return false
