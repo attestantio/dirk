@@ -25,6 +25,7 @@ import (
 	standardrules "github.com/attestantio/dirk/rules/standard"
 	standardaccountmanager "github.com/attestantio/dirk/services/accountmanager/standard"
 	grpcapi "github.com/attestantio/dirk/services/api/grpc"
+	standardcertmanager "github.com/attestantio/dirk/services/certmanager/standard"
 	"github.com/attestantio/dirk/services/checker"
 	staticchecker "github.com/attestantio/dirk/services/checker/static"
 	memfetcher "github.com/attestantio/dirk/services/fetcher/mem"
@@ -39,7 +40,9 @@ import (
 	standardwalletmanager "github.com/attestantio/dirk/services/walletmanager/standard"
 	"github.com/attestantio/dirk/testing/logger"
 	"github.com/attestantio/dirk/testing/resources"
+	"github.com/attestantio/dirk/util"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	e2types "github.com/wealdtech/go-eth2-types/v2"
 	distributed "github.com/wealdtech/go-eth2-wallet-distributed"
 	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
@@ -114,10 +117,14 @@ var Wallet2Keys = [][]byte{
 // Returns the log capture for the daemon, along with the filesystem path for the wallets.
 //
 //nolint:maintidx
-func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[uint64]string) (*logger.LogCapture, string, error) {
+func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[uint64]string) (*logger.LogCapture, string, []any, error) {
+	majordomo, err := util.InitMajordomo(ctx)
+	if err != nil {
+		return nil, "", nil, errors.Wrap(err, "failed to initialise majordomo")
+	}
 	capture := logger.NewLogCapture()
 	if err := e2types.InitBLS(); err != nil {
-		return nil, "", errors.Wrap(err, "failed to initialise BLS")
+		return nil, "", nil, errors.Wrap(err, "failed to initialise BLS")
 	}
 
 	// Start off creating the wallet and accounts if required.
@@ -130,10 +137,10 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 
 	wallet1, err := nd.CreateWallet(ctx, "Wallet 1", store, encryptor)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create wallet 1")
+		return nil, "", nil, errors.Wrap(err, "failed to create wallet 1")
 	}
 	if err := wallet1.(e2wtypes.WalletLocker).Unlock(ctx, nil); err != nil {
-		return nil, "", errors.Wrap(err, "failed to unlock wallet 1")
+		return nil, "", nil, errors.Wrap(err, "failed to unlock wallet 1")
 	}
 	for i := range Wallet1Keys {
 		_, err := wallet1.(e2wtypes.WalletAccountImporter).ImportAccount(ctx,
@@ -142,19 +149,19 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 			[]byte("pass"),
 		)
 		if err != nil {
-			return nil, "", errors.Wrap(err, fmt.Sprintf("failed to create wallet 1 account %d", i))
+			return nil, "", nil, errors.Wrap(err, fmt.Sprintf("failed to create wallet 1 account %d", i))
 		}
 	}
 	if err := wallet1.(e2wtypes.WalletLocker).Lock(ctx); err != nil {
-		return nil, "", errors.Wrap(err, "failed to lock wallet 1")
+		return nil, "", nil, errors.Wrap(err, "failed to lock wallet 1")
 	}
 
 	wallet2, err := nd.CreateWallet(ctx, "Wallet 2", store, encryptor)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create wallet 2")
+		return nil, "", nil, errors.Wrap(err, "failed to create wallet 2")
 	}
 	if err := wallet2.(e2wtypes.WalletLocker).Unlock(ctx, nil); err != nil {
-		return nil, "", errors.Wrap(err, "failed to unlock wallet 2")
+		return nil, "", nil, errors.Wrap(err, "failed to unlock wallet 2")
 	}
 	for i := range Wallet2Keys {
 		_, err := wallet2.(e2wtypes.WalletAccountImporter).ImportAccount(ctx,
@@ -163,16 +170,16 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 			[]byte("pass"),
 		)
 		if err != nil {
-			return nil, "", errors.Wrap(err, fmt.Sprintf("failed to create wallet 2 account %d", i))
+			return nil, "", nil, errors.Wrap(err, fmt.Sprintf("failed to create wallet 2 account %d", i))
 		}
 	}
 	if err := wallet2.(e2wtypes.WalletLocker).Lock(ctx); err != nil {
-		return nil, "", errors.Wrap(err, "failed to lock wallet 2")
+		return nil, "", nil, errors.Wrap(err, "failed to lock wallet 2")
 	}
 
 	_, err = distributed.CreateWallet(ctx, "Wallet 3", store, encryptor)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create wallet 3")
+		return nil, "", nil, errors.Wrap(err, "failed to create wallet 3")
 	}
 
 	stores := []e2wtypes.Store{store}
@@ -181,7 +188,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		localunlocker.WithAccountPassphrases([]string{"pass"}),
 	)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create local unlocker")
+		return nil, "", nil, errors.Wrap(err, "failed to create local unlocker")
 	}
 
 	permissions := make(map[string][]*checker.Permissions)
@@ -219,7 +226,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		staticchecker.WithPermissions(permissions),
 	)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create static checker")
+		return nil, "", nil, errors.Wrap(err, "failed to create static checker")
 	}
 
 	fetcher, err := memfetcher.New(ctx,
@@ -227,12 +234,12 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		memfetcher.WithEncryptor(keystorev4.New()),
 	)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create memory fetcher")
+		return nil, "", nil, errors.Wrap(err, "failed to create memory fetcher")
 	}
 
 	locker, err := syncmaplocker.New(ctx)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create syncmap locker")
+		return nil, "", nil, errors.Wrap(err, "failed to create syncmap locker")
 	}
 
 	storagePath := filepath.Join(path, "storage")
@@ -240,14 +247,14 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		standardrules.WithStoragePath(storagePath),
 	)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create rules")
+		return nil, "", nil, errors.Wrap(err, "failed to create rules")
 	}
 	ruler, err := goruler.New(ctx,
 		goruler.WithLocker(locker),
 		goruler.WithRules(rules),
 	)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create Go ruler")
+		return nil, "", nil, errors.Wrap(err, "failed to create Go ruler")
 	}
 
 	lister, err := standardlister.New(ctx,
@@ -256,7 +263,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		standardlister.WithRuler(ruler),
 	)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create standard lister")
+		return nil, "", nil, errors.Wrap(err, "failed to create standard lister")
 	}
 
 	signer, err := standardsigner.New(ctx,
@@ -266,24 +273,33 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		standardsigner.WithRuler(ruler),
 	)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create standard signer")
+		return nil, "", nil, errors.Wrap(err, "failed to create standard signer")
 	}
 
 	peers, err := staticpeers.New(ctx,
 		staticpeers.WithPeers(peersMap),
 	)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create static peers")
+		return nil, "", nil, errors.Wrap(err, "failed to create static peers")
+	}
+
+	certManager, err := standardcertmanager.New(ctx,
+		standardcertmanager.WithLogLevel(zerolog.InfoLevel),
+		standardcertmanager.WithMajordomo(majordomo),
+		standardcertmanager.WithCertPEMURI("file://"+resources.CertPaths[id]),
+		standardcertmanager.WithCertKeyURI("file://"+resources.KeyPaths[id]),
+	)
+	if err != nil {
+		return nil, "", nil, errors.Wrap(err, "failed to create standard cert manager")
 	}
 
 	sender, err := sendergrpc.New(ctx,
 		sendergrpc.WithName(fmt.Sprintf("signer-test%02d", id)),
-		sendergrpc.WithServerCert(resources.SignerCerts[id]),
-		sendergrpc.WithServerKey(resources.SignerKeys[id]),
+		sendergrpc.WithCertManager(certManager),
 		sendergrpc.WithCACert(resources.CACrt),
 	)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create GRPC sender")
+		return nil, "", nil, errors.Wrap(err, "failed to create GRPC sender")
 	}
 
 	process, err := standardprocess.New(ctx,
@@ -298,7 +314,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		standardprocess.WithGenerationPassphrase([]byte("pass")),
 	)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create standard process")
+		return nil, "", nil, errors.Wrap(err, "failed to create standard process")
 	}
 
 	accountManager, err := standardaccountmanager.New(ctx,
@@ -309,7 +325,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		standardaccountmanager.WithProcess(process),
 	)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create standard account manager")
+		return nil, "", nil, errors.Wrap(err, "failed to create standard account manager")
 	}
 
 	walletManager, err := standardwalletmanager.New(ctx,
@@ -319,7 +335,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		standardwalletmanager.WithRuler(ruler),
 	)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create standard wallet manager")
+		return nil, "", nil, errors.Wrap(err, "failed to create standard wallet manager")
 	}
 
 	_, err = grpcapi.New(ctx,
@@ -331,14 +347,15 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		grpcapi.WithPeers(peers),
 		grpcapi.WithName(fmt.Sprintf("signer-test%02d", id)),
 		grpcapi.WithID(id),
-		grpcapi.WithServerCert(resources.SignerCerts[id]),
-		grpcapi.WithServerKey(resources.SignerKeys[id]),
+		grpcapi.WithCertManager(certManager),
 		grpcapi.WithCACert(resources.CACrt),
 		grpcapi.WithListenAddress(fmt.Sprintf("0.0.0.0:%d", port)),
 	)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create GRPC API")
+		return nil, "", nil, errors.Wrap(err, "failed to create GRPC API")
 	}
 
-	return capture, path, nil
+	// Return the cert manager to test the certificate reload functionality.
+	// Any other service can be returned to test other functionality.
+	return capture, path, []any{certManager}, nil
 }
