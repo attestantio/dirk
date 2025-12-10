@@ -84,6 +84,7 @@ func TestCertReload(t *testing.T) {
 	err = resources.SetupCerts(certPath)
 	require.NoError(t, err)
 
+	// #nosec G404
 	port := uint32(12000 + rand.Intn(4000))
 	logCapture, path, services, err := daemon.New(ctx, "", 1, port, map[uint64]string{1: fmt.Sprintf("signer-test01:%d", port)})
 	require.NoError(t, err)

@@ -21,7 +21,7 @@ import (
 // Service is the tls certificate manager service.
 type Service interface {
 	// GetCertificate gets the certificate, reloading it if current certificate is expired.
-	GetCertificate(*tls.ClientHelloInfo) (*tls.Certificate, error)
+	GetCertificate(info *tls.ClientHelloInfo) (*tls.Certificate, error)
 
 	// TryReloadCertificate tries to reload the certificate.
 	TryReloadCertificate(ctx context.Context)

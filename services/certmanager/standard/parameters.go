@@ -16,17 +16,17 @@ package standard
 import (
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/wealdtech/go-majordomo"
 )
 
 type parameters struct {
-	logLevel       zerolog.Level
-	majordomo      majordomo.Service
-	reloadThreshold time.Duration
-	reloadTimeout  time.Duration
-	certPEMURI     string
-	certKeyURI     string
+	logLevel      zerolog.Level
+	majordomo     majordomo.Service
+	reloadTimeout time.Duration
+	certPEMURI    string
+	certKeyURI    string
 }
 
 // Parameter is the interface for service parameters.
@@ -84,6 +84,16 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 		if params != nil {
 			p.apply(&parameters)
 		}
+	}
+
+	if parameters.majordomo == nil {
+		return nil, errors.New("no majordomo specified")
+	}
+	if parameters.certPEMURI == "" {
+		return nil, errors.New("no cert PEM URI specified")
+	}
+	if parameters.certKeyURI == "" {
+		return nil, errors.New("no cert key URI specified")
 	}
 
 	return &parameters, nil

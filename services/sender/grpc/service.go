@@ -203,7 +203,6 @@ func (s *Service) SendContribution(ctx context.Context, peer *core.Endpoint, acc
 }
 
 func composeCredentials(_ context.Context, certmanager certmanager.Service, caPEMBlock []byte) (credentials.TransportCredentials, error) {
-
 	tlsCfg := &tls.Config{
 		GetClientCertificate: func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
 			return certmanager.GetCertificate(nil)

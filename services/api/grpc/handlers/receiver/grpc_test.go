@@ -314,6 +314,10 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 		standardcertmanager.WithCertPEMURI(certPEMURI),
 		standardcertmanager.WithCertKeyURI(certKeyURI),
 	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create cert manager")
+	}
+
 	caPEMBlock, err := os.ReadFile(filepath.Join(base, "ca.crt"))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to obtain CA certificate")
