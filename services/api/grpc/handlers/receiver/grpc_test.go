@@ -28,12 +28,14 @@ import (
 	mockrules "github.com/attestantio/dirk/rules/mock"
 	mockaccountmanager "github.com/attestantio/dirk/services/accountmanager/mock"
 	grpcapi "github.com/attestantio/dirk/services/api/grpc"
+	standardcertmanager "github.com/attestantio/dirk/services/certmanager/standard"
 	mockchecker "github.com/attestantio/dirk/services/checker/mock"
 	memfetcher "github.com/attestantio/dirk/services/fetcher/mem"
 	mocklister "github.com/attestantio/dirk/services/lister/mock"
 	standardlister "github.com/attestantio/dirk/services/lister/standard"
 	syncmaplocker "github.com/attestantio/dirk/services/locker/syncmap"
 	staticpeers "github.com/attestantio/dirk/services/peers/static"
+	"github.com/attestantio/dirk/services/process"
 	standardprocess "github.com/attestantio/dirk/services/process/standard"
 	goruler "github.com/attestantio/dirk/services/ruler/golang"
 	"github.com/attestantio/dirk/services/sender"
@@ -96,7 +98,7 @@ func TestAbortUnknownEndpoint(t *testing.T) {
 	require.NoError(t, senderSvc.Prepare(ctx, participants[0], accountName, []byte("test"), 2, participants))
 	err = senderSvc.Abort(ctx, &core.Endpoint{ID: 11111, Name: "unknown", Port: 1111}, accountName)
 	require.Error(t, err)
-	require.True(t, strings.HasPrefix(err.Error(), "Failed to call Abort(): rpc error: code = Unavailable"))
+	require.True(t, strings.HasPrefix(err.Error(), "failed to call Abort(): rpc error: code = Unavailable"))
 }
 
 func TestEndToEnd(t *testing.T) {
@@ -150,6 +152,9 @@ func createServers(ctx context.Context) (string, []*core.Endpoint, []*grpcapi.Se
 	if err := resources.SetupCerts(base); err != nil {
 		return "", nil, nil, err
 	}
+
+	// Initialize the mock.Processes map
+	mock.Processes = make(map[uint64]process.Service)
 
 	rand.Seed(time.Now().UnixNano())
 	endpoints := []*core.Endpoint{
@@ -300,14 +305,15 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 	}
 	mock.Processes[id] = process
 
-	certPEMBlock, err := os.ReadFile(filepath.Join(base, fmt.Sprintf("%s.crt", name)))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to obtain server certificate")
-	}
-	keyPEMBlock, err := os.ReadFile(filepath.Join(base, fmt.Sprintf("%s.key", name)))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to obtain server key")
-	}
+	certPEMURI := "file://" + filepath.Join(base, fmt.Sprintf("%s.crt", name))
+	certKeyURI := "file://" + filepath.Join(base, fmt.Sprintf("%s.key", name))
+
+	certManager, err := standardcertmanager.New(ctx,
+		standardcertmanager.WithLogLevel(zerolog.Disabled),
+		standardcertmanager.WithMajordomo(majordomo),
+		standardcertmanager.WithCertPEMURI(certPEMURI),
+		standardcertmanager.WithCertKeyURI(certKeyURI),
+	)
 	caPEMBlock, err := os.ReadFile(filepath.Join(base, "ca.crt"))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to obtain CA certificate")
@@ -317,8 +323,7 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 		grpcapi.WithLister(lister),
 		grpcapi.WithSigner(signer),
 		grpcapi.WithName(name),
-		grpcapi.WithServerCert(certPEMBlock),
-		grpcapi.WithServerKey(keyPEMBlock),
+		grpcapi.WithCertManager(certManager),
 		grpcapi.WithCACert(caPEMBlock),
 		grpcapi.WithPeers(peers),
 		grpcapi.WithID(id),
@@ -336,13 +341,22 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 }
 
 func createSender(ctx context.Context, name string, base string) (sender.Service, error) {
-	certPEMBlock, err := os.ReadFile(filepath.Join(base, fmt.Sprintf("%s.crt", name)))
+	majordomo, err := util.InitMajordomo(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to obtain server certificate")
+		return nil, err
 	}
-	keyPEMBlock, err := os.ReadFile(filepath.Join(base, fmt.Sprintf("%s.key", name)))
+
+	certPEMURI := "file://" + filepath.Join(base, fmt.Sprintf("%s.crt", name))
+	certKeyURI := "file://" + filepath.Join(base, fmt.Sprintf("%s.key", name))
+
+	certManager, err := standardcertmanager.New(ctx,
+		standardcertmanager.WithLogLevel(zerolog.Disabled),
+		standardcertmanager.WithMajordomo(majordomo),
+		standardcertmanager.WithCertPEMURI(certPEMURI),
+		standardcertmanager.WithCertKeyURI(certKeyURI),
+	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to obtain server key")
+		return nil, errors.Wrap(err, "failed to create cert manager")
 	}
 	caPEMBlock, err := os.ReadFile(filepath.Join(base, "ca.crt"))
 	if err != nil {
@@ -351,8 +365,7 @@ func createSender(ctx context.Context, name string, base string) (sender.Service
 
 	return grpcsender.New(ctx,
 		grpcsender.WithName(name),
-		grpcsender.WithServerCert(certPEMBlock),
-		grpcsender.WithServerKey(keyPEMBlock),
+		grpcsender.WithCertManager(certManager),
 		grpcsender.WithCACert(caPEMBlock),
 	)
 }

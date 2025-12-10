@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2025 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,21 +11,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package grpc
+package standard
 
 import (
-	"github.com/attestantio/dirk/services/certmanager"
-	"github.com/attestantio/dirk/services/metrics"
-	"github.com/pkg/errors"
+	"time"
+
 	"github.com/rs/zerolog"
+	"github.com/wealdtech/go-majordomo"
 )
 
 type parameters struct {
-	logLevel    zerolog.Level
-	monitor     metrics.SenderMonitor
-	name        string
-	certManager certmanager.Service
-	caCert      []byte
+	logLevel       zerolog.Level
+	majordomo      majordomo.Service
+	reloadThreshold time.Duration
+	reloadTimeout  time.Duration
+	certPEMURI     string
+	certKeyURI     string
 }
 
 // Parameter is the interface for service parameters.
@@ -46,31 +47,31 @@ func WithLogLevel(logLevel zerolog.Level) Parameter {
 	})
 }
 
-// WithMonitor sets the monitor for this module.
-func WithMonitor(monitor metrics.SenderMonitor) Parameter {
+// WithMajordomo sets the majordomo for this module.
+func WithMajordomo(service majordomo.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.monitor = monitor
+		p.majordomo = service
 	})
 }
 
-// WithName sets the name for this module.
-func WithName(name string) Parameter {
+// WithReloadTimeout sets the reload timeout for the module.
+func WithReloadTimeout(reloadTimeout time.Duration) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.name = name
+		p.reloadTimeout = reloadTimeout
 	})
 }
 
-// WithCertManager sets the cert manager for this module.
-func WithCertManager(service certmanager.Service) Parameter {
+// WithCertKeyURI sets the key URI for the module.
+func WithCertKeyURI(certKeyURI string) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.certManager = service
+		p.certKeyURI = certKeyURI
 	})
 }
 
-// WithCACert sets the CA certificate for this module.
-func WithCACert(caCert []byte) Parameter {
+// WithCertPEMURI sets the PEM URI for the module.
+func WithCertPEMURI(certPEMURI string) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.caCert = caCert
+		p.certPEMURI = certPEMURI
 	})
 }
 
@@ -83,24 +84,6 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 		if params != nil {
 			p.apply(&parameters)
 		}
-	}
-
-	if parameters.monitor == nil {
-		// Use no-op monitor.
-		parameters.monitor = &noopMonitor{}
-	}
-	if parameters.name == "" {
-		return nil, errors.New("no name specified")
-	}
-	if parameters.certManager == nil {
-		return nil, errors.New("no cert manager specified")
-	}
-	cert, err := parameters.certManager.GetCertificate(nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get server certificate")
-	}
-	if len(cert.Certificate) == 0 {
-		return nil, errors.New("no server certificate specified")
 	}
 
 	return &parameters, nil
