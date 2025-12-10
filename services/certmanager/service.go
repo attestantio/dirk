@@ -13,7 +13,10 @@
 
 package certmanager
 
-import "crypto/tls"
+import (
+	"context"
+	"crypto/tls"
+)
 
 // Service is the tls certificate manager service.
 type Service interface {
@@ -21,5 +24,5 @@ type Service interface {
 	GetCertificate(*tls.ClientHelloInfo) (*tls.Certificate, error)
 
 	// TryReloadCertificate tries to reload the certificate.
-	TryReloadCertificate()
+	TryReloadCertificate(ctx context.Context)
 }

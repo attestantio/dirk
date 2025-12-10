@@ -155,7 +155,7 @@ func main() {
 		sig := <-sigCh
 		if sig == syscall.SIGHUP {
 			log.Info().Msg("Received SIGHUP; renewing certificates")
-			certManagerSvc.TryReloadCertificate()
+			certManagerSvc.TryReloadCertificate(ctx)
 			continue
 		}
 		if sig == syscall.SIGINT || sig == syscall.SIGTERM || sig == os.Interrupt || sig == os.Kill {

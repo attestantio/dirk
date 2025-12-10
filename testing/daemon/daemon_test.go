@@ -121,7 +121,7 @@ func TestCertReload(t *testing.T) {
 			require.NoError(t, err)
 
 			// Trigger reload
-			certManager.TryReloadCertificate()
+			certManager.TryReloadCertificate(context.Background())
 			logCapture.AssertHasEntry(t, "Server certificate reloaded successfully")
 			require.True(t, endpointAlive(fmt.Sprintf("signer-test01:%d", port)))
 

@@ -28,7 +28,6 @@ import (
 )
 
 type Service struct {
-	ctx           context.Context
 	majordomo     majordomo.Service
 	reloadTimeout time.Duration
 	certPEMURI    string
@@ -84,7 +83,6 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 	log.Info().Str("issued_to", cert.Subject.CommonName).Str("issued_by", cert.Issuer.CommonName).Time("valid_until", cert.NotAfter).Msg("Server certificate loaded")
 
 	out := &Service{
-		ctx:           ctx,
 		majordomo:     parameters.majordomo,
 		certPEMURI:    parameters.certPEMURI,
 		certKeyURI:    parameters.certKeyURI,
@@ -95,7 +93,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 }
 
 // TryReloadCertificate tries to reload the certificate. Can be called asynchronously and on demand.
-func (s *Service) TryReloadCertificate() {
+func (s *Service) TryReloadCertificate(ctx context.Context) {
 	if !s.currentCertMutext.TryLock() {
 		// Certificate is already being reloaded; do nothing.
 		return
@@ -104,11 +102,10 @@ func (s *Service) TryReloadCertificate() {
 
 	s.lastReloadAttemptTime = time.Now()
 
-	ctx := s.ctx
 	if s.reloadTimeout > 0 {
 		var cancel context.CancelFunc
 		// Give up on the reload if it takes longer than the reload timeout.
-		ctx, cancel = context.WithDeadline(s.ctx, s.lastReloadAttemptTime.Add(s.reloadTimeout))
+		ctx, cancel = context.WithDeadline(ctx, s.lastReloadAttemptTime.Add(s.reloadTimeout))
 		defer cancel()
 	}
 
@@ -165,7 +162,7 @@ func (s *Service) GetCertificate(_ *tls.ClientHelloInfo) (*tls.Certificate, erro
 
 	// Do we want to reload automatically the certificate if it is expired?
 	// If not, shall we return an error or just use the existing certificate?
-	// The code block below should be removed if we don't want to reload automatically the certificate if it is expired.
+	// The code block below should be un if we don't want to reload automatically the certificate if it is expired.
 	expiry := cert.NotAfter
 	if expiry.Before(time.Now()) {
 		log.Warn().
@@ -174,7 +171,7 @@ func (s *Service) GetCertificate(_ *tls.ClientHelloInfo) (*tls.Certificate, erro
 			Time("expiry", expiry).
 			Msg("Server certificate expired, reloading it...")
 		// Reload the certificate.
-		s.TryReloadCertificate()
+		s.TryReloadCertificate(context.Background())
 	}
 
 	// Use the existing certificate.
