@@ -69,11 +69,64 @@ import (
 	"github.com/spf13/viper"
 	e2types "github.com/wealdtech/go-eth2-types/v2"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
-	majordomo "github.com/wealdtech/go-majordomo"
+	"github.com/wealdtech/go-majordomo"
 )
 
 // ReleaseVersion is the release version for the code.
 var ReleaseVersion = "1.2.1-rc.1"
+
+// initSystemComponents initializes profiling, tracing, runtime settings, and BLS.
+func initSystemComponents(ctx context.Context, majordomoSvc majordomo.Service) error {
+	initProfiling()
+
+	if err := initTracing(ctx, majordomoSvc); err != nil {
+		log.Error().Err(err).Msg("Failed to initialise tracing")
+		return err
+	}
+
+	runtime.GOMAXPROCS(runtime.NumCPU() * 8)
+
+	if err := e2types.InitBLS(); err != nil {
+		log.Error().Err(err).Msg("Failed to initialise BLS library")
+		return err
+	}
+
+	return nil
+}
+
+// initMonitoringAndMetrics initializes the monitoring service and registers metrics.
+func initMonitoringAndMetrics(ctx context.Context) (metrics.Service, error) {
+	monitor, err := startMonitor(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to start metrics service")
+		return nil, err
+	}
+
+	if err := registerMetrics(ctx, monitor); err != nil {
+		log.Error().Err(err).Msg("Failed to register metrics")
+		return nil, err
+	}
+
+	return monitor, nil
+}
+
+// handleSignals manages signal handling for graceful shutdown and certificate renewal.
+func handleSignals(ctx context.Context, cancel context.CancelFunc, certManagerSvc certmanager.Service) {
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, os.Interrupt)
+	for {
+		sig := <-sigCh
+		if sig == syscall.SIGHUP {
+			log.Info().Msg("Received SIGHUP; renewing certificates")
+			certManagerSvc.TryReloadCertificate(ctx)
+			continue
+		}
+		if sig == syscall.SIGINT || sig == syscall.SIGTERM || sig == os.Interrupt || sig == os.Kill {
+			cancel()
+			break
+		}
+	}
+}
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -107,29 +160,15 @@ func main() {
 	logModules()
 	log.Info().Str("version", ReleaseVersion).Str("commit_hash", util.CommitHash()).Msg("Starting dirk")
 
-	initProfiling()
-
-	if err := initTracing(ctx, majordomoSvc); err != nil {
-		log.Error().Err(err).Msg("Failed to initialise tracing")
+	if err := initSystemComponents(ctx, majordomoSvc); err != nil {
 		return
 	}
 
-	runtime.GOMAXPROCS(runtime.NumCPU() * 8)
-
-	if err := e2types.InitBLS(); err != nil {
-		log.Error().Err(err).Msg("Failed to initialise BLS library")
-		return
-	}
-
-	monitor, err := startMonitor(ctx)
+	monitor, err := initMonitoringAndMetrics(ctx)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to start metrics service")
 		return
 	}
-	if err := registerMetrics(ctx, monitor); err != nil {
-		log.Error().Err(err).Msg("Failed to register metrics")
-		return
-	}
+
 	setRelease(ctx, ReleaseVersion)
 	setReady(ctx, false)
 
@@ -148,21 +187,8 @@ func main() {
 
 	log.Info().Msg("All services operational")
 
-	// Wait for signal.
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, os.Interrupt)
-	for {
-		sig := <-sigCh
-		if sig == syscall.SIGHUP {
-			log.Info().Msg("Received SIGHUP; renewing certificates")
-			certManagerSvc.TryReloadCertificate(ctx)
-			continue
-		}
-		if sig == syscall.SIGINT || sig == syscall.SIGTERM || sig == os.Interrupt || sig == os.Kill {
-			cancel()
-			break
-		}
-	}
+	// Handle signals for graceful shutdown and certificate renewal.
+	handleSignals(ctx, cancel, certManagerSvc)
 
 	log.Info().Msg("Stopping dirk")
 	setReady(ctx, false)

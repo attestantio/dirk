@@ -28,21 +28,28 @@ import (
 	mockrules "github.com/attestantio/dirk/rules/mock"
 	mockaccountmanager "github.com/attestantio/dirk/services/accountmanager/mock"
 	grpcapi "github.com/attestantio/dirk/services/api/grpc"
+	"github.com/attestantio/dirk/services/certmanager"
 	standardcertmanager "github.com/attestantio/dirk/services/certmanager/standard"
+	"github.com/attestantio/dirk/services/checker"
 	mockchecker "github.com/attestantio/dirk/services/checker/mock"
+	"github.com/attestantio/dirk/services/fetcher"
 	memfetcher "github.com/attestantio/dirk/services/fetcher/mem"
 	mocklister "github.com/attestantio/dirk/services/lister/mock"
 	standardlister "github.com/attestantio/dirk/services/lister/standard"
+	"github.com/attestantio/dirk/services/locker"
 	syncmaplocker "github.com/attestantio/dirk/services/locker/syncmap"
+	"github.com/attestantio/dirk/services/peers"
 	staticpeers "github.com/attestantio/dirk/services/peers/static"
 	"github.com/attestantio/dirk/services/process"
 	standardprocess "github.com/attestantio/dirk/services/process/standard"
+	"github.com/attestantio/dirk/services/ruler"
 	goruler "github.com/attestantio/dirk/services/ruler/golang"
 	"github.com/attestantio/dirk/services/sender"
 	grpcsender "github.com/attestantio/dirk/services/sender/grpc"
 	mocksender "github.com/attestantio/dirk/services/sender/mock"
 	mocksigner "github.com/attestantio/dirk/services/signer/mock"
 	standardsigner "github.com/attestantio/dirk/services/signer/standard"
+	"github.com/attestantio/dirk/services/unlocker"
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
 	mockwalletmanager "github.com/attestantio/dirk/services/walletmanager/mock"
 	"github.com/attestantio/dirk/testing/mock"
@@ -54,6 +61,7 @@ import (
 	distributed "github.com/wealdtech/go-eth2-wallet-distributed"
 	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
+	"github.com/wealdtech/go-majordomo"
 )
 
 func TestAbort(t *testing.T) {
@@ -207,20 +215,8 @@ func createServers(ctx context.Context) (string, []*core.Endpoint, []*grpcapi.Se
 	return base, endpoints, grpcdServices, nil
 }
 
-func createServer(ctx context.Context, name string, id uint64, port uint32, base string) (*grpcapi.Service, error) {
-	majordomo, err := util.InitMajordomo(ctx)
-	if err != nil {
-		return nil, err
-	}
-	unlocker, err := localunlocker.New(ctx,
-		localunlocker.WithAccountPassphrases([]string{}))
-	if err != nil {
-		return nil, err
-	}
-	checker, err := mockchecker.New(zerolog.Disabled)
-	if err != nil {
-		return nil, err
-	}
+// createTestStoresAndWallet creates filesystem stores and a test wallet for the test server.
+func createTestStoresAndWallet(ctx context.Context, majordomo majordomo.Service, base, name string) ([]e2wtypes.Store, error) {
 	stores, err := core.InitStores(ctx, majordomo, []*core.Store{
 		{
 			Name:     "Local",
@@ -237,6 +233,31 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 		return nil, err
 	}
 	if err := testWallet.(e2wtypes.WalletLocker).Unlock(ctx, nil); err != nil {
+		return nil, err
+	}
+
+	return stores, nil
+}
+
+// basicTestServices bundles the core test services to reduce argument lists.
+type basicTestServices struct {
+	unlocker unlocker.Service
+	checker  checker.Service
+	fetcher  fetcher.Service
+	locker   locker.Service
+	ruler    ruler.Service
+}
+
+// createBasicTestServices creates the basic services needed for testing.
+func createBasicTestServices(ctx context.Context, stores []e2wtypes.Store) (*basicTestServices, error) {
+	unlocker, err := localunlocker.New(ctx,
+		localunlocker.WithAccountPassphrases([]string{}))
+	if err != nil {
+		return nil, err
+	}
+
+	checker, err := mockchecker.New(zerolog.Disabled)
+	if err != nil {
 		return nil, err
 	}
 
@@ -260,51 +281,27 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 		return nil, err
 	}
 
-	lister, err := standardlister.New(ctx,
-		standardlister.WithLogLevel(zerolog.Disabled),
-		standardlister.WithFetcher(fetcher),
-		standardlister.WithChecker(checker),
-		standardlister.WithRuler(ruler))
-	if err != nil {
-		return nil, err
-	}
+	return &basicTestServices{
+		unlocker: unlocker,
+		checker:  checker,
+		fetcher:  fetcher,
+		locker:   locker,
+		ruler:    ruler,
+	}, nil
+}
 
-	peers, err := staticpeers.New(ctx,
+// createTestPeers creates static peers for testing.
+func createTestPeers(ctx context.Context) (peers.Service, error) {
+	return staticpeers.New(ctx,
 		staticpeers.WithPeers(map[uint64]string{
 			1: "signer-test01:8881",
 			2: "signer-test02:8882",
 			3: "signer-test03:8883",
 		}))
-	if err != nil {
-		return nil, err
-	}
+}
 
-	// Set up the signer.
-	signer, err := standardsigner.New(ctx,
-		standardsigner.WithLogLevel(zerolog.Disabled),
-		standardsigner.WithUnlocker(unlocker),
-		standardsigner.WithChecker(checker),
-		standardsigner.WithFetcher(fetcher),
-		standardsigner.WithRuler(ruler))
-	if err != nil {
-		return nil, err
-	}
-
-	process, err := standardprocess.New(ctx,
-		standardprocess.WithChecker(checker),
-		standardprocess.WithGenerationPassphrase([]byte("secret")),
-		standardprocess.WithID(id),
-		standardprocess.WithPeers(peers),
-		standardprocess.WithSender(mocksender.New(id)),
-		standardprocess.WithFetcher(fetcher),
-		standardprocess.WithStores(stores),
-		standardprocess.WithUnlocker(unlocker),
-	)
-	if err != nil {
-		return nil, err
-	}
-	mock.Processes[id] = process
-
+// createTestCertManager creates a certificate manager for testing.
+func createTestCertManager(ctx context.Context, majordomo majordomo.Service, base, name string) (certmanager.Service, []byte, error) {
 	certPEMURI := "file://" + filepath.Join(base, fmt.Sprintf("%s.crt", name))
 	certKeyURI := "file://" + filepath.Join(base, fmt.Sprintf("%s.key", name))
 
@@ -315,12 +312,76 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 		standardcertmanager.WithCertKeyURI(certKeyURI),
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create cert manager")
+		return nil, nil, errors.Wrap(err, "failed to create cert manager")
 	}
 
 	caPEMBlock, err := os.ReadFile(filepath.Join(base, "ca.crt"))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to obtain CA certificate")
+		return nil, nil, errors.Wrap(err, "failed to obtain CA certificate")
+	}
+
+	return certManager, caPEMBlock, nil
+}
+
+func createServer(ctx context.Context, name string, id uint64, port uint32, base string) (*grpcapi.Service, error) {
+	majordomo, err := util.InitMajordomo(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	stores, err := createTestStoresAndWallet(ctx, majordomo, base, name)
+	if err != nil {
+		return nil, err
+	}
+
+	basicSvcs, err := createBasicTestServices(ctx, stores)
+	if err != nil {
+		return nil, err
+	}
+
+	lister, err := standardlister.New(ctx,
+		standardlister.WithLogLevel(zerolog.Disabled),
+		standardlister.WithFetcher(basicSvcs.fetcher),
+		standardlister.WithChecker(basicSvcs.checker),
+		standardlister.WithRuler(basicSvcs.ruler))
+	if err != nil {
+		return nil, err
+	}
+
+	peers, err := createTestPeers(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set up the signer.
+	signer, err := standardsigner.New(ctx,
+		standardsigner.WithLogLevel(zerolog.Disabled),
+		standardsigner.WithUnlocker(basicSvcs.unlocker),
+		standardsigner.WithChecker(basicSvcs.checker),
+		standardsigner.WithFetcher(basicSvcs.fetcher),
+		standardsigner.WithRuler(basicSvcs.ruler))
+	if err != nil {
+		return nil, err
+	}
+
+	process, err := standardprocess.New(ctx,
+		standardprocess.WithChecker(basicSvcs.checker),
+		standardprocess.WithGenerationPassphrase([]byte("secret")),
+		standardprocess.WithID(id),
+		standardprocess.WithPeers(peers),
+		standardprocess.WithSender(mocksender.New(id)),
+		standardprocess.WithFetcher(basicSvcs.fetcher),
+		standardprocess.WithStores(stores),
+		standardprocess.WithUnlocker(basicSvcs.unlocker),
+	)
+	if err != nil {
+		return nil, err
+	}
+	mock.Processes[id] = process
+
+	certManager, caPEMBlock, err := createTestCertManager(ctx, majordomo, base, name)
+	if err != nil {
+		return nil, err
 	}
 
 	serverSvc, err := grpcapi.New(ctx,

@@ -49,6 +49,7 @@ import (
 	nd "github.com/wealdtech/go-eth2-wallet-nd/v2"
 	filesystem "github.com/wealdtech/go-eth2-wallet-store-filesystem"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
+	"github.com/wealdtech/go-majordomo"
 )
 
 func _byte(input string) []byte {
@@ -99,48 +100,18 @@ var Wallet2Keys = [][]byte{
 	_byte("0x575ace3c2bf7a175b526d296e8b022357c7ceb8e799d1029d5b267d8598f449f"),
 }
 
-// New creates a Dirk daemon with pre-configured wallets and accounts.
-// If path is supplied it is used to create wallets, otherwise a random filesystem path is generated.
-// id is the identifier for the instance.  This should be in the range 1-5, as they are the only values
-// that have certificates available.
-// Because the account keys are well-known this should only be used for testing.
-// Cancelling the context will kill the daemon.
-//
-// The specifics of what are created are:
-// - ND wallet 'Wallet 1' with 16 interop keys indices 0 through 15
-// - ND wallet 'Wallet 2' with 16 interop keys indices 16 through 31
-// - distributed wallet 'Wallet 3' with no keys
-// - full permissions for 'client-test01' to access 'Wallet 1' and 'Wallet 3'
-// - full permissions for 'client-test02' to access 'Wallet 2' and 'Wallet 3'
-// - full permissions for 'client-test03' to access 'Wallet 1' and 'Wallet 2'
-//
-// Returns the log capture for the daemon, along with the filesystem path for the wallets.
-//
-//nolint:maintidx
-func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[uint64]string) (*logger.LogCapture, string, []any, error) {
-	majordomo, err := util.InitMajordomo(ctx)
-	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to initialise majordomo")
-	}
-	capture := logger.NewLogCapture()
-	if err := e2types.InitBLS(); err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to initialise BLS")
-	}
-
-	// Start off creating the wallet and accounts if required.
-	if path == "" {
-		// #nosec G404
-		path = filepath.Join(os.TempDir(), fmt.Sprintf("Dirk-%d", rand.Int31()))
-	}
+// createTestWallets creates the three test wallets with their accounts.
+func createTestWallets(ctx context.Context, path string) (e2wtypes.Store, error) {
 	store := filesystem.New(filesystem.WithLocation(path))
 	encryptor := keystorev4.New()
 
+	// Create Wallet 1 with interop keys 0-15.
 	wallet1, err := nd.CreateWallet(ctx, "Wallet 1", store, encryptor)
 	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to create wallet 1")
+		return nil, errors.Wrap(err, "failed to create wallet 1")
 	}
 	if err := wallet1.(e2wtypes.WalletLocker).Unlock(ctx, nil); err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to unlock wallet 1")
+		return nil, errors.Wrap(err, "failed to unlock wallet 1")
 	}
 	for i := range Wallet1Keys {
 		_, err := wallet1.(e2wtypes.WalletAccountImporter).ImportAccount(ctx,
@@ -149,19 +120,20 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 			[]byte("pass"),
 		)
 		if err != nil {
-			return nil, "", nil, errors.Wrap(err, fmt.Sprintf("failed to create wallet 1 account %d", i))
+			return nil, errors.Wrap(err, fmt.Sprintf("failed to create wallet 1 account %d", i))
 		}
 	}
 	if err := wallet1.(e2wtypes.WalletLocker).Lock(ctx); err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to lock wallet 1")
+		return nil, errors.Wrap(err, "failed to lock wallet 1")
 	}
 
+	// Create Wallet 2 with interop keys 16-31.
 	wallet2, err := nd.CreateWallet(ctx, "Wallet 2", store, encryptor)
 	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to create wallet 2")
+		return nil, errors.Wrap(err, "failed to create wallet 2")
 	}
 	if err := wallet2.(e2wtypes.WalletLocker).Unlock(ctx, nil); err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to unlock wallet 2")
+		return nil, errors.Wrap(err, "failed to unlock wallet 2")
 	}
 	for i := range Wallet2Keys {
 		_, err := wallet2.(e2wtypes.WalletAccountImporter).ImportAccount(ctx,
@@ -170,27 +142,113 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 			[]byte("pass"),
 		)
 		if err != nil {
-			return nil, "", nil, errors.Wrap(err, fmt.Sprintf("failed to create wallet 2 account %d", i))
+			return nil, errors.Wrap(err, fmt.Sprintf("failed to create wallet 2 account %d", i))
 		}
 	}
 	if err := wallet2.(e2wtypes.WalletLocker).Lock(ctx); err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to lock wallet 2")
+		return nil, errors.Wrap(err, "failed to lock wallet 2")
 	}
 
+	// Create Wallet 3 (distributed, no keys).
 	_, err = distributed.CreateWallet(ctx, "Wallet 3", store, encryptor)
 	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to create wallet 3")
+		return nil, errors.Wrap(err, "failed to create wallet 3")
 	}
 
+	return store, nil
+}
+
+// basicServices holds the core services needed by the daemon.
+type basicServices struct {
+	unlocker *localunlocker.Service
+	checker  *staticchecker.Service
+	fetcher  *memfetcher.Service
+	locker   *syncmaplocker.Service
+	ruler    *goruler.Service
+	lister   *standardlister.Service
+	signer   *standardsigner.Service
+}
+
+// createBasicServices creates the core services needed by the daemon.
+func createBasicServices(ctx context.Context, store e2wtypes.Store, path string) (*basicServices, error) {
 	stores := []e2wtypes.Store{store}
+
 	unlocker, err := localunlocker.New(ctx,
 		localunlocker.WithWalletPassphrases([]string{"pass"}),
 		localunlocker.WithAccountPassphrases([]string{"pass"}),
 	)
 	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to create local unlocker")
+		return nil, errors.Wrap(err, "failed to create local unlocker")
 	}
 
+	permissions := createTestPermissions()
+	checkerSvc, err := staticchecker.New(ctx,
+		staticchecker.WithPermissions(permissions),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create static checker")
+	}
+
+	fetcher, err := memfetcher.New(ctx,
+		memfetcher.WithStores(stores),
+		memfetcher.WithEncryptor(keystorev4.New()),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create memory fetcher")
+	}
+
+	locker, err := syncmaplocker.New(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create syncmap locker")
+	}
+
+	storagePath := filepath.Join(path, "storage")
+	rules, err := standardrules.New(ctx,
+		standardrules.WithStoragePath(storagePath),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create rules")
+	}
+	ruler, err := goruler.New(ctx,
+		goruler.WithLocker(locker),
+		goruler.WithRules(rules),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create Go ruler")
+	}
+
+	lister, err := standardlister.New(ctx,
+		standardlister.WithFetcher(fetcher),
+		standardlister.WithChecker(checkerSvc),
+		standardlister.WithRuler(ruler),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create standard lister")
+	}
+
+	signer, err := standardsigner.New(ctx,
+		standardsigner.WithUnlocker(unlocker),
+		standardsigner.WithChecker(checkerSvc),
+		standardsigner.WithFetcher(fetcher),
+		standardsigner.WithRuler(ruler),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create standard signer")
+	}
+
+	return &basicServices{
+		unlocker: unlocker,
+		checker:  checkerSvc,
+		fetcher:  fetcher,
+		locker:   locker,
+		ruler:    ruler,
+		lister:   lister,
+		signer:   signer,
+	}, nil
+}
+
+// createTestPermissions creates the permission structure for test clients.
+func createTestPermissions() map[string][]*checker.Permissions {
 	permissions := make(map[string][]*checker.Permissions)
 	permissions["client-test01"] = []*checker.Permissions{
 		{
@@ -222,65 +280,26 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 			Operations: []string{"All"},
 		},
 	}
-	checkerSvc, err := staticchecker.New(ctx,
-		staticchecker.WithPermissions(permissions),
-	)
-	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to create static checker")
-	}
+	return permissions
+}
 
-	fetcher, err := memfetcher.New(ctx,
-		memfetcher.WithStores(stores),
-		memfetcher.WithEncryptor(keystorev4.New()),
-	)
-	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to create memory fetcher")
-	}
+// advancedServices holds the higher-level services that depend on the basic services.
+type advancedServices struct {
+	certManager    *standardcertmanager.Service
+	sender         *sendergrpc.Service
+	process        *standardprocess.Service
+	accountManager *standardaccountmanager.Service
+	walletManager  *standardwalletmanager.Service
+	peers          *staticpeers.Service
+}
 
-	locker, err := syncmaplocker.New(ctx)
-	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to create syncmap locker")
-	}
-
-	storagePath := filepath.Join(path, "storage")
-	rules, err := standardrules.New(ctx,
-		standardrules.WithStoragePath(storagePath),
-	)
-	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to create rules")
-	}
-	ruler, err := goruler.New(ctx,
-		goruler.WithLocker(locker),
-		goruler.WithRules(rules),
-	)
-	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to create Go ruler")
-	}
-
-	lister, err := standardlister.New(ctx,
-		standardlister.WithFetcher(fetcher),
-		standardlister.WithChecker(checkerSvc),
-		standardlister.WithRuler(ruler),
-	)
-	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to create standard lister")
-	}
-
-	signer, err := standardsigner.New(ctx,
-		standardsigner.WithUnlocker(unlocker),
-		standardsigner.WithChecker(checkerSvc),
-		standardsigner.WithFetcher(fetcher),
-		standardsigner.WithRuler(ruler),
-	)
-	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to create standard signer")
-	}
-
+// createAdvancedServices creates the higher-level services that depend on the basic services.
+func createAdvancedServices(ctx context.Context, majordomo majordomo.Service, basicSvcs *basicServices, peersMap map[uint64]string, stores []e2wtypes.Store, id uint64) (*advancedServices, error) {
 	peers, err := staticpeers.New(ctx,
 		staticpeers.WithPeers(peersMap),
 	)
 	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to create static peers")
+		return nil, errors.Wrap(err, "failed to create static peers")
 	}
 
 	certManager, err := standardcertmanager.New(ctx,
@@ -290,7 +309,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		standardcertmanager.WithCertKeyURI("file://"+resources.KeyPaths[id]),
 	)
 	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to create standard cert manager")
+		return nil, errors.Wrap(err, "failed to create standard cert manager")
 	}
 
 	sender, err := sendergrpc.New(ctx,
@@ -299,14 +318,14 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		sendergrpc.WithCACert(resources.CACrt),
 	)
 	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to create GRPC sender")
+		return nil, errors.Wrap(err, "failed to create GRPC sender")
 	}
 
 	process, err := standardprocess.New(ctx,
-		standardprocess.WithChecker(checkerSvc),
-		standardprocess.WithUnlocker(unlocker),
+		standardprocess.WithChecker(basicSvcs.checker),
+		standardprocess.WithUnlocker(basicSvcs.unlocker),
 		standardprocess.WithSender(sender),
-		standardprocess.WithFetcher(fetcher),
+		standardprocess.WithFetcher(basicSvcs.fetcher),
 		standardprocess.WithEncryptor(keystorev4.New()),
 		standardprocess.WithPeers(peers),
 		standardprocess.WithID(id),
@@ -314,40 +333,98 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		standardprocess.WithGenerationPassphrase([]byte("pass")),
 	)
 	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to create standard process")
+		return nil, errors.Wrap(err, "failed to create standard process")
 	}
 
 	accountManager, err := standardaccountmanager.New(ctx,
-		standardaccountmanager.WithUnlocker(unlocker),
-		standardaccountmanager.WithChecker(checkerSvc),
-		standardaccountmanager.WithFetcher(fetcher),
-		standardaccountmanager.WithRuler(ruler),
+		standardaccountmanager.WithUnlocker(basicSvcs.unlocker),
+		standardaccountmanager.WithChecker(basicSvcs.checker),
+		standardaccountmanager.WithFetcher(basicSvcs.fetcher),
+		standardaccountmanager.WithRuler(basicSvcs.ruler),
 		standardaccountmanager.WithProcess(process),
 	)
 	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to create standard account manager")
+		return nil, errors.Wrap(err, "failed to create standard account manager")
 	}
 
 	walletManager, err := standardwalletmanager.New(ctx,
-		standardwalletmanager.WithUnlocker(unlocker),
-		standardwalletmanager.WithChecker(checkerSvc),
-		standardwalletmanager.WithFetcher(fetcher),
-		standardwalletmanager.WithRuler(ruler),
+		standardwalletmanager.WithUnlocker(basicSvcs.unlocker),
+		standardwalletmanager.WithChecker(basicSvcs.checker),
+		standardwalletmanager.WithFetcher(basicSvcs.fetcher),
+		standardwalletmanager.WithRuler(basicSvcs.ruler),
 	)
 	if err != nil {
-		return nil, "", nil, errors.Wrap(err, "failed to create standard wallet manager")
+		return nil, errors.Wrap(err, "failed to create standard wallet manager")
+	}
+
+	return &advancedServices{
+		certManager:    certManager,
+		sender:         sender,
+		process:        process,
+		accountManager: accountManager,
+		walletManager:  walletManager,
+		peers:          peers,
+	}, nil
+}
+
+// New creates a Dirk daemon with pre-configured wallets and accounts.
+// If path is supplied it is used to create wallets, otherwise a random filesystem path is generated.
+// id is the identifier for the instance.  This should be in the range 1-5, as they are the only values
+// that have certificates available.
+// Because the account keys are well-known this should only be used for testing.
+// Cancelling the context will kill the daemon.
+//
+// The specifics of what are created are:
+// - ND wallet 'Wallet 1' with 16 interop keys indices 0 through 15
+// - ND wallet 'Wallet 2' with 16 interop keys indices 16 through 31
+// - distributed wallet 'Wallet 3' with no keys
+// - full permissions for 'client-test01' to access 'Wallet 1' and 'Wallet 3'
+// - full permissions for 'client-test02' to access 'Wallet 2' and 'Wallet 3'
+// - full permissions for 'client-test03' to access 'Wallet 1' and 'Wallet 2'
+//
+// Returns the log capture for the daemon, along with the filesystem path for the wallets.
+func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[uint64]string) (*logger.LogCapture, string, []any, error) {
+	majordomo, err := util.InitMajordomo(ctx)
+	if err != nil {
+		return nil, "", nil, errors.Wrap(err, "failed to initialise majordomo")
+	}
+	capture := logger.NewLogCapture()
+	if err := e2types.InitBLS(); err != nil {
+		return nil, "", nil, errors.Wrap(err, "failed to initialise BLS")
+	}
+
+	// Start off creating the wallet and accounts if required.
+	if path == "" {
+		// #nosec G404
+		path = filepath.Join(os.TempDir(), fmt.Sprintf("Dirk-%d", rand.Int31()))
+	}
+
+	store, err := createTestWallets(ctx, path)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	basicSvcs, err := createBasicServices(ctx, store, path)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	stores := []e2wtypes.Store{store}
+	advancedSvcs, err := createAdvancedServices(ctx, majordomo, basicSvcs, peersMap, stores, id)
+	if err != nil {
+		return nil, "", nil, err
 	}
 
 	_, err = grpcapi.New(ctx,
-		grpcapi.WithSigner(signer),
-		grpcapi.WithLister(lister),
-		grpcapi.WithProcess(process),
-		grpcapi.WithAccountManager(accountManager),
-		grpcapi.WithWalletManager(walletManager),
-		grpcapi.WithPeers(peers),
+		grpcapi.WithSigner(basicSvcs.signer),
+		grpcapi.WithLister(basicSvcs.lister),
+		grpcapi.WithProcess(advancedSvcs.process),
+		grpcapi.WithAccountManager(advancedSvcs.accountManager),
+		grpcapi.WithWalletManager(advancedSvcs.walletManager),
+		grpcapi.WithPeers(advancedSvcs.peers),
 		grpcapi.WithName(fmt.Sprintf("signer-test%02d", id)),
 		grpcapi.WithID(id),
-		grpcapi.WithCertManager(certManager),
+		grpcapi.WithCertManager(advancedSvcs.certManager),
 		grpcapi.WithCACert(resources.CACrt),
 		grpcapi.WithListenAddress(fmt.Sprintf("0.0.0.0:%d", port)),
 	)
@@ -357,5 +434,5 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 
 	// Return the cert manager to test the certificate reload functionality.
 	// Any other service can be returned to test other functionality.
-	return capture, path, []any{certManager}, nil
+	return capture, path, []any{advancedSvcs.certManager}, nil
 }
