@@ -73,7 +73,7 @@ import (
 )
 
 // ReleaseVersion is the release version for the code.
-var ReleaseVersion = "1.2.1-rc.1"
+var ReleaseVersion = "1.2.1-rc.2"
 
 // initSystemComponents initializes profiling, tracing, runtime settings, and BLS.
 func initSystemComponents(ctx context.Context, majordomoSvc majordomo.Service) error {
@@ -820,7 +820,9 @@ func obtainCA(ctx context.Context,
 	error,
 ) {
 	if viper.GetString("certificates.ca-cert") == "" {
-		return nil, errors.New("no CA certificate specified")
+		// CA certificate is optional - return empty slice to use standard CA certificates
+		log.Warn().Msg("No CA certificate specified; using standard CA certificates")
+		return []byte{}, nil
 	}
 	caPEMBlock, err := majordomoSvc.Fetch(ctx, viper.GetString("certificates.ca-cert"))
 	if err != nil {

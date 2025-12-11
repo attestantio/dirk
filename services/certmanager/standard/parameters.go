@@ -81,7 +81,7 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 		logLevel: zerolog.GlobalLevel(),
 	}
 	for _, p := range params {
-		if params != nil {
+		if p != nil {
 			p.apply(&parameters)
 		}
 	}
