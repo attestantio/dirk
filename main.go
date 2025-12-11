@@ -268,7 +268,7 @@ func fetchConfig() (bool, error) {
 	return false, nil
 }
 
-// initProfiling initialises the profiling server.
+// initProfiling initializes the profiling server.
 func initProfiling() {
 	profileAddress := viper.GetString("profile-address")
 	if profileAddress != "" {
@@ -402,7 +402,7 @@ func logModules() {
 	}
 }
 
-// initRules initialises a rules service.
+// initRules initializes a rules service.
 func initRules(ctx context.Context) (rules.Service, error) {
 	return standardrules.New(ctx,
 		standardrules.WithLogLevel(util.LogLevel("rules")),

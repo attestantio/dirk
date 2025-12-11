@@ -64,7 +64,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		return nil, errors.Wrap(err, "failed to obtain server key")
 	}
 
-	// Initialise the certificate pair.
+	// initialize the certificate pair.
 	serverCert, err := tls.X509KeyPair(certPEMBlock, certKeyBlock)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load certificate pair")

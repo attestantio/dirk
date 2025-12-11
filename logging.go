@@ -26,7 +26,7 @@ import (
 // log.
 var log zerolog.Logger
 
-// initLogging initialises logging.
+// initLogging initializes logging.
 func initLogging() error {
 	// We set the global logging level to trace, because if the global log level is higher than the
 	// local log level the local level is ignored.  It is then overridden for each module.

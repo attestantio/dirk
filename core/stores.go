@@ -56,7 +56,7 @@ type S3StoreCredentials struct {
 	Secret string `mapstructure:"secret"`
 }
 
-// InitStores initialises the stores from a configuration.
+// InitStores initializes the stores from a configuration.
 func InitStores(ctx context.Context, majordomo majordomo.Service, storeDefinitions []*Store) ([]e2wtypes.Store, error) {
 	if len(storeDefinitions) == 0 {
 		log.Warn().Msg("No stores configured; using default")
@@ -176,7 +176,7 @@ func initScratchStore(_ context.Context,
 	return store
 }
 
-// initDefaultStores initialises the default stores.
+// initDefaultStores initializes the default stores.
 func initDefaultStores() []e2wtypes.Store {
 	res := make([]e2wtypes.Store, 1)
 	res[0] = filesystem.New()

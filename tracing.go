@@ -38,7 +38,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-// initTracing initialises the tracing system.
+// initTracing initializes the tracing system.
 func initTracing(ctx context.Context, majordomoSvc majordomo.Service) error {
 	if viper.GetString("tracing.address") == "" {
 		log.Debug().Msg("No tracing endpoint supplied; tracing not enabled")
