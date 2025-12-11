@@ -820,7 +820,7 @@ func obtainCA(ctx context.Context,
 	error,
 ) {
 	if viper.GetString("certificates.ca-cert") == "" {
-		// CA certificate is optional - return empty slice to use standard CA certificates
+		// CA certificate is optional - return empty slice to use standard CA certificates.
 		log.Warn().Msg("No CA certificate specified; using standard CA certificates")
 		return []byte{}, nil
 	}
