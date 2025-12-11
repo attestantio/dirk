@@ -34,7 +34,7 @@ type Service struct {
 	certKeyURI    string
 
 	lastReloadAttemptTime time.Time
-	currentCertMutext     sync.RWMutex
+	currentCertMutex      sync.RWMutex
 	currentCert           atomic.Pointer[tls.Certificate]
 }
 
@@ -94,11 +94,11 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 
 // TryReloadCertificate tries to reload the certificate. Can be called asynchronously and on demand.
 func (s *Service) TryReloadCertificate(ctx context.Context) {
-	if !s.currentCertMutext.TryLock() {
+	if !s.currentCertMutex.TryLock() {
 		// Certificate is already being reloaded; do nothing.
 		return
 	}
-	defer s.currentCertMutext.Unlock()
+	defer s.currentCertMutex.Unlock()
 
 	s.lastReloadAttemptTime = time.Now()
 
