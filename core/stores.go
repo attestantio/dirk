@@ -56,7 +56,7 @@ type S3StoreCredentials struct {
 	Secret string `mapstructure:"secret"`
 }
 
-// InitStores initialises the stores from a configuration.
+// InitStores initializes the stores from a configuration.
 func InitStores(ctx context.Context, majordomo majordomo.Service, storeDefinitions []*Store) ([]e2wtypes.Store, error) {
 	if len(storeDefinitions) == 0 {
 		log.Warn().Msg("No stores configured; using default")
@@ -104,7 +104,7 @@ func initFilesystemStore(ctx context.Context,
 	log.Trace().Str("name", storeDefinition.Name).Str("location", storeDefinition.Location).Msg("Adding filesystem store")
 
 	opts := make([]filesystem.Option, 0)
-	if len(storeDefinition.Passphrase) > 0 {
+	if storeDefinition.Passphrase != "" {
 		passphrase, err := majordomo.Fetch(ctx, storeDefinition.Passphrase)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to obtain passphrase")
@@ -129,7 +129,7 @@ func initS3Store(ctx context.Context,
 	log.Trace().Str("name", storeDefinition.Name).Str("location", storeDefinition.Location).Msg("Adding S3 store")
 
 	opts := make([]s3.Option, 0)
-	if len(storeDefinition.Passphrase) > 0 {
+	if storeDefinition.Passphrase != "" {
 		passphrase, err := majordomo.Fetch(ctx, storeDefinition.Passphrase)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to obtain passphrase")
@@ -176,7 +176,7 @@ func initScratchStore(_ context.Context,
 	return store
 }
 
-// initDefaultStores initialises the default stores.
+// initDefaultStores initializes the default stores.
 func initDefaultStores() []e2wtypes.Store {
 	res := make([]e2wtypes.Store, 1)
 	res[0] = filesystem.New()

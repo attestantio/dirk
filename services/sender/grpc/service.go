@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	"github.com/attestantio/dirk/core"
+	"github.com/attestantio/dirk/services/certmanager"
 	"github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/jackc/puddle"
 	"github.com/pkg/errors"
@@ -54,7 +55,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		log = log.Level(parameters.logLevel)
 	}
 
-	transportCredentials, err := composeCredentials(ctx, parameters.serverCert, parameters.serverKey, parameters.caCert)
+	transportCredentials, err := composeCredentials(ctx, parameters.certManager, parameters.caCert)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to compose client credentials")
 	}
@@ -201,15 +202,12 @@ func (s *Service) SendContribution(ctx context.Context, peer *core.Endpoint, acc
 	return resSecret, resVVec, nil
 }
 
-func composeCredentials(_ context.Context, certPEMBlock []byte, keyPEMBlock []byte, caPEMBlock []byte) (credentials.TransportCredentials, error) {
-	clientCert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to access client certificate/key")
-	}
-
+func composeCredentials(_ context.Context, certmanager certmanager.Service, caPEMBlock []byte) (credentials.TransportCredentials, error) {
 	tlsCfg := &tls.Config{
-		Certificates: []tls.Certificate{clientCert},
-		MinVersion:   tls.VersionTLS13,
+		GetClientCertificate: func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
+			return certmanager.GetCertificate(nil)
+		},
+		MinVersion: tls.VersionTLS13,
 	}
 	if len(caPEMBlock) > 0 {
 		cp := x509.NewCertPool()

@@ -1,5 +1,6 @@
 # Version X
   - support SAN for client certificates
+  - support certificates reloading after a SIGHUP signal
 
 # Version 1.2.1
   - run slashing protection database garbage collection periodically
