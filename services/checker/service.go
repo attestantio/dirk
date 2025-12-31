@@ -19,10 +19,25 @@ import "context"
 type Credentials struct {
 	// RequestID is the ID of the request.
 	RequestID string
-	// Client is the authenticated client.
+	// Client is the authenticated client identity (extracted from certificate).
 	Client string
+	// ClientIdentitySource indicates where the Client identity came from.
+	// Possible values: "san-dns", "san-ip", "san-email", "cn", or "" if no identity.
+	ClientIdentitySource string
+	// ClientCertificateSANs contains all Subject Alternative Names from the client certificate.
+	ClientCertificateSANs *CertificateSANs
 	// IP is the originating IP address of the request.
 	IP string
+}
+
+// CertificateSANs contains all Subject Alternative Name values from a certificate.
+type CertificateSANs struct {
+	// DNSNames contains all DNS names from the certificate's SAN extension.
+	DNSNames []string
+	// IPAddresses contains all IP addresses from the certificate's SAN extension (as strings).
+	IPAddresses []string
+	// EmailAddresses contains all email addresses from the certificate's SAN extension.
+	EmailAddresses []string
 }
 
 // Service is the interface for checking client access to accounts.

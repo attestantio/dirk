@@ -36,6 +36,9 @@ certificates:
   # ca-cert is the certificate of the CA that issued the client certificates.  If not present Dirk will use
   # the standard CA certificates supplied with the server.
   ca-cert: file:///home/me/dirk/security/certificates/ca.crt
+  # Note: Client certificates should include the client identity in Subject Alternative Names (SAN).
+  # Dirk supports DNS names, IP addresses, and email addresses in SAN fields, with DNS names preferred.
+  # Legacy certificates using only Common Name (CN) are still supported for backward compatibility.
 # storage-path is the path where information created by the slashing protection system is stored.  If not
 # supplied it will default to using the 'storage' directory in the user's home directory.
 storage-path: /home/me/dirk/protection
