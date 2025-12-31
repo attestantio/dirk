@@ -6,6 +6,8 @@
   - allow use of keystore wallets
   - fix issue where signing with a public key as identifier could fail
   - use millisecond-precision timestamps in logs by default
+  - hand --version output prior to configuration parsing
+  - update to go 1.25
 
 # Version 1.2.0
   - add Amazon Secrets Manager (ASM) confidant
