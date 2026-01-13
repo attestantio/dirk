@@ -4,9 +4,25 @@ Dirk has a permissions system that allows fine-grained control of access to Dirk
 Dirk permissions have three components: the client, the account, and the operation.
 
 ## Clients
-Client names are embedded in the certificate that is used to connect to Dirk.  These certificates must be issued by either the local certificate authority known to Dirk, or one of the trusted root certificate authorities.
+Client identities are extracted from the certificate that is used to connect to Dirk. These certificates must be issued by either the local certificate authority known to Dirk, or one of the trusted root certificate authorities.
 
-Client names should be fully qualified (_i.e._ server.example.com rather than just server) to avoid potential confusion with multiple clients of the same name in different domains.
+### Client Identity Extraction
+Dirk extracts the client identity from certificates following RFC 6125 compliance by prioritizing Subject Alternative Name (SAN) fields over the deprecated Common Name (CN). The identity extraction follows this priority order:
+
+1. **DNS names from SAN** - Most common for service-to-service authentication (e.g., `validator-01.example.com`)
+2. **IP addresses from SAN** - Valid for direct IP-based connections (e.g., `192.168.1.100` or `2001:db8::1`)
+3. **Email addresses from SAN** - Common in client certificates for user identity (e.g., `validator@example.com`)
+4. **Common Name (CN)** - Fallback for backward compatibility with legacy certificates
+
+This approach ensures compatibility with:
+- **Modern certificates** issued by contemporary certificate authorities (often with empty CN and SAN-only)
+- **Legacy certificates** using only the CN field
+- **Multi-identity certificates** with multiple SANs (the first entry of the highest-priority type is used)
+
+**Note:** Dirk does not support URI-based SANs (such as SPIFFE IDs or HTTPS URIs) as these are not commonly used in validator/signer architectures and would complicate the permission matching system.
+
+### Client Identity Best Practices
+Client identities should be fully qualified (_i.e._ `server.example.com` rather than just `server`) to avoid potential confusion with multiple clients of the same name in different domains. When using IP addresses, ensure they are static to maintain consistent authorization.
 
 ## Accounts
 Accounts are standard `ethdo` account specifiers of the form `wallet/account`.  It is possible for either or both of `wallet` and `account` to be regular expressions.  Some examples of account specifiers are:

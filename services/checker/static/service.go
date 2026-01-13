@@ -81,7 +81,28 @@ func (s *Service) Check(_ context.Context, credentials *checker.Credentials, acc
 		log.Warn().Str("result", "denied").Msg("No client name")
 		return false
 	}
-	log := log.With().Str("account", account).Str("operation", operation).Str("client", credentials.Client).Str("account", account).Logger()
+
+	// Build logger with client identity information.
+	logContext := log.With().
+		Str("account", account).
+		Str("operation", operation).
+		Str("client", credentials.Client).
+		Str("client_identity_source", string(credentials.ClientIdentitySource))
+
+	// Add all available identities from certificate SANs for audit trail.
+	if credentials.ClientCertificateSANs != nil {
+		if len(credentials.ClientCertificateSANs.DNSNames) > 0 {
+			logContext = logContext.Strs("cert_dns_names", credentials.ClientCertificateSANs.DNSNames)
+		}
+		if len(credentials.ClientCertificateSANs.IPAddresses) > 0 {
+			logContext = logContext.Strs("cert_ip_addresses", credentials.ClientCertificateSANs.IPAddresses)
+		}
+		if len(credentials.ClientCertificateSANs.EmailAddresses) > 0 {
+			logContext = logContext.Strs("cert_email_addresses", credentials.ClientCertificateSANs.EmailAddresses)
+		}
+	}
+
+	log := logContext.Logger()
 
 	walletName, accountName, err := e2wallet.WalletAndAccountNames(account)
 	if err != nil {

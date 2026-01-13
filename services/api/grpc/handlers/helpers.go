@@ -18,6 +18,7 @@ import (
 
 	"github.com/attestantio/dirk/services/api/grpc/interceptors"
 	"github.com/attestantio/dirk/services/checker"
+	"github.com/attestantio/go-certmanager/san"
 )
 
 // GenerateCredentials generates checker credentials from the GRPC request information.
@@ -29,6 +30,17 @@ func GenerateCredentials(ctx context.Context) *checker.Credentials {
 	}
 	if client, ok := ctx.Value(&interceptors.ClientName{}).(string); ok {
 		res.Client = client
+	}
+	if identitySource, ok := ctx.Value(&interceptors.ClientIdentitySource{}).(san.IdentitySource); ok {
+		res.ClientIdentitySource = identitySource
+	}
+	if certSANs, ok := ctx.Value(&interceptors.ClientCertificateSANs{}).(*san.CertificateSANs); ok && certSANs != nil {
+		// Convert from interceptors type to checker type.
+		res.ClientCertificateSANs = &san.CertificateSANs{
+			DNSNames:       certSANs.DNSNames,
+			IPAddresses:    certSANs.IPAddresses,
+			EmailAddresses: certSANs.EmailAddresses,
+		}
 	}
 	if ip, ok := ctx.Value(&interceptors.ExternalIP{}).(string); ok {
 		res.IP = ip

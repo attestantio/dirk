@@ -13,14 +13,23 @@
 
 package checker
 
-import "context"
+import (
+	"context"
+
+	"github.com/attestantio/go-certmanager/san"
+)
 
 // Credentials are the credentials used to check.
 type Credentials struct {
 	// RequestID is the ID of the request.
 	RequestID string
-	// Client is the authenticated client.
+	// Client is the authenticated client identity (extracted from certificate).
 	Client string
+	// ClientIdentitySource indicates where the Client identity came from.
+	// Possible values: "san-dns", "san-ip", "san-email", "cn", or "" if no identity.
+	ClientIdentitySource san.IdentitySource
+	// ClientCertificateSANs contains all Subject Alternative Names from the client certificate.
+	ClientCertificateSANs *san.CertificateSANs
 	// IP is the originating IP address of the request.
 	IP string
 }

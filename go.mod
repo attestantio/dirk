@@ -1,10 +1,9 @@
 module github.com/attestantio/dirk
 
-go 1.25
-
-toolchain go1.25.3
+go 1.25.5
 
 require (
+	github.com/attestantio/go-certmanager v0.0.0-20260112145936-23c8185ce394
 	github.com/attestantio/go-eth2-client v0.21.11
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/dgraph-io/badger/v2 v2.2007.4
@@ -34,7 +33,7 @@ require (
 	github.com/wealdtech/go-eth2-wallet-store-s3 v1.12.0
 	github.com/wealdtech/go-eth2-wallet-store-scratch v1.7.2
 	github.com/wealdtech/go-eth2-wallet-types/v2 v2.12.0
-	github.com/wealdtech/go-majordomo v1.1.1
+	github.com/wealdtech/go-majordomo v1.1.2
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.55.0
 	go.opentelemetry.io/otel v1.30.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.30.0
@@ -109,7 +108,7 @@ require (
 	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/sys v0.25.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.18.0 // indirect
 	golang.org/x/time v0.6.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
