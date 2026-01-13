@@ -3,7 +3,7 @@ module github.com/attestantio/dirk
 go 1.25.5
 
 require (
-	github.com/attestantio/go-certmanager v0.0.0-20260112145936-23c8185ce394
+	github.com/attestantio/go-certmanager v0.0.0-20260113171259-7243801727ab
 	github.com/attestantio/go-eth2-client v0.21.11
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/dgraph-io/badger/v2 v2.2007.4

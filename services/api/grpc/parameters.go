@@ -21,6 +21,7 @@ import (
 	"github.com/attestantio/dirk/services/process"
 	"github.com/attestantio/dirk/services/signer"
 	"github.com/attestantio/dirk/services/walletmanager"
+	servercert "github.com/attestantio/go-certmanager/server"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
@@ -34,11 +35,10 @@ type parameters struct {
 	walletManager  walletmanager.Service
 	lister         lister.Service
 	signer         signer.Service
+	certManager    servercert.Service
 	name           string
 	listenAddress  string
 	id             uint64
-	serverCert     []byte
-	serverKey      []byte
 	caCert         []byte
 }
 
@@ -130,17 +130,10 @@ func WithListenAddress(listenAddress string) Parameter {
 	})
 }
 
-// WithServerCert sets the server certificate for this module.
-func WithServerCert(serverCert []byte) Parameter {
+// WithCertManager sets the cert manager for this module.
+func WithCertManager(service servercert.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.serverCert = serverCert
-	})
-}
-
-// WithServerKey sets the server key for this module.
-func WithServerKey(serverKey []byte) Parameter {
-	return parameterFunc(func(p *parameters) {
-		p.serverKey = serverKey
+		p.certManager = service
 	})
 }
 
@@ -151,13 +144,74 @@ func WithCACert(caCert []byte) Parameter {
 	})
 }
 
+// validateRequiredServices checks that all required service dependencies are present.
+func validateRequiredServices(p *parameters) error {
+	requiredServices := []struct {
+		service interface{}
+		name    string
+	}{
+		{p.signer, "signer"},
+		{p.lister, "lister"},
+		{p.process, "process"},
+		{p.walletManager, "wallet manager"},
+		{p.accountManager, "account manager"},
+		{p.peers, "peers"},
+		{p.certManager, "cert manager"},
+	}
+
+	for _, req := range requiredServices {
+		if req.service == nil {
+			return errors.New("no " + req.name + " specified")
+		}
+	}
+	return nil
+}
+
+// validateRequiredStrings checks that all required string parameters are present.
+func validateRequiredStrings(p *parameters) error {
+	requiredStrings := []struct {
+		value string
+		name  string
+	}{
+		{p.name, "name"},
+		{p.listenAddress, "listen address"},
+	}
+
+	for _, req := range requiredStrings {
+		if req.value == "" {
+			return errors.New("no " + req.name + " specified")
+		}
+	}
+	return nil
+}
+
+// validateRequiredNumbers checks that all required numeric parameters are present.
+func validateRequiredNumbers(p *parameters) error {
+	if p.id == 0 {
+		return errors.New("no ID specified")
+	}
+	return nil
+}
+
+// validateCertificate checks that the certificate manager has a valid certificate.
+func validateCertificate(certManager servercert.Service) error {
+	cert, err := certManager.GetCertificate(nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to get server certificate")
+	}
+	if len(cert.Certificate) == 0 {
+		return errors.New("no server certificate specified")
+	}
+	return nil
+}
+
 // parseAndCheckParameters parses and checks parameters to ensure that mandatory parameters are present and correct.
 func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	parameters := parameters{
 		logLevel: zerolog.GlobalLevel(),
 	}
 	for _, p := range params {
-		if params != nil {
+		if p != nil {
 			p.apply(&parameters)
 		}
 	}
@@ -166,38 +220,21 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 		// Use no-op monitor.
 		parameters.monitor = &noopMonitor{}
 	}
-	if parameters.signer == nil {
-		return nil, errors.New("no signer specified")
+
+	if err := validateRequiredServices(&parameters); err != nil {
+		return nil, err
 	}
-	if parameters.lister == nil {
-		return nil, errors.New("no lister specified")
+
+	if err := validateRequiredStrings(&parameters); err != nil {
+		return nil, err
 	}
-	if parameters.process == nil {
-		return nil, errors.New("no process specified")
+
+	if err := validateRequiredNumbers(&parameters); err != nil {
+		return nil, err
 	}
-	if parameters.walletManager == nil {
-		return nil, errors.New("no wallet manager specified")
-	}
-	if parameters.accountManager == nil {
-		return nil, errors.New("no account manager specified")
-	}
-	if parameters.peers == nil {
-		return nil, errors.New("no peers specified")
-	}
-	if parameters.name == "" {
-		return nil, errors.New("no name specified")
-	}
-	if parameters.id == 0 {
-		return nil, errors.New("no ID specified")
-	}
-	if parameters.listenAddress == "" {
-		return nil, errors.New("no listen address specified")
-	}
-	if len(parameters.serverCert) == 0 {
-		return nil, errors.New("no server certificate specified")
-	}
-	if len(parameters.serverKey) == 0 {
-		return nil, errors.New("no server key specified")
+
+	if err := validateCertificate(parameters.certManager); err != nil {
+		return nil, err
 	}
 
 	return &parameters, nil

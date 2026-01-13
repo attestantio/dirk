@@ -60,6 +60,9 @@ import (
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
 	standardwalletmanager "github.com/attestantio/dirk/services/walletmanager/standard"
 	"github.com/attestantio/dirk/util"
+	majordomofetcher "github.com/attestantio/go-certmanager/fetcher/majordomo"
+	servercert "github.com/attestantio/go-certmanager/server"
+	standardservercert "github.com/attestantio/go-certmanager/server/standard"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	zerologger "github.com/rs/zerolog/log"
@@ -72,6 +75,59 @@ import (
 
 // ReleaseVersion is the release version for the code.
 var ReleaseVersion = "1.2.1"
+
+// initSystemComponents initialises profiling, tracing, runtime settings, and BLS.
+func initSystemComponents(ctx context.Context, majordomoSvc majordomo.Service) error {
+	initProfiling()
+
+	if err := initTracing(ctx, majordomoSvc); err != nil {
+		log.Error().Err(err).Msg("Failed to initialise tracing")
+		return err
+	}
+
+	runtime.GOMAXPROCS(runtime.NumCPU() * 8)
+
+	if err := e2types.InitBLS(); err != nil {
+		log.Error().Err(err).Msg("Failed to initialise BLS library")
+		return err
+	}
+
+	return nil
+}
+
+// initMonitoringAndMetrics initialises the monitoring service and registers metrics.
+func initMonitoringAndMetrics(ctx context.Context) (metrics.Service, error) {
+	monitor, err := startMonitor(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to start metrics service")
+		return nil, err
+	}
+
+	if err := registerMetrics(ctx, monitor); err != nil {
+		log.Error().Err(err).Msg("Failed to register metrics")
+		return nil, err
+	}
+
+	return monitor, nil
+}
+
+// handleSignals manages signal handling for graceful shutdown and certificate reload.
+func handleSignals(ctx context.Context, cancel context.CancelFunc, certManagerSvc servercert.Service) {
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, os.Interrupt)
+	for {
+		sig := <-sigCh
+		if sig == syscall.SIGHUP {
+			log.Info().Msg("Received SIGHUP; reloading certificates")
+			certManagerSvc.TryReloadCertificate(ctx)
+			continue
+		}
+		if sig == syscall.SIGINT || sig == syscall.SIGTERM || sig == os.Interrupt || sig == os.Kill {
+			cancel()
+			break
+		}
+	}
+}
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -105,33 +161,25 @@ func main() {
 	logModules()
 	log.Info().Str("version", ReleaseVersion).Str("commit_hash", util.CommitHash()).Msg("Starting dirk")
 
-	initProfiling()
-
-	if err := initTracing(ctx, majordomoSvc); err != nil {
-		log.Error().Err(err).Msg("Failed to initialise tracing")
+	if err := initSystemComponents(ctx, majordomoSvc); err != nil {
 		return
 	}
 
-	runtime.GOMAXPROCS(runtime.NumCPU() * 8)
-
-	if err := e2types.InitBLS(); err != nil {
-		log.Error().Err(err).Msg("Failed to initialise BLS library")
-		return
-	}
-
-	monitor, err := startMonitor(ctx)
+	monitor, err := initMonitoringAndMetrics(ctx)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to start metrics service")
 		return
 	}
-	if err := registerMetrics(ctx, monitor); err != nil {
-		log.Error().Err(err).Msg("Failed to register metrics")
-		return
-	}
+
 	setRelease(ctx, ReleaseVersion)
 	setReady(ctx, false)
 
-	err = startServices(ctx, majordomoSvc, monitor)
+	certManagerSvc, err := startCertManager(ctx, majordomoSvc)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to set up certmanager service")
+		return
+	}
+
+	err = startServices(ctx, majordomoSvc, certManagerSvc, monitor)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to initialise services")
 		return
@@ -140,16 +188,8 @@ func main() {
 
 	log.Info().Msg("All services operational")
 
-	// Wait for signal.
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-	for {
-		sig := <-sigCh
-		if sig == syscall.SIGINT || sig == syscall.SIGTERM || sig == os.Interrupt || sig == os.Kill {
-			cancel()
-			break
-		}
-	}
+	// Handle signals for graceful shutdown and certificate reload.
+	handleSignals(ctx, cancel, certManagerSvc)
 
 	log.Info().Msg("Stopping dirk")
 	setReady(ctx, false)
@@ -287,7 +327,7 @@ func runCommands(ctx context.Context, majordomoSvc majordomo.Service) (bool, int
 	return false, 0
 }
 
-func startServices(ctx context.Context, majordomoSvc majordomo.Service, monitor metrics.Service) error {
+func startServices(ctx context.Context, majordomoSvc majordomo.Service, certManagerSvc servercert.Service, monitor metrics.Service) error {
 	stores, err := initStores(ctx, majordomoSvc)
 	if err != nil {
 		return err
@@ -321,7 +361,7 @@ func startServices(ctx context.Context, majordomoSvc majordomo.Service, monitor 
 		return errors.Wrap(err, "failed to set up ruler service")
 	}
 
-	_, err = startGrpcServer(ctx, monitor, majordomoSvc, stores, unlockerSvc, checkerSvc, fetcherSvc, rulerSvc)
+	_, err = startGrpcServer(ctx, monitor, majordomoSvc, certManagerSvc, stores, unlockerSvc, checkerSvc, fetcherSvc, rulerSvc)
 	if err != nil {
 		return err
 	}
@@ -346,6 +386,25 @@ func startMonitor(ctx context.Context) (metrics.Service, error) {
 	}
 
 	return monitor, nil
+}
+
+func startCertManager(ctx context.Context, majordomoSvc majordomo.Service) (servercert.Service, error) {
+	log.Trace().Msg("Starting certificate manager service")
+
+	fetcher, err := majordomofetcher.New(ctx,
+		majordomofetcher.WithMajordomo(majordomoSvc),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create certificate fetcher")
+	}
+
+	return standardservercert.New(ctx,
+		standardservercert.WithLogLevel(util.LogLevel("certmanager")),
+		standardservercert.WithFetcher(fetcher),
+		standardservercert.WithCertPEMURI(viper.GetString("certificates.server-cert")),
+		standardservercert.WithCertKeyURI(viper.GetString("certificates.server-key")),
+		standardservercert.WithReloadTimeout(viper.GetDuration("certificates.reload-timeout")),
+	)
 }
 
 func logModules() {
@@ -567,8 +626,7 @@ func startSigner(ctx context.Context,
 
 func startSender(ctx context.Context,
 	monitor metrics.Service,
-	certPEMBlock []byte,
-	keyPEMBlock []byte,
+	serverCertManager servercert.Service,
 	caPEMBlock []byte,
 ) (
 	sender.Service,
@@ -583,8 +641,7 @@ func startSender(ctx context.Context,
 		sendergrpc.WithLogLevel(util.LogLevel("sender")),
 		sendergrpc.WithMonitor(senderMonitor),
 		sendergrpc.WithName(viper.GetString("server.name")),
-		sendergrpc.WithServerCert(certPEMBlock),
-		sendergrpc.WithServerKey(keyPEMBlock),
+		sendergrpc.WithCertManager(serverCertManager),
 		sendergrpc.WithCACert(caPEMBlock),
 	)
 	if err != nil {
@@ -603,14 +660,13 @@ func startProcess(ctx context.Context,
 	checkerSvc checker.Service,
 	fetcherSvc fetcher.Service,
 	peersSvc peers.Service,
-	certPEMBlock []byte,
-	keyPEMBlock []byte,
+	serverCertManager servercert.Service,
 	caPEMBlock []byte,
 ) (
 	process.Service,
 	error,
 ) {
-	sender, err := startSender(ctx, monitor, certPEMBlock, keyPEMBlock, caPEMBlock)
+	sender, err := startSender(ctx, monitor, serverCertManager, caPEMBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -654,6 +710,7 @@ func startProcess(ctx context.Context,
 func startGrpcServer(ctx context.Context,
 	monitor metrics.Service,
 	majordomoSvc majordomo.Service,
+	certManagerSvc servercert.Service,
 	stores []e2wtypes.Store,
 	unlockerSvc unlocker.Service,
 	checkerSvc checker.Service,
@@ -685,7 +742,7 @@ func startGrpcServer(ctx context.Context,
 		return nil, errors.Wrap(err, "failed to obtain server ID")
 	}
 
-	certPEMBlock, keyPEMBlock, caPEMBlock, err := obtainCerts(ctx, majordomoSvc)
+	caPEMBlock, err := obtainCACert(ctx, majordomoSvc)
 	if err != nil {
 		return nil, err
 	}
@@ -699,8 +756,7 @@ func startGrpcServer(ctx context.Context,
 		checkerSvc,
 		fetcherSvc,
 		peersSvc,
-		certPEMBlock,
-		keyPEMBlock,
+		certManagerSvc,
 		caPEMBlock,
 	)
 	if err != nil {
@@ -755,8 +811,7 @@ func startGrpcServer(ctx context.Context,
 		grpcapi.WithPeers(peersSvc),
 		grpcapi.WithName(viper.GetString("server.name")),
 		grpcapi.WithID(serverID),
-		grpcapi.WithServerCert(certPEMBlock),
-		grpcapi.WithServerKey(keyPEMBlock),
+		grpcapi.WithCertManager(certManagerSvc),
 		grpcapi.WithCACert(caPEMBlock),
 		grpcapi.WithListenAddress(viper.GetString("server.listen-address")),
 	)
@@ -767,28 +822,19 @@ func startGrpcServer(ctx context.Context,
 	return svc, nil
 }
 
-func obtainCerts(ctx context.Context,
+func obtainCACert(ctx context.Context,
 	majordomoSvc majordomo.Service,
-) (
-	[]byte,
-	[]byte,
-	[]byte,
-	error,
-) {
-	certPEMBlock, err := majordomoSvc.Fetch(ctx, viper.GetString("certificates.server-cert"))
-	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, fmt.Sprintf("failed to obtain server certificate from %s", viper.GetString("certificates.server-cert")))
-	}
-	keyPEMBlock, err := majordomoSvc.Fetch(ctx, viper.GetString("certificates.server-key"))
-	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, fmt.Sprintf("failed to obtain server key from %s", viper.GetString("certificates.server-key")))
-	}
+) ([]byte, error) {
 	var caPEMBlock []byte
 	if viper.GetString("certificates.ca-cert") != "" {
+		var err error
 		caPEMBlock, err = majordomoSvc.Fetch(ctx, viper.GetString("certificates.ca-cert"))
 		if err != nil {
-			return nil, nil, nil, errors.Wrap(err, fmt.Sprintf("failed to obtain CA certificate from %s", viper.GetString("certificates.ca-cert")))
+			return nil, errors.Wrap(err, fmt.Sprintf("failed to obtain CA certificate from %s", viper.GetString("certificates.ca-cert")))
 		}
+	} else {
+		// CA certificate is optional - return empty slice to use standard CA certificates.
+		log.Warn().Msg("No CA certificate specified; using standard CA certificates")
 	}
-	return certPEMBlock, keyPEMBlock, caPEMBlock, nil
+	return caPEMBlock, nil
 }

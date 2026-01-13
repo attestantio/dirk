@@ -19,6 +19,7 @@ import (
 	"crypto/x509"
 	"net"
 
+	servercert "github.com/attestantio/go-certmanager/server"
 	accountmanagerhandler "github.com/attestantio/dirk/services/api/grpc/handlers/accountmanager"
 	listerhandler "github.com/attestantio/dirk/services/api/grpc/handlers/lister"
 	receiverhandler "github.com/attestantio/dirk/services/api/grpc/handlers/receiver"
@@ -66,7 +67,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		monitor: parameters.monitor,
 	}
 
-	if err := s.createServer(parameters.name, parameters.serverCert, parameters.serverKey, parameters.caCert); err != nil {
+	if err := s.createServer(ctx, parameters.name, parameters.certManager, parameters.caCert); err != nil {
 		return nil, errors.Wrap(err, "failed to create API server")
 	}
 
@@ -133,7 +134,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 }
 
 // createServer creates the GRPC server.
-func (s *Service) createServer(name string, certPEMBlock []byte, keyPEMBlock []byte, caPEMBlock []byte) error {
+func (s *Service) createServer(ctx context.Context, name string, certManager servercert.Service, caPEMBlock []byte) error {
 	grpclog.SetLoggerV2(loggers.NewGRPCLoggerV2(log.With().Str("service", "grpc").Logger()))
 
 	grpcOpts := []grpc.ServerOption{
@@ -151,11 +152,13 @@ func (s *Service) createServer(name string, certPEMBlock []byte, keyPEMBlock []b
 		return errors.New("no server name provided; cannot proceed")
 	}
 
-	serverCert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
+	// Get base TLS config from cert manager with dynamic certificate loading.
+	tlsCfg, err := certManager.GetTLSConfig(ctx)
 	if err != nil {
-		return errors.Wrap(err, "failed to load server keypair")
+		return errors.Wrap(err, "failed to get TLS config from certificate manager")
 	}
 
+	// Add client certificate verification.
 	certPool := x509.NewCertPool()
 	if len(caPEMBlock) > 0 {
 		// Read in the certificate authority certificate; this is required to validate client certificates on incoming connections.
@@ -164,12 +167,10 @@ func (s *Service) createServer(name string, certPEMBlock []byte, keyPEMBlock []b
 		}
 	}
 
-	serverCreds := credentials.NewTLS(&tls.Config{
-		ClientAuth:   tls.RequireAndVerifyClientCert,
-		Certificates: []tls.Certificate{serverCert},
-		ClientCAs:    certPool,
-		MinVersion:   tls.VersionTLS13,
-	})
+	tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
+	tlsCfg.ClientCAs = certPool
+
+	serverCreds := credentials.NewTLS(tlsCfg)
 	grpcOpts = append(grpcOpts, grpc.Creds(serverCreds))
 	s.grpcServer = grpc.NewServer(grpcOpts...)
 

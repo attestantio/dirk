@@ -76,8 +76,8 @@ github.com/OneOfOne/xxhash v1.2.2 h1:KMrpdQIwFcEqXDklaen+P1axHaj9BSKzvpUUfnHldSE
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=
-github.com/attestantio/go-certmanager v0.0.0-20260112145936-23c8185ce394 h1:4B8q5WT5CrqZfAN/KWftGGUHpI0djJrFBor+mCVEAMw=
-github.com/attestantio/go-certmanager v0.0.0-20260112145936-23c8185ce394/go.mod h1:rOhlM/86t1myqtv8jbpZaKgWtcOphd1X7a3Szb89+IY=
+github.com/attestantio/go-certmanager v0.0.0-20260113171259-7243801727ab h1:/HsWILD8AmyV8lVTrOzjUCCefTMryBQsHNi128Jgsn4=
+github.com/attestantio/go-certmanager v0.0.0-20260113171259-7243801727ab/go.mod h1:rOhlM/86t1myqtv8jbpZaKgWtcOphd1X7a3Szb89+IY=
 github.com/attestantio/go-eth2-client v0.21.11 h1:0ZYP69O8rJz41055WOf3n1C1NA4jNh2iME/NuTVfgmQ=
 github.com/attestantio/go-eth2-client v0.21.11/go.mod h1:d7ZPNrMX8jLfIgML5u7QZxFo2AukLM+5m08iMaLdqb8=
 github.com/aws/aws-sdk-go v1.44.81/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=

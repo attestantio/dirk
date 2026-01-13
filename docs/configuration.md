@@ -39,6 +39,13 @@ certificates:
   # Dirk supports DNS names, IP addresses, and email addresses in SAN fields, with DNS names preferred.
   # Legacy certificates using only Common Name (CN) are still supported for backward compatibility.
   ca-cert: file:///home/me/dirk/security/certificates/ca.crt
+  # reload-timeout defines the maximum time allowed for a certificate reload operation to complete.
+  # If a reload operation exceeds this duration, it will be cancelled. If not specified or set to 0,
+  # reload operations have no timeout. A reload will be triggered automatically at Dirk start up if
+  # certificates are expired. Alternatively, certificates can be reloaded on demand by sending a
+  # SIGHUP signal to Dirk's process. Note that only one reload operation can run at a time; concurrent
+  # reload attempts will be silently ignored while a reload is in progress.
+  reload-timeout: '10m'
 # storage-path is the path where information created by the slashing protection system is stored.  If not
 # supplied it will default to using the 'storage' directory in the user's home directory.
 storage-path: /home/me/dirk/protection

@@ -15,7 +15,6 @@ package grpc
 
 import (
 	"context"
-	"crypto/tls"
 	"crypto/x509"
 	"sync"
 
@@ -54,14 +53,24 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		log = log.Level(parameters.logLevel)
 	}
 
-	transportCredentials, err := composeCredentials(ctx, parameters.serverCert, parameters.serverKey, parameters.caCert)
+	// Get TLS config from certificate manager for client connections.
+	tlsCfg, err := parameters.certManager.GetClientTLSConfig(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to compose client credentials")
+		return nil, errors.Wrap(err, "failed to get client TLS config from certificate manager")
+	}
+
+	// Add CA certificate pool if provided.
+	if len(parameters.caCert) > 0 {
+		cp := x509.NewCertPool()
+		if !cp.AppendCertsFromPEM(parameters.caCert) {
+			return nil, errors.New("failed to add CA certificate to pool")
+		}
+		tlsCfg.RootCAs = cp
 	}
 
 	service := &Service{
 		name:            parameters.name,
-		credentials:     transportCredentials,
+		credentials:     credentials.NewTLS(tlsCfg),
 		connectionPools: make(map[string]*puddle.Pool),
 	}
 
@@ -148,7 +157,7 @@ func (s *Service) Commit(ctx context.Context, peer *core.Endpoint, account strin
 func (s *Service) Abort(ctx context.Context, peer *core.Endpoint, account string) error {
 	connResource, err := s.obtainConnection(ctx, peer.ConnectAddress())
 	if err != nil {
-		return errors.Wrap(err, "failed to obtain connection for Execute()")
+		return errors.Wrap(err, "failed to obtain connection for Abort()")
 	}
 	defer connResource.Release()
 	client := pb.NewDKGClient(connResource.Value().(*grpc.ClientConn))
@@ -201,26 +210,6 @@ func (s *Service) SendContribution(ctx context.Context, peer *core.Endpoint, acc
 	return resSecret, resVVec, nil
 }
 
-func composeCredentials(_ context.Context, certPEMBlock []byte, keyPEMBlock []byte, caPEMBlock []byte) (credentials.TransportCredentials, error) {
-	clientCert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to access client certificate/key")
-	}
-
-	tlsCfg := &tls.Config{
-		Certificates: []tls.Certificate{clientCert},
-		MinVersion:   tls.VersionTLS13,
-	}
-	if len(caPEMBlock) > 0 {
-		cp := x509.NewCertPool()
-		if !cp.AppendCertsFromPEM(caPEMBlock) {
-			return nil, errors.New("failed to add CA certificate")
-		}
-		tlsCfg.RootCAs = cp
-	}
-
-	return credentials.NewTLS(tlsCfg), nil
-}
 
 // obtainConnection obtains a connection to the required address via GRPC.
 func (s *Service) obtainConnection(_ context.Context, address string) (*puddle.Resource, error) {
