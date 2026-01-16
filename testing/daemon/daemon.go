@@ -22,6 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	mockcertfetcher "github.com/attestantio/go-certmanager/testing/mock"
+	standardservercert "github.com/attestantio/go-certmanager/server/standard"
 	standardrules "github.com/attestantio/dirk/rules/standard"
 	standardaccountmanager "github.com/attestantio/dirk/services/accountmanager/standard"
 	grpcapi "github.com/attestantio/dirk/services/api/grpc"
@@ -276,10 +278,22 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		return nil, "", errors.Wrap(err, "failed to create static peers")
 	}
 
+	senderCertFetcher := mockcertfetcher.NewFetcher(map[string][]byte{
+		"sender.cert": resources.SignerCerts[id],
+		"sender.key":  resources.SignerKeys[id],
+	})
+	senderCertManager, err := standardservercert.New(ctx,
+		standardservercert.WithFetcher(senderCertFetcher),
+		standardservercert.WithCertPEMURI("sender.cert"),
+		standardservercert.WithCertKeyURI("sender.key"),
+	)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed to create sender certificate manager")
+	}
+
 	sender, err := sendergrpc.New(ctx,
 		sendergrpc.WithName(fmt.Sprintf("signer-test%02d", id)),
-		sendergrpc.WithServerCert(resources.SignerCerts[id]),
-		sendergrpc.WithServerKey(resources.SignerKeys[id]),
+		sendergrpc.WithCertManager(senderCertManager),
 		sendergrpc.WithCACert(resources.CACrt),
 	)
 	if err != nil {
@@ -322,6 +336,20 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		return nil, "", errors.Wrap(err, "failed to create standard wallet manager")
 	}
 
+	// Create certificate manager for test daemon.
+	certFetcher := mockcertfetcher.NewFetcher(map[string][]byte{
+		"cert.pem": resources.SignerCerts[id],
+		"cert.key": resources.SignerKeys[id],
+	})
+	certManager, err := standardservercert.New(ctx,
+		standardservercert.WithFetcher(certFetcher),
+		standardservercert.WithCertPEMURI("cert.pem"),
+		standardservercert.WithCertKeyURI("cert.key"),
+	)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed to create certificate manager")
+	}
+
 	_, err = grpcapi.New(ctx,
 		grpcapi.WithSigner(signer),
 		grpcapi.WithLister(lister),
@@ -331,8 +359,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		grpcapi.WithPeers(peers),
 		grpcapi.WithName(fmt.Sprintf("signer-test%02d", id)),
 		grpcapi.WithID(id),
-		grpcapi.WithServerCert(resources.SignerCerts[id]),
-		grpcapi.WithServerKey(resources.SignerKeys[id]),
+		grpcapi.WithCertManager(certManager),
 		grpcapi.WithCACert(resources.CACrt),
 		grpcapi.WithListenAddress(fmt.Sprintf("0.0.0.0:%d", port)),
 	)

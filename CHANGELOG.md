@@ -1,3 +1,7 @@
+# dev
+  - support SAN for client certificates
+  - support on-demand certificate reload on SIGHUP
+
 # Version 1.2.1
   - run slashing protection database garbage collection periodically
   - add commit hash to log on startup

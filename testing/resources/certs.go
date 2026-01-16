@@ -506,6 +506,62 @@ XDCQeaEUOuLjokRojHrN27ghz3wJoUJzTdjtHZ+yE9s2cW9VXRUxkun0aLcQd/iY
 xvXEII1qCvhI4mmWvbcepvtswQmTEeOroM/27/IIEAOvTyqd6rDi2A==
 -----END RSA PRIVATE KEY-----`)
 
+// ClientCNOnlyCrt is a certificate with CN only (no SAN), for backward-compatibility tests.
+var ClientCNOnlyCrt = []byte(`-----BEGIN CERTIFICATE-----
+MIIEETCCAfmgAwIBAgIUDJrINVXweBw4lvuUkqkkE0wM54UwDQYJKoZIhvcNAQEL
+BQAwKDEmMCQGA1UEAxMdVGVzdGluZyBjZXJ0aWZpY2F0ZSBhdXRob3JpdHkwHhcN
+MjYwMTEzMTUzODQ0WhcNMzYwMTExMTUzODQ0WjAZMRcwFQYDVQQDDA5jbGllbnQt
+Y24tb25seTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKA+g8j+VxU3
+r9jxUkkn6rX2IJuBDjKcQn9dYHsQQqyqNiegpTNu/C6pThZacaNmhFcSLz+0Jvt+
+NLeDsZLXCEVUADZwHnOhhDqMc3FYdIWnS2THCmC2PpsgbMdpoJwraxECOdZnVJMQ
+78geuwylabI27T7R2nY/QNn3dZCFO+ZuvolZ+sIXGhhFUS2MlOe3IZJmuGlE4sJb
+CX7PeX5Pgt2ZFTFJpjTNcHN88juUsrSWjIB1v0Boq8ephRbaMUc3Jil1Eih6IpXq
+eViEg4qEultDMJeCeV+Os1H1jEf+msFGRWmuBKhwz3Op6MrnrI/XHKTrGFq/n6/h
+XK1+9xuaQ3ECAwEAAaNCMEAwHQYDVR0OBBYEFGNe+4ETEgW0wfFASnRJUXgQpx/q
+MB8GA1UdIwQYMBaAFPIpwPTZ6iEk+UgUei98/a22XdQaMA0GCSqGSIb3DQEBCwUA
+A4ICAQAPFuBpklL7IZImJZ7jmHCKIFp6XZuBKD8tM/H9Pa87Q4BCytGOkxPFEeij
+kcrY3CUcBFAjDt4ssM83UcTIz0U3apwOqgbyzNG13ZzzjDGma7lGM6nyoQP92Wg+
+qzaCuy30m5+oKpZHSB85GUfbpaESG/THLiTKc7hPJeUSoMvONUwD1nweKXrANWRY
+sdoMNx/ufyka4ABDVhmBNMWcE0PBX6r4rTO+z6LDC4v1ib3wf4lEkl6GSZDkeurx
+O4t7mu6QDkUqaUrX+vsgmDFcKIxxSfmC/imsUkOaISsbFQJ4NHti78nAEK5iGxd3
+/aSDjqmxR+Kd9hsX4MNnS+Pu1hJZxfDV68Wib1dN/Pn+kVaJFAGP9qanw/27jWg5
+kdB5SWyK9osgya/zm+zlBsSox+qb0R+JuKh/cviQNt4EnqrVcqI3fkgE6teLTmRp
+Da9ZkNMgaHesUI/HUSE+SQzY4hyBkNm818Zjqnz5x+peCFs1ld9huzJzIZvYs+8h
+n2jPkrrNSCp1KLj3g8AcfhS01QdSa/XV2VWMkSWPRCJMfL/dJEHsDoewzConlhof
+I3p/YhOT3nGhJfWQXPV3zvok5GfdfX3ozQSsqCnoyF7DdKxV1zqXaB5wWpJCQfrG
+TZUxXAGbb8897byeI2xkFFWBOYdqCNUF8W2FbfwvOImnGU7keA==
+-----END CERTIFICATE-----`)
+
+// ClientCNOnlyKey is the private key for the CN-only certificate.
+var ClientCNOnlyKey = []byte(`-----BEGIN PRIVATE KEY-----
+MIIEuwIBADANBgkqhkiG9w0BAQEFAASCBKUwggShAgEAAoIBAQCgPoPI/lcVN6/Y
+8VJJJ+q19iCbgQ4ynEJ/XWB7EEKsqjYnoKUzbvwuqU4WWnGjZoRXEi8/tCb7fjS3
+g7GS1whFVAA2cB5zoYQ6jHNxWHSFp0tkxwpgtj6bIGzHaaCcK2sRAjnWZ1STEO/I
+HrsMpWmyNu0+0dp2P0DZ93WQhTvmbr6JWfrCFxoYRVEtjJTntyGSZrhpROLCWwl+
+z3l+T4LdmRUxSaY0zXBzfPI7lLK0loyAdb9AaKvHqYUW2jFHNyYpdRIoeiKV6nlY
+hIOKhLpbQzCXgnlfjrNR9YxH/prBRkVprgSocM9zqejK56yP1xyk6xhav5+v4Vyt
+fvcbmkNxAgMBAAECggEAChaleVv5444T9haLVau7rSUHvIKNgEYyMY6Ram4FpJU6
+v5fvjqNoIQ/rqKCdEup7Xnf4nYwcAC1b6EnUPihnjuXQ9Zxtbl420vDQu8wT2e5E
+Yt3dG2Wd32pVLuDJict5/CIlvgfXXULtta2pnQw08VFf8lqH5HXrAU4BCs44jTNG
+HT6FWBXHYHG2Xeyfoka/QdpgiYRr/v0lVczhAakWt5Q2m+tj+B/rQzUVdO3aRcak
+2MDfPrVW460dj7fGDfhUQNhm86gHGPBpWfFCYBXOvqdd9pBzI1DNfTtkck1HRu1D
+QuRL2XzS2ILV2hI5srmkM7p7wN41mgtdDlJC9rejmQKBgQDZ/G3sOs8IYv7qVPAC
+S6lV9z8EmqVp+Z/3qbYaC3bRylP7cPkP5ZWGceWQDq2SzxBsfvv1bO0dunAEV06N
+mPECChxH/Pghly2Nw+FbXsHHnpD5kswXxAbN+lkDrXYtVpH90732tDp476/D0AX2
+mwv5Usn1jESIuiCmXQg7rvXKSwKBgQC8ME+KlPxoL4+wdGibHbSaTf47UjlgAJ//
+aIGPMLMxWBUwk2TSJsWKQxcINWJFxHV1SzQMnPhqX953o0tADS4NtpLAvELrOBk5
+3DM0/jVuzLJswQ6g6JhZnQw8TntsiRKziQ9Hi6+N5sYA7/T1jlXQd4/7QwEz+0bp
+Fk6x7sbTswKBgQCKZ483nUNUdN6b1GArZPTYY0q81p/OQLOD4VqBAORpYYifLmTE
+5iVhHrH+HIOyogwwhxPdCVMoO/bhmrmCiCgF/ntkbcbyNPW0fDl69RgecZxlCgLR
+2CHl6F1aS2mscbnyKt4DZP13SeAUeOFAacNZg2o9oNjm4x7V4l3W30iqLwJ/fPeX
+2m8VLhpnUMX8sQUI6W7hZIM1lorTtMexQWUVma7kY119lhApHadvpAPPPoU3eqx1
+4+pZDEqdcNT/I4mdC34x9csOpSSbm9CeMJKe6PUFhzKshC3w/ZFMjr+PNoPP52kc
+vGYGLjURR44RHP9n/QdolXHpWpuCe0ZU+9OUNQKBgHUWmWPyymE1iwTe2ySgqKgL
+WwUdaxpoPfsm10ltmFdA9Wa1dCq4DQ7V4O6c2AMeilFHoBkIM9txV4RyGijyhX+8
+LmKUj0phJWgpF1yYq1QKy1fFn1jMGkQo0An4EH1ybqsiovzodeUT+sBPEPdNWacc
+fN7oF9txKso4vUW2XEsb
+-----END PRIVATE KEY-----`)
+
 // SignerCerts gives access to signer certificates by ID.
 var SignerCerts = map[uint64][]byte{
 	1: SignerTest01Crt,
@@ -574,6 +630,12 @@ func SetupCerts(base string) error {
 	if err := os.WriteFile(filepath.Join(base, "client-test03.crt"), ClientTest03Crt, 0o600); err != nil {
 		return err
 	}
+	if err := os.WriteFile(filepath.Join(base, "client-test03.key"), ClientTest03Key, 0o600); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(base, "client-cn-only.crt"), ClientCNOnlyCrt, 0o600); err != nil {
+		return err
+	}
 
-	return os.WriteFile(filepath.Join(base, "client-test03.key"), ClientTest03Key, 0o600)
+	return os.WriteFile(filepath.Join(base, "client-cn-only.key"), ClientCNOnlyKey, 0o600)
 }

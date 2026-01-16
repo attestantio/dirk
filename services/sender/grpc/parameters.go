@@ -14,18 +14,18 @@
 package grpc
 
 import (
+	servercert "github.com/attestantio/go-certmanager/server"
 	"github.com/attestantio/dirk/services/metrics"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
 
 type parameters struct {
-	logLevel   zerolog.Level
-	monitor    metrics.SenderMonitor
-	name       string
-	serverCert []byte
-	serverKey  []byte
-	caCert     []byte
+	logLevel    zerolog.Level
+	monitor     metrics.SenderMonitor
+	name        string
+	certManager servercert.Service
+	caCert      []byte
 }
 
 // Parameter is the interface for service parameters.
@@ -60,17 +60,10 @@ func WithName(name string) Parameter {
 	})
 }
 
-// WithServerCert sets the server certificate for this module.
-func WithServerCert(serverCert []byte) Parameter {
+// WithCertManager sets the certificate manager for this module.
+func WithCertManager(certManager servercert.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.serverCert = serverCert
-	})
-}
-
-// WithServerKey sets the server key for this module.
-func WithServerKey(serverKey []byte) Parameter {
-	return parameterFunc(func(p *parameters) {
-		p.serverKey = serverKey
+		p.certManager = certManager
 	})
 }
 
@@ -99,11 +92,8 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	if parameters.name == "" {
 		return nil, errors.New("no name specified")
 	}
-	if len(parameters.serverCert) == 0 {
-		return nil, errors.New("no server certificate specified")
-	}
-	if len(parameters.serverKey) == 0 {
-		return nil, errors.New("no server key specified")
+	if parameters.certManager == nil {
+		return nil, errors.New("no certificate manager specified")
 	}
 
 	return &parameters, nil

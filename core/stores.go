@@ -104,7 +104,7 @@ func initFilesystemStore(ctx context.Context,
 	log.Trace().Str("name", storeDefinition.Name).Str("location", storeDefinition.Location).Msg("Adding filesystem store")
 
 	opts := make([]filesystem.Option, 0)
-	if len(storeDefinition.Passphrase) > 0 {
+	if storeDefinition.Passphrase != "" {
 		passphrase, err := majordomo.Fetch(ctx, storeDefinition.Passphrase)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to obtain passphrase")
@@ -129,7 +129,7 @@ func initS3Store(ctx context.Context,
 	log.Trace().Str("name", storeDefinition.Name).Str("location", storeDefinition.Location).Msg("Adding S3 store")
 
 	opts := make([]s3.Option, 0)
-	if len(storeDefinition.Passphrase) > 0 {
+	if storeDefinition.Passphrase != "" {
 		passphrase, err := majordomo.Fetch(ctx, storeDefinition.Passphrase)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to obtain passphrase")
