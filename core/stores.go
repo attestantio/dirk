@@ -47,7 +47,7 @@ type S3Store struct {
 	Bucket         string              `mapstructure:"bucket"`
 	Path           string              `mapstructure:"path"`
 	Endpoint       string              `mapstructure:"endpoint"`
-	ForcePathStyle bool                `mapstructure:"forcePathStyle"`
+	ForcePathStyle bool                `mapstructure:"force-path-style"`
 	Credentials    *S3StoreCredentials `mapstructure:"credentials"`
 }
 
