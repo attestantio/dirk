@@ -31,7 +31,7 @@ require (
 	github.com/wealdtech/go-eth2-wallet-keystore v1.0.0
 	github.com/wealdtech/go-eth2-wallet-nd/v2 v2.5.0
 	github.com/wealdtech/go-eth2-wallet-store-filesystem v1.18.1
-	github.com/wealdtech/go-eth2-wallet-store-s3 v1.12.0
+	github.com/wealdtech/go-eth2-wallet-store-s3 v1.12.2
 	github.com/wealdtech/go-eth2-wallet-store-scratch v1.7.2
 	github.com/wealdtech/go-eth2-wallet-types/v2 v2.12.0
 	github.com/wealdtech/go-majordomo v1.1.1
