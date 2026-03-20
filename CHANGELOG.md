@@ -1,3 +1,7 @@
+# Development
+  - fix account manager completed metric OnGenerate error
+  - import latest go-eth2-wallet-store-s3 to enable force-path-style on S3 
+
 # Version 1.2.1
   - run slashing protection database garbage collection periodically
   - add commit hash to log on startup
