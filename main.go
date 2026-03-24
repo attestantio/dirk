@@ -35,6 +35,8 @@ import (
 	standardrules "github.com/attestantio/dirk/rules/standard"
 	standardaccountmanager "github.com/attestantio/dirk/services/accountmanager/standard"
 	grpcapi "github.com/attestantio/dirk/services/api/grpc"
+	"github.com/attestantio/dirk/services/certmanager"
+	standardcertmanager "github.com/attestantio/dirk/services/certmanager/standard"
 	"github.com/attestantio/dirk/services/checker"
 	staticchecker "github.com/attestantio/dirk/services/checker/static"
 	"github.com/attestantio/dirk/services/fetcher"
@@ -206,6 +208,8 @@ func fetchConfig() (bool, error) {
 	viper.SetDefault("logging.timestamp.format", "2006-01-02T15:04:05.000Z07:00")
 	viper.SetDefault("storage-path", "storage")
 	viper.SetDefault("process.generation-timeout", 70*time.Second)
+	viper.SetDefault("certificates.reload-interval", 10*time.Minute)
+	viper.SetDefault("certificates.reload-threshold", 24*time.Hour)
 
 	if err := viper.ReadInConfig(); err != nil {
 		switch {
@@ -321,7 +325,13 @@ func startServices(ctx context.Context, majordomoSvc majordomo.Service, monitor 
 		return errors.Wrap(err, "failed to set up ruler service")
 	}
 
-	_, err = startGrpcServer(ctx, monitor, majordomoSvc, stores, unlockerSvc, checkerSvc, fetcherSvc, rulerSvc)
+	// Set up the certmanager.
+	certManagerSvc, err := startCertManager(ctx, majordomoSvc)
+	if err != nil {
+		return errors.Wrap(err, "failed to set up certmanager service")
+	}
+
+	_, err = startGrpcServer(ctx, monitor, majordomoSvc, stores, unlockerSvc, checkerSvc, fetcherSvc, rulerSvc, certManagerSvc)
 	if err != nil {
 		return err
 	}
@@ -490,6 +500,17 @@ func startRuler(ctx context.Context, lockerSvc locker.Service, monitor metrics.S
 	)
 }
 
+func startCertManager(ctx context.Context, majordomoSvc majordomo.Service) (certmanager.Service, error) {
+	return standardcertmanager.New(ctx,
+		standardcertmanager.WithLogLevel(util.LogLevel("certmanager")),
+		standardcertmanager.WithMajordomo(majordomoSvc),
+		standardcertmanager.WithCertPEMURI(viper.GetString("certificates.server-cert")),
+		standardcertmanager.WithCertKeyURI(viper.GetString("certificates.server-key")),
+		standardcertmanager.WithReloadThreshold(viper.GetDuration("certificates.reload-threshold")),
+		standardcertmanager.WithReloadInterval(viper.GetDuration("certificates.reload-interval")),
+	)
+}
+
 func startPeers(ctx context.Context, monitor metrics.Service) (peers.Service, error) {
 	// Keys are strings.
 	peersInfo := viper.GetStringMapString("peers")
@@ -567,8 +588,7 @@ func startSigner(ctx context.Context,
 
 func startSender(ctx context.Context,
 	monitor metrics.Service,
-	certPEMBlock []byte,
-	keyPEMBlock []byte,
+	certManagerSvc certmanager.Service,
 	caPEMBlock []byte,
 ) (
 	sender.Service,
@@ -583,8 +603,7 @@ func startSender(ctx context.Context,
 		sendergrpc.WithLogLevel(util.LogLevel("sender")),
 		sendergrpc.WithMonitor(senderMonitor),
 		sendergrpc.WithName(viper.GetString("server.name")),
-		sendergrpc.WithServerCert(certPEMBlock),
-		sendergrpc.WithServerKey(keyPEMBlock),
+		sendergrpc.WithCertManager(certManagerSvc),
 		sendergrpc.WithCACert(caPEMBlock),
 	)
 	if err != nil {
@@ -603,14 +622,13 @@ func startProcess(ctx context.Context,
 	checkerSvc checker.Service,
 	fetcherSvc fetcher.Service,
 	peersSvc peers.Service,
-	certPEMBlock []byte,
-	keyPEMBlock []byte,
+	certManagerSvc certmanager.Service,
 	caPEMBlock []byte,
 ) (
 	process.Service,
 	error,
 ) {
-	sender, err := startSender(ctx, monitor, certPEMBlock, keyPEMBlock, caPEMBlock)
+	sender, err := startSender(ctx, monitor, certManagerSvc, caPEMBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -659,6 +677,7 @@ func startGrpcServer(ctx context.Context,
 	checkerSvc checker.Service,
 	fetcherSvc fetcher.Service,
 	rulerSvc ruler.Service,
+	certManagerSvc certmanager.Service,
 ) (
 	*grpcapi.Service,
 	error,
@@ -685,7 +704,7 @@ func startGrpcServer(ctx context.Context,
 		return nil, errors.Wrap(err, "failed to obtain server ID")
 	}
 
-	certPEMBlock, keyPEMBlock, caPEMBlock, err := obtainCerts(ctx, majordomoSvc)
+	caPEMBlock, err := obtainCA(ctx, majordomoSvc)
 	if err != nil {
 		return nil, err
 	}
@@ -699,8 +718,7 @@ func startGrpcServer(ctx context.Context,
 		checkerSvc,
 		fetcherSvc,
 		peersSvc,
-		certPEMBlock,
-		keyPEMBlock,
+		certManagerSvc,
 		caPEMBlock,
 	)
 	if err != nil {
@@ -755,8 +773,7 @@ func startGrpcServer(ctx context.Context,
 		grpcapi.WithPeers(peersSvc),
 		grpcapi.WithName(viper.GetString("server.name")),
 		grpcapi.WithID(serverID),
-		grpcapi.WithServerCert(certPEMBlock),
-		grpcapi.WithServerKey(keyPEMBlock),
+		grpcapi.WithCertManager(certManagerSvc),
 		grpcapi.WithCACert(caPEMBlock),
 		grpcapi.WithListenAddress(viper.GetString("server.listen-address")),
 	)
@@ -767,28 +784,18 @@ func startGrpcServer(ctx context.Context,
 	return svc, nil
 }
 
-func obtainCerts(ctx context.Context,
+func obtainCA(ctx context.Context,
 	majordomoSvc majordomo.Service,
 ) (
 	[]byte,
-	[]byte,
-	[]byte,
 	error,
 ) {
-	certPEMBlock, err := majordomoSvc.Fetch(ctx, viper.GetString("certificates.server-cert"))
+	if viper.GetString("certificates.ca-cert") == "" {
+		return nil, nil
+	}
+	caPEMBlock, err := majordomoSvc.Fetch(ctx, viper.GetString("certificates.ca-cert"))
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, fmt.Sprintf("failed to obtain server certificate from %s", viper.GetString("certificates.server-cert")))
+		return nil, errors.Wrap(err, fmt.Sprintf("failed to obtain CA certificate from %s", viper.GetString("certificates.ca-cert")))
 	}
-	keyPEMBlock, err := majordomoSvc.Fetch(ctx, viper.GetString("certificates.server-key"))
-	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, fmt.Sprintf("failed to obtain server key from %s", viper.GetString("certificates.server-key")))
-	}
-	var caPEMBlock []byte
-	if viper.GetString("certificates.ca-cert") != "" {
-		caPEMBlock, err = majordomoSvc.Fetch(ctx, viper.GetString("certificates.ca-cert"))
-		if err != nil {
-			return nil, nil, nil, errors.Wrap(err, fmt.Sprintf("failed to obtain CA certificate from %s", viper.GetString("certificates.ca-cert")))
-		}
-	}
-	return certPEMBlock, keyPEMBlock, caPEMBlock, nil
+	return caPEMBlock, nil
 }
