@@ -21,4 +21,15 @@ coverage.html
 # Local TODO
 TODO.md
 
+# VCS and editor metadata
+.git
+.gitignore
+.github
+.idea
+.vscode
+.DS_Store
+
+# Logs
+*.log
+
 Dockerfile
