@@ -87,7 +87,7 @@ func TestSignBeaconProposal(t *testing.T) {
 }
 
 // TestSignBeaconProposalSlotZero tests slashing protection behavior
-// at slot 0 (genesis), where the sentinel value -1 transitions to 0.
+// at slot 0 (genesis), where no prior proposal state exists.
 func TestSignBeaconProposalSlotZero(t *testing.T) {
 	ctx := context.Background()
 	base, err := os.MkdirTemp("", "")

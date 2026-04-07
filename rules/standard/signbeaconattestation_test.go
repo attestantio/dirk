@@ -143,7 +143,7 @@ func TestSignBeaconAttestation(t *testing.T) {
 }
 
 // TestSignBeaconAttestationEpochZero tests slashing protection behavior
-// at epoch 0 (genesis), where the sentinel value -1 transitions to 0.
+// at epoch 0 (genesis), where no prior attestation state exists.
 func TestSignBeaconAttestationEpochZero(t *testing.T) {
 	ctx := context.Background()
 	base, err := os.MkdirTemp("", "")
