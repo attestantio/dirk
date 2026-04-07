@@ -22,6 +22,7 @@ import (
 	"github.com/attestantio/dirk/rules"
 	standardrules "github.com/attestantio/dirk/rules/standard"
 	"github.com/attestantio/dirk/testing/logger"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -243,8 +244,7 @@ func TestSignBeaconAttestations(t *testing.T) {
 }
 
 // TestSignBeaconAttestationsEpochZero tests batch attestation signing at
-// epoch 0 (genesis), where no prior attestation state exists. Each step
-// builds on state left by the previous.
+// epoch 0 (genesis), where no prior attestation state exists.
 func TestSignBeaconAttestationsEpochZero(t *testing.T) {
 	ctx := context.Background()
 	base, err := os.MkdirTemp("", "")
@@ -260,6 +260,7 @@ func TestSignBeaconAttestationsEpochZero(t *testing.T) {
 
 	attestationDomain := _byteStr(t, "0100000000000000000000000000000000000000000000000000000000000000")
 
+	// Tests are sequential; each builds on state left by the previous.
 	tests := []struct {
 		name     string
 		metadata []*rules.ReqMetadata
@@ -268,6 +269,8 @@ func TestSignBeaconAttestationsEpochZero(t *testing.T) {
 	}{
 		{
 			// Two validators attest at epoch 0 from fresh state — both should be approved.
+			// Equal source/target at epoch 0 is the one accepted case (the guard at
+			// signbeaconattestations.go:142 explicitly allows source==target==0).
 			name: "GenesisBatch",
 			metadata: []*rules.ReqMetadata{
 				{PubKey: pubKeyA},
@@ -355,7 +358,7 @@ func TestSignBeaconAttestationsEpochZero(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			res := testRules.OnSignBeaconAttestations(ctx, test.metadata, test.req)
-			require.Equal(t, test.res, res)
+			assert.Equal(t, test.res, res)
 		})
 	}
 }
