@@ -85,3 +85,59 @@ func TestSignBeaconProposal(t *testing.T) {
 		})
 	}
 }
+
+// TestSignBeaconProposalSlotZero tests slashing protection behavior
+// at slot 0 (genesis), where the sentinel value -1 transitions to 0.
+func TestSignBeaconProposalSlotZero(t *testing.T) {
+	ctx := context.Background()
+	base, err := os.MkdirTemp("", "")
+	require.NoError(t, err)
+	defer os.RemoveAll(base)
+	testRules, err := standardrules.New(ctx,
+		standardrules.WithStoragePath(base),
+	)
+	require.NoError(t, err)
+
+	// Tests are sequential; each builds on state left by the previous.
+	tests := []struct {
+		name     string
+		metadata *rules.ReqMetadata
+		req      *rules.SignBeaconProposalData
+		res      rules.Result
+	}{
+		{
+			name:     "GenesisSlotProposal",
+			metadata: &rules.ReqMetadata{},
+			req: &rules.SignBeaconProposalData{
+				Domain: _byteStr(t, "0000000000000000000000000000000000000000000000000000000000000000"),
+				Slot:   0,
+			},
+			res: rules.APPROVED,
+		},
+		{
+			name:     "GenesisSlotRetry",
+			metadata: &rules.ReqMetadata{},
+			req: &rules.SignBeaconProposalData{
+				Domain: _byteStr(t, "0000000000000000000000000000000000000000000000000000000000000000"),
+				Slot:   0,
+			},
+			res: rules.DENIED,
+		},
+		{
+			name:     "PostGenesisSlotProposal",
+			metadata: &rules.ReqMetadata{},
+			req: &rules.SignBeaconProposalData{
+				Domain: _byteStr(t, "0000000000000000000000000000000000000000000000000000000000000000"),
+				Slot:   1,
+			},
+			res: rules.APPROVED,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			res := testRules.OnSignBeaconProposal(ctx, test.metadata, test.req)
+			assert.Equal(t, test.res, res)
+		})
+	}
+}
