@@ -269,8 +269,8 @@ func TestSignBeaconAttestationsEpochZero(t *testing.T) {
 	}{
 		{
 			// Two validators attest at epoch 0 from fresh state — both should be approved.
-			// Equal source/target at epoch 0 is the one accepted case (the guard at
-			// signbeaconattestations.go:142 explicitly allows source==target==0).
+			// Equal source/target at epoch 0 is the one accepted case (the
+			// "sourceEpoch != 0 || targetEpoch != 0" guard explicitly allows source==target==0).
 			name: "GenesisBatch",
 			metadata: []*rules.ReqMetadata{
 				{PubKey: pubKeyA},
@@ -352,6 +352,28 @@ func TestSignBeaconAttestationsEpochZero(t *testing.T) {
 				},
 			},
 			res: []rules.Result{rules.APPROVED, rules.APPROVED},
+		},
+		{
+			// Mixed results in a single batch: A retries the current epoch (denied)
+			// while B advances (approved). Verifies per-validator independence.
+			name: "PostGenesisBatchMixed",
+			metadata: []*rules.ReqMetadata{
+				{PubKey: pubKeyA},
+				{PubKey: pubKeyB},
+			},
+			req: []*rules.SignBeaconAttestationData{
+				{
+					Domain: attestationDomain,
+					Source: &rules.Checkpoint{Epoch: 1},
+					Target: &rules.Checkpoint{Epoch: 2},
+				},
+				{
+					Domain: attestationDomain,
+					Source: &rules.Checkpoint{Epoch: 1},
+					Target: &rules.Checkpoint{Epoch: 3},
+				},
+			},
+			res: []rules.Result{rules.DENIED, rules.APPROVED},
 		},
 	}
 
