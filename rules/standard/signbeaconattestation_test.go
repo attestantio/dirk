@@ -141,3 +141,88 @@ func TestSignBeaconAttestation(t *testing.T) {
 		})
 	}
 }
+
+// TestSignBeaconAttestationEpochZero tests slashing protection behavior
+// at epoch 0 (genesis), where no prior attestation state exists.
+func TestSignBeaconAttestationEpochZero(t *testing.T) {
+	ctx := context.Background()
+	base, err := os.MkdirTemp("", "")
+	require.NoError(t, err)
+	defer os.RemoveAll(base)
+	testRules, err := standardrules.New(ctx,
+		standardrules.WithStoragePath(base),
+	)
+	require.NoError(t, err)
+
+	// Tests are sequential; each builds on state left by the previous.
+	tests := []struct {
+		name     string
+		metadata *rules.ReqMetadata
+		req      *rules.SignBeaconAttestationData
+		res      rules.Result
+	}{
+		{
+			name:     "GenesisAttestation",
+			metadata: &rules.ReqMetadata{},
+			req: &rules.SignBeaconAttestationData{
+				Domain: _byteStr(t, "0100000000000000000000000000000000000000000000000000000000000000"),
+				Source: &rules.Checkpoint{
+					Epoch: 0,
+				},
+				Target: &rules.Checkpoint{
+					Epoch: 0,
+				},
+			},
+			res: rules.APPROVED,
+		},
+		{
+			name:     "GenesisAttestationRetry",
+			metadata: &rules.ReqMetadata{},
+			req: &rules.SignBeaconAttestationData{
+				Domain: _byteStr(t, "0100000000000000000000000000000000000000000000000000000000000000"),
+				Source: &rules.Checkpoint{
+					Epoch: 0,
+				},
+				Target: &rules.Checkpoint{
+					Epoch: 0,
+				},
+			},
+			res: rules.DENIED,
+		},
+		{
+			name:     "PostGenesisAttestation",
+			metadata: &rules.ReqMetadata{},
+			req: &rules.SignBeaconAttestationData{
+				Domain: _byteStr(t, "0100000000000000000000000000000000000000000000000000000000000000"),
+				Source: &rules.Checkpoint{
+					Epoch: 0,
+				},
+				Target: &rules.Checkpoint{
+					Epoch: 1,
+				},
+			},
+			res: rules.APPROVED,
+		},
+		{
+			name:     "PostGenesisAttestationHigher",
+			metadata: &rules.ReqMetadata{},
+			req: &rules.SignBeaconAttestationData{
+				Domain: _byteStr(t, "0100000000000000000000000000000000000000000000000000000000000000"),
+				Source: &rules.Checkpoint{
+					Epoch: 1,
+				},
+				Target: &rules.Checkpoint{
+					Epoch: 2,
+				},
+			},
+			res: rules.APPROVED,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			res := testRules.OnSignBeaconAttestation(ctx, test.metadata, test.req)
+			assert.Equal(t, test.res, res)
+		})
+	}
+}

@@ -22,6 +22,7 @@ import (
 	"github.com/attestantio/dirk/rules"
 	standardrules "github.com/attestantio/dirk/rules/standard"
 	"github.com/attestantio/dirk/testing/logger"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -240,4 +241,146 @@ func TestSignBeaconAttestations(t *testing.T) {
 	// Cancel the context and wait for it to take effect.
 	cancelFunc()
 	time.Sleep(100 * time.Millisecond)
+}
+
+// TestSignBeaconAttestationsEpochZero tests batch attestation signing at
+// epoch 0 (genesis), where no prior attestation state exists.
+func TestSignBeaconAttestationsEpochZero(t *testing.T) {
+	ctx := context.Background()
+	base, err := os.MkdirTemp("", "")
+	require.NoError(t, err)
+	defer os.RemoveAll(base)
+	testRules, err := standardrules.New(ctx,
+		standardrules.WithStoragePath(base),
+	)
+	require.NoError(t, err)
+
+	pubKeyA := _byteStr(t, "a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+	pubKeyB := _byteStr(t, "b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+
+	attestationDomain := _byteStr(t, "0100000000000000000000000000000000000000000000000000000000000000")
+
+	// Tests are sequential; each builds on state left by the previous.
+	tests := []struct {
+		name     string
+		metadata []*rules.ReqMetadata
+		req      []*rules.SignBeaconAttestationData
+		res      []rules.Result
+	}{
+		{
+			// Two validators attest at epoch 0 from fresh state — both should be approved.
+			// Equal source/target at epoch 0 is the one accepted case (the
+			// "sourceEpoch != 0 || targetEpoch != 0" guard explicitly allows source==target==0).
+			name: "GenesisBatch",
+			metadata: []*rules.ReqMetadata{
+				{PubKey: pubKeyA},
+				{PubKey: pubKeyB},
+			},
+			req: []*rules.SignBeaconAttestationData{
+				{
+					Domain: attestationDomain,
+					Source: &rules.Checkpoint{Epoch: 0},
+					Target: &rules.Checkpoint{Epoch: 0},
+				},
+				{
+					Domain: attestationDomain,
+					Source: &rules.Checkpoint{Epoch: 0},
+					Target: &rules.Checkpoint{Epoch: 0},
+				},
+			},
+			res: []rules.Result{rules.APPROVED, rules.APPROVED},
+		},
+		{
+			// Same batch retried at epoch 0 — both should be denied (already signed).
+			name: "GenesisBatchRetry",
+			metadata: []*rules.ReqMetadata{
+				{PubKey: pubKeyA},
+				{PubKey: pubKeyB},
+			},
+			req: []*rules.SignBeaconAttestationData{
+				{
+					Domain: attestationDomain,
+					Source: &rules.Checkpoint{Epoch: 0},
+					Target: &rules.Checkpoint{Epoch: 0},
+				},
+				{
+					Domain: attestationDomain,
+					Source: &rules.Checkpoint{Epoch: 0},
+					Target: &rules.Checkpoint{Epoch: 0},
+				},
+			},
+			res: []rules.Result{rules.DENIED, rules.DENIED},
+		},
+		{
+			// Advance to epoch 1 — both should be approved.
+			name: "PostGenesisBatch",
+			metadata: []*rules.ReqMetadata{
+				{PubKey: pubKeyA},
+				{PubKey: pubKeyB},
+			},
+			req: []*rules.SignBeaconAttestationData{
+				{
+					Domain: attestationDomain,
+					Source: &rules.Checkpoint{Epoch: 0},
+					Target: &rules.Checkpoint{Epoch: 1},
+				},
+				{
+					Domain: attestationDomain,
+					Source: &rules.Checkpoint{Epoch: 0},
+					Target: &rules.Checkpoint{Epoch: 1},
+				},
+			},
+			res: []rules.Result{rules.APPROVED, rules.APPROVED},
+		},
+		{
+			// Advance to epoch 2 — both should be approved.
+			name: "PostGenesisBatchHigher",
+			metadata: []*rules.ReqMetadata{
+				{PubKey: pubKeyA},
+				{PubKey: pubKeyB},
+			},
+			req: []*rules.SignBeaconAttestationData{
+				{
+					Domain: attestationDomain,
+					Source: &rules.Checkpoint{Epoch: 1},
+					Target: &rules.Checkpoint{Epoch: 2},
+				},
+				{
+					Domain: attestationDomain,
+					Source: &rules.Checkpoint{Epoch: 1},
+					Target: &rules.Checkpoint{Epoch: 2},
+				},
+			},
+			res: []rules.Result{rules.APPROVED, rules.APPROVED},
+		},
+		{
+			// Mixed results in a single batch: A retries the current epoch (denied)
+			// while B advances (approved). Verifies per-validator independence.
+			name: "PostGenesisBatchMixed",
+			metadata: []*rules.ReqMetadata{
+				{PubKey: pubKeyA},
+				{PubKey: pubKeyB},
+			},
+			req: []*rules.SignBeaconAttestationData{
+				{
+					Domain: attestationDomain,
+					Source: &rules.Checkpoint{Epoch: 1},
+					Target: &rules.Checkpoint{Epoch: 2},
+				},
+				{
+					Domain: attestationDomain,
+					Source: &rules.Checkpoint{Epoch: 1},
+					Target: &rules.Checkpoint{Epoch: 3},
+				},
+			},
+			res: []rules.Result{rules.DENIED, rules.APPROVED},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			res := testRules.OnSignBeaconAttestations(ctx, test.metadata, test.req)
+			assert.Equal(t, test.res, res)
+		})
+	}
 }
