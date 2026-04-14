@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,7 +26,7 @@ type Credentials struct {
 	// Client is the authenticated client identity (extracted from certificate).
 	Client string
 	// ClientIdentitySource indicates where the Client identity came from.
-	// Possible values: "san-dns", "san-ip", "san-email", "cn", or "" if no identity.
+	// Possible values: "san-dns", "cn", or "unknown" if no identity.
 	ClientIdentitySource san.IdentitySource
 	// ClientCertificateSANs contains all Subject Alternative Names from the client certificate.
 	ClientCertificateSANs *san.CertificateSANs

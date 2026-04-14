@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -87,18 +87,12 @@ func (s *Service) Check(_ context.Context, credentials *checker.Credentials, acc
 		Str("account", account).
 		Str("operation", operation).
 		Str("client", credentials.Client).
-		Str("client_identity_source", string(credentials.ClientIdentitySource))
+		Str("client_identity_source", credentials.ClientIdentitySource.String())
 
 	// Add all available identities from certificate SANs for audit trail.
 	if credentials.ClientCertificateSANs != nil {
 		if len(credentials.ClientCertificateSANs.DNSNames) > 0 {
 			logContext = logContext.Strs("cert_dns_names", credentials.ClientCertificateSANs.DNSNames)
-		}
-		if len(credentials.ClientCertificateSANs.IPAddresses) > 0 {
-			logContext = logContext.Strs("cert_ip_addresses", credentials.ClientCertificateSANs.IPAddresses)
-		}
-		if len(credentials.ClientCertificateSANs.EmailAddresses) > 0 {
-			logContext = logContext.Strs("cert_email_addresses", credentials.ClientCertificateSANs.EmailAddresses)
 		}
 	}
 

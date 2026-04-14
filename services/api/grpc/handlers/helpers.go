@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -35,12 +35,7 @@ func GenerateCredentials(ctx context.Context) *checker.Credentials {
 		res.ClientIdentitySource = identitySource
 	}
 	if certSANs, ok := ctx.Value(&interceptors.ClientCertificateSANs{}).(*san.CertificateSANs); ok && certSANs != nil {
-		// Convert from interceptors type to checker type.
-		res.ClientCertificateSANs = &san.CertificateSANs{
-			DNSNames:       certSANs.DNSNames,
-			IPAddresses:    certSANs.IPAddresses,
-			EmailAddresses: certSANs.EmailAddresses,
-		}
+		res.ClientCertificateSANs = certSANs
 	}
 	if ip, ok := ctx.Value(&interceptors.ExternalIP{}).(string); ok {
 		res.IP = ip

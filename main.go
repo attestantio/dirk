@@ -60,7 +60,8 @@ import (
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
 	standardwalletmanager "github.com/attestantio/dirk/services/walletmanager/standard"
 	"github.com/attestantio/dirk/util"
-	majordomofetcher "github.com/attestantio/go-certmanager/fetcher/majordomo"
+	clientcert "github.com/attestantio/go-certmanager/client"
+	standardclientcert "github.com/attestantio/go-certmanager/client/standard"
 	servercert "github.com/attestantio/go-certmanager/server"
 	standardservercert "github.com/attestantio/go-certmanager/server/standard"
 	"github.com/mitchellh/go-homedir"
@@ -119,7 +120,9 @@ func handleSignals(ctx context.Context, cancel context.CancelFunc, certManagerSv
 		sig := <-sigCh
 		if sig == syscall.SIGHUP {
 			log.Info().Msg("Received SIGHUP; reloading certificates")
-			certManagerSvc.TryReloadCertificate(ctx)
+			if err := certManagerSvc.ReloadCertificate(ctx); err != nil {
+				log.Error().Err(err).Msg("Failed to reload certificates")
+			}
 			continue
 		}
 		if sig == syscall.SIGINT || sig == syscall.SIGTERM || sig == os.Interrupt || sig == os.Kill {
@@ -179,7 +182,13 @@ func main() {
 		return
 	}
 
-	err = startServices(ctx, majordomoSvc, certManagerSvc, monitor)
+	clientCertManagerSvc, err := startClientCertManager(ctx, majordomoSvc)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to set up client certmanager service")
+		return
+	}
+
+	err = startServices(ctx, majordomoSvc, certManagerSvc, clientCertManagerSvc, monitor)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to initialise services")
 		return
@@ -327,7 +336,7 @@ func runCommands(ctx context.Context, majordomoSvc majordomo.Service) (bool, int
 	return false, 0
 }
 
-func startServices(ctx context.Context, majordomoSvc majordomo.Service, certManagerSvc servercert.Service, monitor metrics.Service) error {
+func startServices(ctx context.Context, majordomoSvc majordomo.Service, certManagerSvc servercert.Service, clientCertManagerSvc clientcert.Service, monitor metrics.Service) error {
 	stores, err := initStores(ctx, majordomoSvc)
 	if err != nil {
 		return err
@@ -361,7 +370,7 @@ func startServices(ctx context.Context, majordomoSvc majordomo.Service, certMana
 		return errors.Wrap(err, "failed to set up ruler service")
 	}
 
-	_, err = startGrpcServer(ctx, monitor, majordomoSvc, certManagerSvc, stores, unlockerSvc, checkerSvc, fetcherSvc, rulerSvc)
+	_, err = startGrpcServer(ctx, monitor, majordomoSvc, certManagerSvc, clientCertManagerSvc, stores, unlockerSvc, checkerSvc, fetcherSvc, rulerSvc)
 	if err != nil {
 		return err
 	}
@@ -391,19 +400,24 @@ func startMonitor(ctx context.Context) (metrics.Service, error) {
 func startCertManager(ctx context.Context, majordomoSvc majordomo.Service) (servercert.Service, error) {
 	log.Trace().Msg("Starting certificate manager service")
 
-	fetcher, err := majordomofetcher.New(ctx,
-		majordomofetcher.WithMajordomo(majordomoSvc),
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create certificate fetcher")
-	}
-
 	return standardservercert.New(ctx,
 		standardservercert.WithLogLevel(util.LogLevel("certmanager")),
-		standardservercert.WithFetcher(fetcher),
+		standardservercert.WithMajordomo(majordomoSvc),
 		standardservercert.WithCertPEMURI(viper.GetString("certificates.server-cert")),
 		standardservercert.WithCertKeyURI(viper.GetString("certificates.server-key")),
-		standardservercert.WithReloadTimeout(viper.GetDuration("certificates.reload-timeout")),
+		standardservercert.WithLoadTimeout(viper.GetDuration("certificates.load-timeout")),
+	)
+}
+
+func startClientCertManager(ctx context.Context, majordomoSvc majordomo.Service) (clientcert.Service, error) {
+	log.Trace().Msg("Starting client certificate manager service")
+
+	return standardclientcert.New(ctx,
+		standardclientcert.WithLogLevel(util.LogLevel("certmanager")),
+		standardclientcert.WithMajordomo(majordomoSvc),
+		standardclientcert.WithCertPEMURI(viper.GetString("certificates.server-cert")),
+		standardclientcert.WithCertKeyURI(viper.GetString("certificates.server-key")),
+		standardclientcert.WithCACertURI(viper.GetString("certificates.ca-cert")),
 	)
 }
 
@@ -626,8 +640,7 @@ func startSigner(ctx context.Context,
 
 func startSender(ctx context.Context,
 	monitor metrics.Service,
-	serverCertManager servercert.Service,
-	caPEMBlock []byte,
+	clientCertManager clientcert.Service,
 ) (
 	sender.Service,
 	error,
@@ -641,8 +654,7 @@ func startSender(ctx context.Context,
 		sendergrpc.WithLogLevel(util.LogLevel("sender")),
 		sendergrpc.WithMonitor(senderMonitor),
 		sendergrpc.WithName(viper.GetString("server.name")),
-		sendergrpc.WithCertManager(serverCertManager),
-		sendergrpc.WithCACert(caPEMBlock),
+		sendergrpc.WithCertManager(clientCertManager),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create sender service")
@@ -660,13 +672,12 @@ func startProcess(ctx context.Context,
 	checkerSvc checker.Service,
 	fetcherSvc fetcher.Service,
 	peersSvc peers.Service,
-	serverCertManager servercert.Service,
-	caPEMBlock []byte,
+	clientCertManager clientcert.Service,
 ) (
 	process.Service,
 	error,
 ) {
-	sender, err := startSender(ctx, monitor, serverCertManager, caPEMBlock)
+	sender, err := startSender(ctx, monitor, clientCertManager)
 	if err != nil {
 		return nil, err
 	}
@@ -711,6 +722,7 @@ func startGrpcServer(ctx context.Context,
 	monitor metrics.Service,
 	majordomoSvc majordomo.Service,
 	certManagerSvc servercert.Service,
+	clientCertManagerSvc clientcert.Service,
 	stores []e2wtypes.Store,
 	unlockerSvc unlocker.Service,
 	checkerSvc checker.Service,
@@ -756,8 +768,7 @@ func startGrpcServer(ctx context.Context,
 		checkerSvc,
 		fetcherSvc,
 		peersSvc,
-		certManagerSvc,
-		caPEMBlock,
+		clientCertManagerSvc,
 	)
 	if err != nil {
 		return nil, err

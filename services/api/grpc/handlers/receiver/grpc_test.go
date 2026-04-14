@@ -1,4 +1,4 @@
-// Copyright © 2020, 2022 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -53,7 +53,7 @@ import (
 	"github.com/attestantio/dirk/testing/mock"
 	"github.com/attestantio/dirk/testing/resources"
 	"github.com/attestantio/dirk/util"
-	majordomofetcher "github.com/attestantio/go-certmanager/fetcher/majordomo"
+	standardclientcert "github.com/attestantio/go-certmanager/client/standard"
 	standardservercert "github.com/attestantio/go-certmanager/server/standard"
 	mockcertfetcher "github.com/attestantio/go-certmanager/testing/mock"
 	"github.com/pkg/errors"
@@ -301,16 +301,9 @@ func createTestCertManager(ctx context.Context, majordomo majordomo.Service, bas
 	certPEMURI := "file://" + filepath.Join(base, fmt.Sprintf("%s.crt", name))
 	certKeyURI := "file://" + filepath.Join(base, fmt.Sprintf("%s.key", name))
 
-	fetcher, err := majordomofetcher.New(ctx,
-		majordomofetcher.WithMajordomo(majordomo),
-	)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create majordomo fetcher")
-	}
-
 	certManager, err := standardservercert.New(ctx,
 		standardservercert.WithLogLevel(zerolog.Disabled),
-		standardservercert.WithFetcher(fetcher),
+		standardservercert.WithMajordomo(majordomo),
 		standardservercert.WithCertPEMURI(certPEMURI),
 		standardservercert.WithCertKeyURI(certKeyURI),
 	)
@@ -396,12 +389,12 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 	}
 
 	// Create certificate manager for test.
-	certFetcher := mockcertfetcher.NewFetcher(map[string][]byte{
+	certFetcher := mockcertfetcher.NewMajordomo(map[string][]byte{
 		"cert.pem": certPEMBlock,
 		"cert.key": keyPEMBlock,
 	})
 	certManager, err := standardservercert.New(ctx,
-		standardservercert.WithFetcher(certFetcher),
+		standardservercert.WithMajordomo(certFetcher),
 		standardservercert.WithCertPEMURI("cert.pem"),
 		standardservercert.WithCertKeyURI("cert.key"),
 	)
@@ -444,14 +437,16 @@ func createSender(ctx context.Context, name string, base string) (sender.Service
 		return nil, errors.Wrap(err, "failed to obtain CA certificate")
 	}
 
-	senderCertFetcher := mockcertfetcher.NewFetcher(map[string][]byte{
+	senderCertFetcher := mockcertfetcher.NewMajordomo(map[string][]byte{
 		"sender.cert": certPEMBlock,
 		"sender.key":  keyPEMBlock,
+		"ca.cert":     caPEMBlock,
 	})
-	senderCertManager, err := standardservercert.New(ctx,
-		standardservercert.WithFetcher(senderCertFetcher),
-		standardservercert.WithCertPEMURI("sender.cert"),
-		standardservercert.WithCertKeyURI("sender.key"),
+	senderCertManager, err := standardclientcert.New(ctx,
+		standardclientcert.WithMajordomo(senderCertFetcher),
+		standardclientcert.WithCertPEMURI("sender.cert"),
+		standardclientcert.WithCertKeyURI("sender.key"),
+		standardclientcert.WithCACertURI("ca.cert"),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create sender certificate manager")
@@ -460,6 +455,5 @@ func createSender(ctx context.Context, name string, base string) (sender.Service
 	return grpcsender.New(ctx,
 		grpcsender.WithName(name),
 		grpcsender.WithCertManager(senderCertManager),
-		grpcsender.WithCACert(caPEMBlock),
 	)
 }

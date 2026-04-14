@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -41,20 +41,7 @@ type ClientCertificateSANs struct{}
 //
 // The identity extraction follows this priority order:
 //  1. DNS names from SAN - Most common for service-to-service authentication
-//  2. IP addresses from SAN - Valid for direct IP-based connections
-//  3. Email addresses from SAN - Common in client certificates for user identity
-//  4. Common Name (CN) - Fallback for backward compatibility with legacy certificates
-//
-// Note on URI SANs: We intentionally do not support URI-based SANs (e.g., SPIFFE IDs,
-// https:// URIs) because:
-//   - They are not commonly used in Dirk's validator/signer architecture
-//   - URI schemes vary widely and require additional parsing/validation logic
-//   - The permission system expects simple string identities (hostnames, IPs, emails)
-//   - Adding URI support would complicate authorization rules without clear benefit
-//
-// If URI SAN support is needed in the future, it should be added with careful
-// consideration of which URI schemes to accept and how to normalize them for
-// permission matching.
+//  2. Common Name (CN) - Fallback for backward compatibility with legacy certificates
 func ClientInfoInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		grpcPeer, ok := peer.FromContext(ctx)

@@ -15,10 +15,9 @@ package grpc
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"net"
 
+	certcredentials "github.com/attestantio/go-certmanager/credentials"
 	servercert "github.com/attestantio/go-certmanager/server"
 	accountmanagerhandler "github.com/attestantio/dirk/services/api/grpc/handlers/accountmanager"
 	listerhandler "github.com/attestantio/dirk/services/api/grpc/handlers/lister"
@@ -137,7 +136,8 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 func (s *Service) createServer(ctx context.Context, name string, certManager servercert.Service, caPEMBlock []byte) error {
 	grpclog.SetLoggerV2(loggers.NewGRPCLoggerV2(log.With().Str("service", "grpc").Logger()))
 
-	grpcOpts := []grpc.ServerOption{
+	grpcOpts := make([]grpc.ServerOption, 0, 3)
+	grpcOpts = append(grpcOpts,
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.UnaryInterceptor(
 			grpcmiddleware.ChainUnaryServer(
@@ -146,29 +146,17 @@ func (s *Service) createServer(ctx context.Context, name string, certManager ser
 				interceptors.SourceIPInterceptor(),
 				interceptors.ClientInfoInterceptor(),
 			)),
-	}
+	)
 
 	if name == "" {
 		return errors.New("no server name provided; cannot proceed")
 	}
 
-	// Get base TLS config from cert manager with dynamic certificate loading.
-	tlsCfg, err := certManager.GetTLSConfig(ctx)
+	// Create server TLS config with client certificate verification.
+	tlsCfg, err := certcredentials.NewServerTLSConfig(ctx, certManager, caPEMBlock)
 	if err != nil {
-		return errors.Wrap(err, "failed to get TLS config from certificate manager")
+		return errors.Wrap(err, "failed to create server TLS config")
 	}
-
-	// Add client certificate verification.
-	certPool := x509.NewCertPool()
-	if len(caPEMBlock) > 0 {
-		// Read in the certificate authority certificate; this is required to validate client certificates on incoming connections.
-		if ok := certPool.AppendCertsFromPEM(caPEMBlock); !ok {
-			return errors.New("could not add CA certificate to pool")
-		}
-	}
-
-	tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
-	tlsCfg.ClientCAs = certPool
 
 	serverCreds := credentials.NewTLS(tlsCfg)
 	grpcOpts = append(grpcOpts, grpc.Creds(serverCreds))

@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,8 +14,8 @@
 package grpc
 
 import (
-	servercert "github.com/attestantio/go-certmanager/server"
 	"github.com/attestantio/dirk/services/metrics"
+	clientcert "github.com/attestantio/go-certmanager/client"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
@@ -24,8 +24,7 @@ type parameters struct {
 	logLevel    zerolog.Level
 	monitor     metrics.SenderMonitor
 	name        string
-	certManager servercert.Service
-	caCert      []byte
+	certManager clientcert.Service
 }
 
 // Parameter is the interface for service parameters.
@@ -61,16 +60,9 @@ func WithName(name string) Parameter {
 }
 
 // WithCertManager sets the certificate manager for this module.
-func WithCertManager(certManager servercert.Service) Parameter {
+func WithCertManager(certManager clientcert.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
 		p.certManager = certManager
-	})
-}
-
-// WithCACert sets the CA certificate for this module.
-func WithCACert(caCert []byte) Parameter {
-	return parameterFunc(func(p *parameters) {
-		p.caCert = caCert
 	})
 }
 
@@ -80,7 +72,7 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 		logLevel: zerolog.GlobalLevel(),
 	}
 	for _, p := range params {
-		if params != nil {
+		if p != nil {
 			p.apply(&parameters)
 		}
 	}

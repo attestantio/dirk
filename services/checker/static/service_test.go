@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -333,9 +333,7 @@ func TestCheckLogging(t *testing.T) {
 				Client:               "test-client",
 				ClientIdentitySource: san.IdentitySourceSANDNS,
 				ClientCertificateSANs: &san.CertificateSANs{
-					DNSNames:       []string{"validator.example.com", "backup.example.com"},
-					IPAddresses:    []string{"192.168.1.1"},
-					EmailAddresses: []string{"admin@example.com"},
+					DNSNames: []string{"validator.example.com", "backup.example.com"},
 				},
 			},
 			account:        "TestWallet/account1",
@@ -343,52 +341,8 @@ func TestCheckLogging(t *testing.T) {
 			expectedResult: true,
 			expectedFields: map[string]any{
 				"client":                 "test-client",
-				"client_identity_source": string(san.IdentitySourceSANDNS),
+				"client_identity_source": san.IdentitySourceSANDNS.String(),
 				"cert_dns_names":         []any{"validator.example.com", "backup.example.com"},
-				"cert_ip_addresses":      []any{"192.168.1.1"},
-				"cert_email_addresses":   []any{"admin@example.com"},
-				"result":                 "succeeded",
-			},
-		},
-		{
-			name: "Client with SAN IP identity",
-			credentials: &checker.Credentials{
-				Client:               "test-client",
-				ClientIdentitySource: san.IdentitySourceSANIP,
-				ClientCertificateSANs: &san.CertificateSANs{
-					DNSNames:       []string{},
-					IPAddresses:    []string{"10.0.0.1", "::1"},
-					EmailAddresses: []string{},
-				},
-			},
-			account:        "TestWallet/account1",
-			operation:      "Sign",
-			expectedResult: true,
-			expectedFields: map[string]any{
-				"client":                 "test-client",
-				"client_identity_source": string(san.IdentitySourceSANIP),
-				"cert_ip_addresses":      []any{"10.0.0.1", "::1"},
-				"result":                 "succeeded",
-			},
-		},
-		{
-			name: "Client with SAN Email identity",
-			credentials: &checker.Credentials{
-				Client:               "test-client",
-				ClientIdentitySource: san.IdentitySourceSANEmail,
-				ClientCertificateSANs: &san.CertificateSANs{
-					DNSNames:       []string{},
-					IPAddresses:    []string{},
-					EmailAddresses: []string{"service@example.com"},
-				},
-			},
-			account:        "TestWallet/account1",
-			operation:      "Sign",
-			expectedResult: true,
-			expectedFields: map[string]any{
-				"client":                 "test-client",
-				"client_identity_source": string(san.IdentitySourceSANEmail),
-				"cert_email_addresses":   []any{"service@example.com"},
 				"result":                 "succeeded",
 			},
 		},
@@ -398,9 +352,7 @@ func TestCheckLogging(t *testing.T) {
 				Client:               "test-client",
 				ClientIdentitySource: san.IdentitySourceCN,
 				ClientCertificateSANs: &san.CertificateSANs{
-					DNSNames:       []string{},
-					IPAddresses:    []string{},
-					EmailAddresses: []string{},
+					DNSNames: []string{},
 				},
 			},
 			account:        "TestWallet/account1",
@@ -408,7 +360,7 @@ func TestCheckLogging(t *testing.T) {
 			expectedResult: true,
 			expectedFields: map[string]any{
 				"client":                 "test-client",
-				"client_identity_source": string(san.IdentitySourceCN),
+				"client_identity_source": san.IdentitySourceCN.String(),
 				"result":                 "succeeded",
 			},
 		},
@@ -424,7 +376,7 @@ func TestCheckLogging(t *testing.T) {
 			expectedResult: true,
 			expectedFields: map[string]any{
 				"client":                 "test-client",
-				"client_identity_source": string(san.IdentitySourceSANDNS),
+				"client_identity_source": san.IdentitySourceSANDNS.String(),
 				"result":                 "succeeded",
 			},
 		},
@@ -442,7 +394,7 @@ func TestCheckLogging(t *testing.T) {
 			expectedResult: false,
 			expectedFields: map[string]any{
 				"client":                 "unknown-client",
-				"client_identity_source": string(san.IdentitySourceSANDNS),
+				"client_identity_source": san.IdentitySourceSANDNS.String(),
 				"cert_dns_names":         []any{"denied.example.com"},
 				"result":                 "denied",
 			},

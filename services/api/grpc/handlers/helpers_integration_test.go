@@ -75,7 +75,7 @@ func parseCertificate(certPEM []byte) (*x509.Certificate, error) {
 func extractExpectedIdentity(certPEM []byte) (string, san.IdentitySource, *san.CertificateSANs, error) {
 	cert, err := parseCertificate(certPEM)
 	if err != nil {
-		return "", "", nil, err
+		return "", san.IdentitySourceUnknown, nil, err
 	}
 
 	identity, identitySource := san.ExtractIdentity(cert)
@@ -194,12 +194,12 @@ func createTestServer(ctx context.Context, t *testing.T, base string, permission
 	}
 
 	// Create certificate manager for server
-	certFetcher := mockcertfetcher.NewFetcher(map[string][]byte{
+	certFetcher := mockcertfetcher.NewMajordomo(map[string][]byte{
 		"cert.pem": certPEMBlock,
 		"cert.key": keyPEMBlock,
 	})
 	certManager, err := standardservercert.New(ctx,
-		standardservercert.WithFetcher(certFetcher),
+		standardservercert.WithMajordomo(certFetcher),
 		standardservercert.WithCertPEMURI("cert.pem"),
 		standardservercert.WithCertKeyURI("cert.key"),
 	)
@@ -244,12 +244,12 @@ func createTestClient(ctx context.Context, base string, clientCertName string, s
 	}
 
 	// Create certificate manager for client using go-certmanager
-	clientCertFetcher := mockcertfetcher.NewFetcher(map[string][]byte{
+	clientCertFetcher := mockcertfetcher.NewMajordomo(map[string][]byte{
 		"client.cert": certPEMBlock,
 		"client.key":  keyPEMBlock,
 	})
 	clientCertManager, err := standardclientcert.New(ctx,
-		standardclientcert.WithFetcher(clientCertFetcher),
+		standardclientcert.WithMajordomo(clientCertFetcher),
 		standardclientcert.WithCertPEMURI("client.cert"),
 		standardclientcert.WithCertKeyURI("client.key"),
 	)
@@ -407,8 +407,6 @@ func TestIntegration_CertificateIdentity_CNOnly(t *testing.T) {
 	assert.Equal(t, "client-cn-only", expectedIdentity)
 	assert.NotNil(t, expectedSANs)
 	assert.Empty(t, expectedSANs.DNSNames)
-	assert.Empty(t, expectedSANs.IPAddresses)
-	assert.Empty(t, expectedSANs.EmailAddresses)
 
 	// Create server with mock checker
 	_, port, err := createTestServer(ctx, t, base, nil)

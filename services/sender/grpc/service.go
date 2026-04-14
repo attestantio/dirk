@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,10 +15,10 @@ package grpc
 
 import (
 	"context"
-	"crypto/x509"
 	"sync"
 
 	"github.com/attestantio/dirk/core"
+	certcredentials "github.com/attestantio/go-certmanager/credentials"
 	"github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/jackc/puddle"
 	"github.com/pkg/errors"
@@ -53,24 +53,15 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		log = log.Level(parameters.logLevel)
 	}
 
-	// Get TLS config from certificate manager for client connections.
-	tlsCfg, err := parameters.certManager.GetClientTLSConfig(ctx)
+	// Create gRPC client credentials from certificate manager.
+	creds, err := certcredentials.NewGRPCClientCredentials(ctx, parameters.certManager)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get client TLS config from certificate manager")
-	}
-
-	// Add CA certificate pool if provided.
-	if len(parameters.caCert) > 0 {
-		cp := x509.NewCertPool()
-		if !cp.AppendCertsFromPEM(parameters.caCert) {
-			return nil, errors.New("failed to add CA certificate to pool")
-		}
-		tlsCfg.RootCAs = cp
+		return nil, errors.Wrap(err, "failed to create gRPC client credentials")
 	}
 
 	service := &Service{
 		name:            parameters.name,
-		credentials:     credentials.NewTLS(tlsCfg),
+		credentials:     creds,
 		connectionPools: make(map[string]*puddle.Pool),
 	}
 
@@ -209,7 +200,6 @@ func (s *Service) SendContribution(ctx context.Context, peer *core.Endpoint, acc
 
 	return resSecret, resVVec, nil
 }
-
 
 // obtainConnection obtains a connection to the required address via GRPC.
 func (s *Service) obtainConnection(_ context.Context, address string) (*puddle.Resource, error) {

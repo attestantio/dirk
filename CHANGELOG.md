@@ -1,6 +1,8 @@
 # dev
-  - support SAN for client certificates
+  - integrate go-certmanager for TLS certificate management
+  - use DNS SAN for client certificate identity extraction, with CN fallback
   - support on-demand certificate reload on SIGHUP
+  - use separate client certificate manager for outgoing DKG connections
 
 # Version 1.2.1
   - run slashing protection database garbage collection periodically
