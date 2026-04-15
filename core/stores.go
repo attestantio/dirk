@@ -42,12 +42,13 @@ type Store struct {
 
 // S3Store defines an S3 store.
 type S3Store struct {
-	Region      string              `mapstructure:"region"`
-	ID          string              `mapstructure:"id"`
-	Bucket      string              `mapstructure:"bucket"`
-	Path        string              `mapstructure:"path"`
-	Endpoint    string              `mapstructure:"endpoint"`
-	Credentials *S3StoreCredentials `mapstructure:"credentials"`
+	Region         string              `mapstructure:"region"`
+	ID             string              `mapstructure:"id"`
+	Bucket         string              `mapstructure:"bucket"`
+	Path           string              `mapstructure:"path"`
+	Endpoint       string              `mapstructure:"endpoint"`
+	ForcePathStyle bool                `mapstructure:"force-path-style"`
+	Credentials    *S3StoreCredentials `mapstructure:"credentials"`
 }
 
 // S3StoreCredentials defines credentials for an S3 store.
@@ -143,6 +144,7 @@ func initS3Store(ctx context.Context,
 			s3.WithBucket(storeDefinition.S3.Bucket),
 			s3.WithPath(storeDefinition.S3.Path),
 			s3.WithEndpoint(storeDefinition.S3.Endpoint),
+			s3.WithForcePathStyle(storeDefinition.S3.ForcePathStyle),
 		)
 	}
 	if storeDefinition.S3 != nil && storeDefinition.S3.Credentials != nil {

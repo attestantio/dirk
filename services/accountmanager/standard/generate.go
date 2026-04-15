@@ -100,7 +100,7 @@ func (s *Service) Generate(ctx context.Context,
 	// Generate it.
 	pubKey, endpoints, err := s.process.OnGenerate(ctx, credentials, account, passphrase, signingThreshold, participants)
 	if err != nil {
-		s.monitor.AccountManagerCompleted(started, "generate", core.ResultSucceeded)
+		s.monitor.AccountManagerCompleted(started, "generate", core.ResultFailed)
 		return core.ResultFailed, nil, nil, errors.Wrap(err, "failed to generate account")
 	}
 

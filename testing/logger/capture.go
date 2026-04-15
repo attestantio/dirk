@@ -85,12 +85,17 @@ func (c *LogCapture) HasLog(fields map[string]any) bool {
 
 // Entries returns all captures log entries.
 func (c *LogCapture) Entries() []map[string]any {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	return c.entries
 }
 
 // ClearEntries removes all existing log entries.
 func (c *LogCapture) ClearEntries() {
+	c.mu.Lock()
 	c.entries = make([]map[string]any, 0)
+	c.mu.Unlock()
 }
 
 // hasField returns true if the entry has a matching field.
