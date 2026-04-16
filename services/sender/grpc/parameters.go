@@ -21,8 +21,8 @@ import (
 )
 
 type parameters struct {
-	logLevel    zerolog.Level
 	monitor     metrics.SenderMonitor
+	logLevel    zerolog.Level
 	name        string
 	certManager clientcert.Service
 }

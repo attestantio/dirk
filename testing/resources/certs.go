@@ -582,60 +582,36 @@ var SignerKeys = map[uint64][]byte{
 
 // SetupCerts sets up a number of certificates on-disk in the provided location.
 func SetupCerts(base string) error {
-	if err := os.WriteFile(filepath.Join(base, "ca.crt"), CACrt, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test01.crt"), SignerTest01Crt, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test01.key"), SignerTest01Key, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test02.crt"), SignerTest02Crt, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test02.key"), SignerTest02Key, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test03.crt"), SignerTest03Crt, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test03.key"), SignerTest03Key, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test04.crt"), SignerTest04Crt, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test04.key"), SignerTest04Key, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test05.crt"), SignerTest05Crt, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "signer-test05.key"), SignerTest05Key, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "client-test01.crt"), ClientTest01Crt, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "client-test01.key"), ClientTest01Key, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "client-test02.crt"), ClientTest02Crt, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "client-test02.key"), ClientTest02Key, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "client-test03.crt"), ClientTest03Crt, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "client-test03.key"), ClientTest03Key, 0o600); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(base, "client-cn-only.crt"), ClientCNOnlyCrt, 0o600); err != nil {
-		return err
+	files := []struct {
+		name string
+		data []byte
+	}{
+		{"ca.crt", CACrt},
+		{"signer-test01.crt", SignerTest01Crt},
+		{"signer-test01.key", SignerTest01Key},
+		{"signer-test02.crt", SignerTest02Crt},
+		{"signer-test02.key", SignerTest02Key},
+		{"signer-test03.crt", SignerTest03Crt},
+		{"signer-test03.key", SignerTest03Key},
+		{"signer-test04.crt", SignerTest04Crt},
+		{"signer-test04.key", SignerTest04Key},
+		{"signer-test05.crt", SignerTest05Crt},
+		{"signer-test05.key", SignerTest05Key},
+		{"client-test01.crt", ClientTest01Crt},
+		{"client-test01.key", ClientTest01Key},
+		{"client-test02.crt", ClientTest02Crt},
+		{"client-test02.key", ClientTest02Key},
+		{"client-test03.crt", ClientTest03Crt},
+		{"client-test03.key", ClientTest03Key},
+		{"client-cn-only.crt", ClientCNOnlyCrt},
+		{"client-cn-only.key", ClientCNOnlyKey},
 	}
 
-	return os.WriteFile(filepath.Join(base, "client-cn-only.key"), ClientCNOnlyKey, 0o600)
+	for _, f := range files {
+		if err := os.WriteFile(filepath.Join(base, f.name), f.data, 0o600); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
