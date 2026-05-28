@@ -32,7 +32,7 @@ func TestGenerateCredentials(t *testing.T) {
 	}{
 		{
 			name:     "EmptyContext",
-			setupCtx: func() context.Context { return context.Background() },
+			setupCtx: context.Background,
 			expected: &checker.Credentials{},
 		},
 		{
