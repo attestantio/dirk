@@ -33,8 +33,8 @@ import (
 type Service struct {
 	name                 string
 	credentials          credentials.TransportCredentials
-	connectionPoolsMutex sync.Mutex
 	connectionPools      map[string]*puddle.Pool
+	connectionPoolsMutex sync.Mutex
 }
 
 // module-wide log.

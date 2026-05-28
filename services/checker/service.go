@@ -21,8 +21,6 @@ import (
 
 // Credentials are the credentials used to check.
 type Credentials struct {
-	// RequestID is the ID of the request.
-	RequestID string
 	// Client is the authenticated client identity (extracted from certificate).
 	Client string
 	// ClientIdentitySource indicates where the Client identity came from.
@@ -30,6 +28,8 @@ type Credentials struct {
 	ClientIdentitySource san.IdentitySource
 	// ClientCertificateSANs contains all Subject Alternative Names from the client certificate.
 	ClientCertificateSANs *san.CertificateSANs
+	// RequestID is the ID of the request.
+	RequestID string
 	// IP is the originating IP address of the request.
 	IP string
 }
