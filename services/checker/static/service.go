@@ -82,21 +82,7 @@ func (s *Service) Check(_ context.Context, credentials *checker.Credentials, acc
 		return false
 	}
 
-	// Build logger with client identity information.
-	logContext := log.With().
-		Str("account", account).
-		Str("operation", operation).
-		Str("client", credentials.Client).
-		Str("client_identity_source", credentials.ClientIdentitySource.String())
-
-	// Add all available identities from certificate SANs for audit trail.
-	if credentials.ClientCertificateSANs != nil {
-		if len(credentials.ClientCertificateSANs.DNSNames) > 0 {
-			logContext = logContext.Strs("cert_dns_names", credentials.ClientCertificateSANs.DNSNames)
-		}
-	}
-
-	log := logContext.Logger()
+	log := buildCheckLogger(credentials, account, operation)
 
 	walletName, accountName, err := e2wallet.WalletAndAccountNames(account)
 	if err != nil {
@@ -116,21 +102,53 @@ func (s *Service) Check(_ context.Context, credentials *checker.Credentials, acc
 
 	antiOperation := fmt.Sprintf("~%s", operation)
 	for _, path := range paths {
-		if path.wallet.MatchString(walletName) && path.account.MatchString(accountName) {
-			for i := range path.operations {
-				if strings.EqualFold(path.operations[i], "none") || strings.EqualFold(path.operations[i], antiOperation) {
-					log.Trace().Str("result", "denied").Msg("Negative permission matched")
-					return false
-				}
-				if strings.EqualFold(path.operations[i], "all") || strings.EqualFold(path.operations[i], operation) {
-					log.Trace().Str("result", "succeeded").Msg("Positive permission matched")
-					return true
-				}
-			}
+		if !path.wallet.MatchString(walletName) || !path.account.MatchString(accountName) {
+			continue
 		}
+		matched, allowed := matchOperation(path.operations, operation, antiOperation)
+		if !matched {
+			continue
+		}
+		if !allowed {
+			log.Trace().Str("result", "denied").Msg("Negative permission matched")
+			return false
+		}
+		log.Trace().Str("result", "succeeded").Msg("Positive permission matched")
+		return true
 	}
 
 	log.Trace().Str("result", "denied").Msg("No matching rules")
 
 	return false
+}
+
+// buildCheckLogger returns a logger annotated with the client identity fields
+// used throughout a permission check.
+func buildCheckLogger(credentials *checker.Credentials, account, operation string) zerolog.Logger {
+	logContext := log.With().
+		Str("account", account).
+		Str("operation", operation).
+		Str("client", credentials.Client).
+		Str("client_identity_source", credentials.ClientIdentitySource.String())
+
+	if credentials.ClientCertificateSANs != nil && len(credentials.ClientCertificateSANs.DNSNames) > 0 {
+		logContext = logContext.Strs("cert_dns_names", credentials.ClientCertificateSANs.DNSNames)
+	}
+
+	return logContext.Logger()
+}
+
+// matchOperation walks the list of operation entries for a single path and
+// returns whether any entry decided the request, and if so whether it allows
+// or denies it.
+func matchOperation(operations []string, operation, antiOperation string) (bool, bool) {
+	for i := range operations {
+		if strings.EqualFold(operations[i], "none") || strings.EqualFold(operations[i], antiOperation) {
+			return true, false
+		}
+		if strings.EqualFold(operations[i], "all") || strings.EqualFold(operations[i], operation) {
+			return true, true
+		}
+	}
+	return false, false
 }
