@@ -117,6 +117,8 @@ var Wallet2Keys = [][]byte{
 // Returns the log capture for the daemon, along with the filesystem path for the wallets.
 //
 //nolint:maintidx
+//
+//skipcq: GO-R1005
 func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[uint64]string) (*logger.LogCapture, string, error) {
 	capture := logger.NewLogCapture()
 	if err := e2types.InitBLS(); err != nil {
