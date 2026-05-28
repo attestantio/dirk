@@ -84,6 +84,21 @@ func extractExpectedIdentity(certPEM []byte) (string, san.IdentitySource, *san.C
 	return identity, identitySource, certSANs, nil
 }
 
+// waitForServerReady blocks until the server is accepting TCP connections on
+// the given port, or fails the test after a fixed deadline.
+func waitForServerReady(t *testing.T, port uint32) {
+	t.Helper()
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	require.Eventually(t, func() bool {
+		conn, err := net.DialTimeout("tcp", addr, 100*time.Millisecond)
+		if err != nil {
+			return false
+		}
+		_ = conn.Close()
+		return true
+	}, 5*time.Second, 10*time.Millisecond, "server at %s did not become ready", addr)
+}
+
 // createTestServer creates a gRPC server with static checker and configured permissions.
 func createTestServer(ctx context.Context, t *testing.T, base string, permissions map[string][]*checker.Permissions) (*grpcapi.Service, uint32, error) {
 	rand.Seed(time.Now().UnixNano())
@@ -312,8 +327,8 @@ func TestIntegration_CertificateIdentityExtraction_DNS(t *testing.T) {
 	_, port, err := createTestServer(ctx, t, base, nil)
 	require.NoError(t, err)
 
-	// Server starts automatically in New(), wait for it to be ready
-	time.Sleep(200 * time.Millisecond)
+	// Server starts automatically in New(); wait for the accept loop to be ready.
+	waitForServerReady(t, port)
 
 	// Create client with client-test01 certificate
 	clientConn, err := createTestClient(ctx, base, "client-test01", port)
@@ -368,7 +383,7 @@ func TestIntegration_CertificateIdentityPriority_DNSOverCN(t *testing.T) {
 	_, port, err := createTestServer(ctx, t, base, nil)
 	require.NoError(t, err)
 
-	time.Sleep(200 * time.Millisecond)
+	waitForServerReady(t, port)
 
 	clientConn, err := createTestClient(ctx, base, "client-test01", port)
 	require.NoError(t, err)
@@ -412,7 +427,7 @@ func TestIntegration_CertificateIdentity_CNOnly(t *testing.T) {
 	_, port, err := createTestServer(ctx, t, base, nil)
 	require.NoError(t, err)
 
-	time.Sleep(200 * time.Millisecond)
+	waitForServerReady(t, port)
 
 	// Create client with CN-only certificate
 	clientConn, err := createTestClient(ctx, base, "client-cn-only", port)
@@ -459,7 +474,7 @@ func TestIntegration_EndToEndPermissionCheck_Granted(t *testing.T) {
 	_, port, err := createTestServer(ctx, t, base, permissions)
 	require.NoError(t, err)
 
-	time.Sleep(200 * time.Millisecond)
+	waitForServerReady(t, port)
 
 	clientConn, err := createTestClient(ctx, base, "client-test01", port)
 	require.NoError(t, err)
@@ -515,7 +530,7 @@ func TestIntegration_EndToEndPermissionCheck_Denied(t *testing.T) {
 	_, port, err := createTestServer(ctx, t, base, permissions)
 	require.NoError(t, err)
 
-	time.Sleep(200 * time.Millisecond)
+	waitForServerReady(t, port)
 
 	// Use client-test02 certificate (not in permissions)
 	clientConn, err := createTestClient(ctx, base, "client-test02", port)
