@@ -418,6 +418,7 @@ func startClientCertManager(ctx context.Context, majordomoSvc majordomo.Service)
 		standardclientcert.WithCertPEMURI(viper.GetString("certificates.server-cert")),
 		standardclientcert.WithCertKeyURI(viper.GetString("certificates.server-key")),
 		standardclientcert.WithCACertURI(viper.GetString("certificates.ca-cert")),
+		standardclientcert.WithLoadTimeout(viper.GetDuration("certificates.load-timeout")),
 	)
 }
 

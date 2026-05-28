@@ -15,6 +15,8 @@ package grpc
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"net"
 
 	certcredentials "github.com/attestantio/go-certmanager/credentials"
@@ -153,7 +155,7 @@ func (s *Service) createServer(ctx context.Context, name string, certManager ser
 	}
 
 	// Create server TLS config with client certificate verification.
-	tlsCfg, err := certcredentials.NewServerTLSConfig(ctx, certManager, caPEMBlock)
+	tlsCfg, err := buildServerTLSConfig(ctx, certManager, caPEMBlock)
 	if err != nil {
 		return errors.Wrap(err, "failed to create server TLS config")
 	}
@@ -163,6 +165,31 @@ func (s *Service) createServer(ctx context.Context, name string, certManager ser
 	s.grpcServer = grpc.NewServer(grpcOpts...)
 
 	return nil
+}
+
+// buildServerTLSConfig returns a TLS config that verifies client certificates,
+// using caPEMBlock as the client CA pool when provided and falling back to the
+// host's system root pool when caPEMBlock is empty (matching the documented
+// "use standard CA certificates" behaviour).
+func buildServerTLSConfig(ctx context.Context, certManager servercert.Service, caPEMBlock []byte) (*tls.Config, error) {
+	if len(caPEMBlock) > 0 {
+		return certcredentials.NewServerTLSConfig(ctx, certManager, caPEMBlock)
+	}
+
+	baseCfg, err := certManager.GetTLSConfig(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to obtain base TLS config")
+	}
+
+	systemPool, err := x509.SystemCertPool()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load system CA pool")
+	}
+
+	cfg := baseCfg.Clone()
+	cfg.ClientAuth = tls.RequireAndVerifyClientCert
+	cfg.ClientCAs = systemPool
+	return cfg, nil
 }
 
 // Serve serves the GRPC server.
