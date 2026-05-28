@@ -101,13 +101,30 @@ func waitForServerReady(t *testing.T, port uint32) {
 	}, 5*time.Second, 10*time.Millisecond, "server at %s did not become ready", addr)
 }
 
-// pickTestPort returns a port in [8192, 16384) for a test server to bind to,
-// sourced from crypto/rand so the math/rand weak-randomness lint does not fire.
+// pickTestPort returns a port in [8192, 16384) that is bindable on the
+// loopback interface at the time of the check. The bind probe is racy by
+// nature (the port might be taken before the caller binds for real) but it
+// rules out ports already held by another process and avoids the silent
+// "address already in use" failures the previous unchecked variant produced.
+// Ports are sourced from crypto/rand so the math/rand weak-randomness lint
+// does not fire.
 func pickTestPort(t *testing.T) uint32 {
 	t.Helper()
-	n, err := cryptorand.Int(cryptorand.Reader, big.NewInt(8192))
-	require.NoError(t, err, "failed to pick test port")
-	return uint32(n.Uint64()) + 8192
+	const maxAttempts = 32
+	for range maxAttempts {
+		n, err := cryptorand.Int(cryptorand.Reader, big.NewInt(8192))
+		require.NoError(t, err, "failed to pick test port")
+		port := uint32(n.Uint64()) + 8192
+
+		ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+		if err != nil {
+			continue
+		}
+		_ = ln.Close()
+		return port
+	}
+	t.Fatalf("could not find an available test port after %d attempts", maxAttempts)
+	return 0
 }
 
 // createCheckerService returns a static checker when permissions are provided
@@ -215,7 +232,7 @@ func createTestServer(ctx context.Context, t *testing.T, base string, permission
 
 	peers, err := staticpeers.New(ctx,
 		staticpeers.WithPeers(map[uint64]string{
-			1: "signer-test01:8881",
+			1: fmt.Sprintf("signer-test01:%d", port),
 		}))
 	if err != nil {
 		return nil, 0, err

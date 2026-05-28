@@ -32,7 +32,6 @@ import (
 	mockchecker "github.com/attestantio/dirk/services/checker/mock"
 	"github.com/attestantio/dirk/services/fetcher"
 	memfetcher "github.com/attestantio/dirk/services/fetcher/mem"
-	mocklister "github.com/attestantio/dirk/services/lister/mock"
 	standardlister "github.com/attestantio/dirk/services/lister/standard"
 	"github.com/attestantio/dirk/services/locker"
 	syncmaplocker "github.com/attestantio/dirk/services/locker/syncmap"
@@ -45,7 +44,6 @@ import (
 	"github.com/attestantio/dirk/services/sender"
 	grpcsender "github.com/attestantio/dirk/services/sender/grpc"
 	mocksender "github.com/attestantio/dirk/services/sender/mock"
-	mocksigner "github.com/attestantio/dirk/services/signer/mock"
 	standardsigner "github.com/attestantio/dirk/services/signer/standard"
 	"github.com/attestantio/dirk/services/unlocker"
 	localunlocker "github.com/attestantio/dirk/services/unlocker/local"
@@ -72,14 +70,13 @@ func TestAbort(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	base, endpoints, _, err := createServers(ctx)
+	servers, err := createServers(t, ctx)
 	require.NoError(t, err)
-	defer os.RemoveAll(base)
 	// #nosec G404
 	accountName := fmt.Sprintf("Test/%d", rand.Int())
-	participants := endpoints[0:3]
+	participants := servers.endpoints[0:3]
 
-	senderSvc, err := createSender(ctx, endpoints[0].Name, base)
+	senderSvc, err := createSender(ctx, servers.endpoints[0].Name, servers.base)
 	require.NoError(t, err)
 
 	require.Error(t, senderSvc.Abort(ctx, participants[0], accountName))
@@ -94,14 +91,13 @@ func TestAbortUnknownEndpoint(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	base, endpoints, _, err := createServers(ctx)
+	servers, err := createServers(t, ctx)
 	require.NoError(t, err)
-	defer os.RemoveAll(base)
 	// #nosec G404
 	accountName := fmt.Sprintf("Test/%d", rand.Int())
-	participants := endpoints[0:3]
+	participants := servers.endpoints[0:3]
 
-	senderSvc, err := createSender(ctx, endpoints[0].Name, base)
+	senderSvc, err := createSender(ctx, servers.endpoints[0].Name, servers.base)
 	require.NoError(t, err)
 
 	require.NoError(t, senderSvc.Prepare(ctx, participants[0], accountName, []byte("test"), 2, participants))
@@ -117,14 +113,13 @@ func TestEndToEnd(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	base, endpoints, _, err := createServers(ctx)
+	servers, err := createServers(t, ctx)
 	require.NoError(t, err)
-	defer os.RemoveAll(base)
 	// #nosec G404
 	accountName := fmt.Sprintf("Test/%d", rand.Int())
-	participants := endpoints[0:3]
+	participants := servers.endpoints[0:3]
 
-	senderSvc, err := createSender(ctx, endpoints[0].Name, base)
+	senderSvc, err := createSender(ctx, servers.endpoints[0].Name, servers.base)
 	require.NoError(t, err)
 
 	for _, participant := range participants {
@@ -152,17 +147,28 @@ func TestEndToEnd(t *testing.T) {
 	}
 }
 
-func createServers(ctx context.Context) (string, []*core.Endpoint, []*grpcapi.Service, error) {
-	// initialise mock.Processes map
-	mock.Processes = make(map[uint64]process.Service)
+// testServers bundles the per-test resources produced by createServers so
+// individual tests do not have to thread unrelated values, and so the
+// lifecycle of the package-global mock.Processes map can be tied to t.Cleanup
+// rather than leaking between tests.
+type testServers struct {
+	base      string
+	endpoints []*core.Endpoint
+	services  []*grpcapi.Service
+	processes map[uint64]process.Service
+}
+
+func createServers(t *testing.T, ctx context.Context) (*testServers, error) {
+	t.Helper()
 
 	base, err := os.MkdirTemp("", "")
 	if err != nil {
-		return "", nil, nil, err
+		return nil, err
 	}
+	t.Cleanup(func() { _ = os.RemoveAll(base) })
 
 	if err := resources.SetupCerts(base); err != nil {
-		return "", nil, nil, err
+		return nil, err
 	}
 
 	rand.Seed(time.Now().UnixNano())
@@ -204,16 +210,28 @@ func createServers(ctx context.Context) (string, []*core.Endpoint, []*grpcapi.Se
 		peerAddresses[endpoint.ID] = net.JoinHostPort(endpoint.Name, fmt.Sprintf("%d", endpoint.Port))
 	}
 
-	grpcdServices := make([]*grpcapi.Service, 0)
-	for _, endpoint := range endpoints {
-		grpcdService, err := createServer(ctx, endpoint.Name, endpoint.ID, endpoint.Port, base, peerAddresses)
-		if err != nil {
-			return "", nil, nil, err
-		}
-		grpcdServices = append(grpcdServices, grpcdService)
+	servers := &testServers{
+		base:      base,
+		endpoints: endpoints,
+		processes: make(map[uint64]process.Service),
 	}
 
-	return base, endpoints, grpcdServices, nil
+	// The mock sender resolves process services through this package-global.
+	// Adopt the fixture's map so tests share a clean view, and tear it down
+	// on test end so order-dependent state cannot leak into later tests.
+	mock.Processes = servers.processes
+	t.Cleanup(func() { mock.Processes = nil })
+
+	for _, endpoint := range endpoints {
+		grpcdService, processSvc, err := createServer(ctx, endpoint.Name, endpoint.ID, endpoint.Port, base, peerAddresses)
+		if err != nil {
+			return nil, err
+		}
+		servers.services = append(servers.services, grpcdService)
+		servers.processes[endpoint.ID] = processSvc
+	}
+
+	return servers, nil
 }
 
 // createTestStoresAndWallet creates filesystem stores and a test wallet for the test server.
@@ -296,43 +314,20 @@ func createTestPeers(ctx context.Context, peerAddresses map[uint64]string) (peer
 		staticpeers.WithPeers(peerAddresses))
 }
 
-// createTestCertManager creates a certificate manager for testing.
-func createTestCertManager(ctx context.Context, majordomo majordomo.Service, base, name string) (*standardservercert.Service, []byte, error) {
-	certPEMURI := "file://" + filepath.Join(base, fmt.Sprintf("%s.crt", name))
-	certKeyURI := "file://" + filepath.Join(base, fmt.Sprintf("%s.key", name))
-
-	certManager, err := standardservercert.New(ctx,
-		standardservercert.WithLogLevel(zerolog.Disabled),
-		standardservercert.WithMajordomo(majordomo),
-		standardservercert.WithCertPEMURI(certPEMURI),
-		standardservercert.WithCertKeyURI(certKeyURI),
-	)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create cert manager")
-	}
-
-	caPEMBlock, err := os.ReadFile(filepath.Join(base, "ca.crt"))
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to obtain CA certificate")
-	}
-
-	return certManager, caPEMBlock, nil
-}
-
-func createServer(ctx context.Context, name string, id uint64, port uint32, base string, peerAddresses map[uint64]string) (*grpcapi.Service, error) {
+func createServer(ctx context.Context, name string, id uint64, port uint32, base string, peerAddresses map[uint64]string) (*grpcapi.Service, process.Service, error) {
 	majordomo, err := util.InitMajordomo(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	stores, err := createTestStoresAndWallet(ctx, majordomo, base, name)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	basicSvcs, err := createBasicTestServices(ctx, stores)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	lister, err := standardlister.New(ctx,
@@ -341,12 +336,12 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 		standardlister.WithChecker(basicSvcs.checker),
 		standardlister.WithRuler(basicSvcs.ruler))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	peers, err := createTestPeers(ctx, peerAddresses)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Set up the signer.
@@ -357,10 +352,10 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 		standardsigner.WithFetcher(basicSvcs.fetcher),
 		standardsigner.WithRuler(basicSvcs.ruler))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	process, err := standardprocess.New(ctx,
+	processSvc, err := standardprocess.New(ctx,
 		standardprocess.WithChecker(basicSvcs.checker),
 		standardprocess.WithGenerationPassphrase([]byte("secret")),
 		standardprocess.WithID(id),
@@ -371,21 +366,20 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 		standardprocess.WithUnlocker(basicSvcs.unlocker),
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	mock.Processes[id] = process
 
 	certPEMBlock, err := os.ReadFile(filepath.Join(base, fmt.Sprintf("%s.crt", name)))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to obtain server certificate")
+		return nil, nil, errors.Wrap(err, "failed to obtain server certificate")
 	}
 	keyPEMBlock, err := os.ReadFile(filepath.Join(base, fmt.Sprintf("%s.key", name)))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to obtain server key")
+		return nil, nil, errors.Wrap(err, "failed to obtain server key")
 	}
 	caPEMBlock, err := os.ReadFile(filepath.Join(base, "ca.crt"))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to obtain CA certificate")
+		return nil, nil, errors.Wrap(err, "failed to obtain CA certificate")
 	}
 
 	// Create certificate manager for test.
@@ -399,7 +393,7 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 		standardservercert.WithCertKeyURI("cert.key"),
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create certificate manager")
+		return nil, nil, errors.Wrap(err, "failed to create certificate manager")
 	}
 
 	serverSvc, err := grpcapi.New(ctx,
@@ -410,17 +404,15 @@ func createServer(ctx context.Context, name string, id uint64, port uint32, base
 		grpcapi.WithCACert(caPEMBlock),
 		grpcapi.WithPeers(peers),
 		grpcapi.WithID(id),
-		grpcapi.WithProcess(process),
+		grpcapi.WithProcess(processSvc),
 		grpcapi.WithWalletManager(mockwalletmanager.New()),
 		grpcapi.WithAccountManager(mockaccountmanager.New()),
-		grpcapi.WithSigner(mocksigner.New()),
-		grpcapi.WithLister(mocklister.New()),
 		grpcapi.WithListenAddress(fmt.Sprintf("127.0.0.1:%d", port)),
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return serverSvc, nil
+	return serverSvc, processSvc, nil
 }
 
 func createSender(ctx context.Context, name string, base string) (sender.Service, error) {
