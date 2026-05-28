@@ -419,3 +419,96 @@ func TestCheckLogging(t *testing.T) {
 		})
 	}
 }
+
+// countDeprecationWarnings returns the number of captured warn entries that
+// match the SAN-vs-CN deprecation message.
+func countDeprecationWarnings(t *testing.T, logCapture *logger.LogCapture, expectedExtracted, expectedCN string) int {
+	t.Helper()
+	count := 0
+	for _, entry := range logCapture.Entries() {
+		extracted, _ := entry["extracted_identity"].(string)
+		cn, _ := entry["common_name"].(string)
+		if extracted == expectedExtracted && cn == expectedCN {
+			count++
+		}
+	}
+	return count
+}
+
+func TestCheck_WarnsOnSANDNSWhenCNHasPermissions(t *testing.T) {
+	logCapture := logger.NewLogCapture()
+
+	service, err := static.New(context.Background(),
+		static.WithLogLevel(zerolog.TraceLevel),
+		static.WithPermissions(map[string][]*checker.Permissions{
+			"validator-prod": {
+				{
+					Path:       "Wallet1",
+					Operations: []string{"Sign"},
+				},
+			},
+		}),
+	)
+	require.NoError(t, err)
+
+	credentials := &checker.Credentials{
+		Client:               "val01.internal.example.com",
+		ClientIdentitySource: san.IdentitySourceSANDNS,
+		ClientCommonName:     "validator-prod",
+	}
+
+	allowed := service.Check(context.Background(), credentials, "Wallet1/account1", "Sign")
+	assert.False(t, allowed, "the SAN-DNS identity has no permissions and should be denied")
+
+	require.Equal(t, 1, countDeprecationWarnings(t, logCapture, "val01.internal.example.com", "validator-prod"),
+		"expected exactly one CN-fallback deprecation warning on first denied check")
+
+	// Second check with the same identity pair must not double-log.
+	service.Check(context.Background(), credentials, "Wallet1/account1", "Sign")
+	require.Equal(t, 1, countDeprecationWarnings(t, logCapture, "val01.internal.example.com", "validator-prod"),
+		"expected the deprecation warning to be deduplicated across requests from the same identity pair")
+}
+
+func TestCheck_NoWarnWhenCNHasNoPermissions(t *testing.T) {
+	logCapture := logger.NewLogCapture()
+
+	service, err := static.New(context.Background(),
+		static.WithLogLevel(zerolog.TraceLevel),
+		static.WithPermissions(map[string][]*checker.Permissions{
+			"validator-prod": {{Path: "Wallet1", Operations: []string{"Sign"}}},
+		}),
+	)
+	require.NoError(t, err)
+
+	credentials := &checker.Credentials{
+		Client:               "val01.internal.example.com",
+		ClientIdentitySource: san.IdentitySourceSANDNS,
+		ClientCommonName:     "some-other-cn",
+	}
+
+	service.Check(context.Background(), credentials, "Wallet1/account1", "Sign")
+	require.Zero(t, countDeprecationWarnings(t, logCapture, "val01.internal.example.com", "some-other-cn"),
+		"expected no CN-fallback warning when the CN itself has no permissions")
+}
+
+func TestCheck_NoWarnWhenClientMatchesCN(t *testing.T) {
+	logCapture := logger.NewLogCapture()
+
+	service, err := static.New(context.Background(),
+		static.WithLogLevel(zerolog.TraceLevel),
+		static.WithPermissions(map[string][]*checker.Permissions{
+			"validator-prod": {{Path: "Wallet1", Operations: []string{"Sign"}}},
+		}),
+	)
+	require.NoError(t, err)
+
+	credentials := &checker.Credentials{
+		Client:               "validator-prod",
+		ClientIdentitySource: san.IdentitySourceCN,
+		ClientCommonName:     "validator-prod",
+	}
+
+	service.Check(context.Background(), credentials, "Wallet1/account1", "Sign")
+	require.Zero(t, countDeprecationWarnings(t, logCapture, "validator-prod", "validator-prod"),
+		"expected no warning when extracted identity already matches the CN")
+}

@@ -33,6 +33,9 @@ type ClientIdentitySource struct{}
 // ClientCertificateSANs is a context tag for all SANs from the client's certificate.
 type ClientCertificateSANs struct{}
 
+// ClientCommonName is a context tag for the Common Name field of the client's certificate.
+type ClientCommonName struct{}
+
 // ClientInfoInterceptor adds the client certificate identity to incoming requests.
 //
 // Identity is extracted from the client certificate using a prioritized approach
@@ -50,7 +53,11 @@ func ClientInfoInterceptor() grpc.UnaryServerInterceptor {
 		}
 
 		newCtx := ctx
-		authState := grpcPeer.AuthInfo.(credentials.TLSInfo).State
+		tlsInfo, ok := grpcPeer.AuthInfo.(credentials.TLSInfo)
+		if !ok {
+			return nil, status.Error(codes.Unauthenticated, "missing TLS auth info")
+		}
+		authState := tlsInfo.State
 		if authState.HandshakeComplete {
 			peerCerts := authState.PeerCertificates
 			if len(peerCerts) > 0 {
@@ -63,6 +70,7 @@ func ClientInfoInterceptor() grpc.UnaryServerInterceptor {
 				newCtx = context.WithValue(ctx, &ClientName{}, clientIdentity)
 				newCtx = context.WithValue(newCtx, &ClientIdentitySource{}, identitySource)
 				newCtx = context.WithValue(newCtx, &ClientCertificateSANs{}, certificateSANs)
+				newCtx = context.WithValue(newCtx, &ClientCommonName{}, peerCert.Subject.CommonName)
 			}
 		}
 

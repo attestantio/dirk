@@ -37,6 +37,9 @@ func GenerateCredentials(ctx context.Context) *checker.Credentials {
 	if certSANs, ok := ctx.Value(&interceptors.ClientCertificateSANs{}).(*san.CertificateSANs); ok && certSANs != nil {
 		res.ClientCertificateSANs = certSANs
 	}
+	if cn, ok := ctx.Value(&interceptors.ClientCommonName{}).(string); ok {
+		res.ClientCommonName = cn
+	}
 	if ip, ok := ctx.Value(&interceptors.ExternalIP{}).(string); ok {
 		res.IP = ip
 	}

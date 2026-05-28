@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/attestantio/dirk/services/checker"
 	"github.com/attestantio/dirk/services/metrics"
@@ -29,8 +30,9 @@ import (
 
 // Service checks access against a static list.
 type Service struct {
-	monitor metrics.CheckerMonitor
-	access  map[string][]*path
+	monitor          metrics.CheckerMonitor
+	access           map[string][]*path
+	warnedCNFallback sync.Map
 }
 
 type path struct {
@@ -96,6 +98,7 @@ func (s *Service) Check(_ context.Context, credentials *checker.Credentials, acc
 
 	paths, exists := s.access[credentials.Client]
 	if !exists {
+		s.warnCNFallbackIfApplicable(credentials)
 		log.Warn().Str("result", "denied").Msg("No rules for client")
 		return false
 	}
@@ -120,6 +123,32 @@ func (s *Service) Check(_ context.Context, credentials *checker.Credentials, acc
 	log.Trace().Str("result", "denied").Msg("No matching rules")
 
 	return false
+}
+
+// warnCNFallbackIfApplicable emits a one-shot deprecation warning when the
+// extracted identity differs from the certificate's Common Name and a
+// permission entry exists for the CN. This indicates an operator whose
+// permissions.yaml is still keyed on legacy CN identities and would have
+// authorised this client before the SAN-DNS preference was introduced.
+func (s *Service) warnCNFallbackIfApplicable(credentials *checker.Credentials) {
+	cn := credentials.ClientCommonName
+	if cn == "" || cn == credentials.Client {
+		return
+	}
+	if _, hasCNRules := s.access[cn]; !hasCNRules {
+		return
+	}
+
+	dedupKey := credentials.Client + "\x00" + cn
+	if _, already := s.warnedCNFallback.LoadOrStore(dedupKey, struct{}{}); already {
+		return
+	}
+
+	log.Warn().
+		Str("extracted_identity", credentials.Client).
+		Str("common_name", cn).
+		Str("client_identity_source", credentials.ClientIdentitySource.String()).
+		Msg("Client certificate's CN has permissions configured but the extracted identity (SAN-DNS) does not; update permissions.yaml to key on the SAN-DNS identity before the next release removes CN-based authorisation")
 }
 
 // buildCheckLogger returns a logger annotated with the client identity fields

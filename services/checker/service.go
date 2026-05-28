@@ -28,6 +28,10 @@ type Credentials struct {
 	ClientIdentitySource san.IdentitySource
 	// ClientCertificateSANs contains all Subject Alternative Names from the client certificate.
 	ClientCertificateSANs *san.CertificateSANs
+	// ClientCommonName is the Common Name field of the client certificate's
+	// Subject. Retained while SAN-DNS identities co-exist with legacy CN
+	// identities so the checker can warn about mismatches during migration.
+	ClientCommonName string
 	// RequestID is the ID of the request.
 	RequestID string
 	// IP is the originating IP address of the request.
