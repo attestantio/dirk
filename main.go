@@ -75,7 +75,7 @@ import (
 )
 
 // ReleaseVersion is the release version for the code.
-var ReleaseVersion = "1.2.1-dev-go-certmanager"
+var ReleaseVersion = "1.3.0-rc.1"
 
 // initSystemComponents initialises profiling, tracing, runtime settings, and BLS.
 func initSystemComponents(ctx context.Context, majordomoSvc majordomo.Service) error {
