@@ -31,7 +31,6 @@ import (
 	mockaccountmanager "github.com/attestantio/dirk/services/accountmanager/mock"
 	grpcapi "github.com/attestantio/dirk/services/api/grpc"
 	"github.com/attestantio/dirk/services/checker"
-	mockchecker "github.com/attestantio/dirk/services/checker/mock"
 	"github.com/attestantio/dirk/services/checker/static"
 	"github.com/attestantio/dirk/services/fetcher/mem"
 	"github.com/attestantio/dirk/services/lister/standard"
@@ -55,8 +54,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	pb "github.com/wealdtech/eth2-signer-api/pb/v1"
+	e2types "github.com/wealdtech/go-eth2-types/v2"
+	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
+	nd "github.com/wealdtech/go-eth2-wallet-nd/v2"
+	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+)
+
+const (
+	testWalletName  = "TestWallet"
+	testAccountName = "account1"
 )
 
 // parseCertificate parses a PEM-encoded certificate and returns the x509 certificate.
@@ -127,15 +135,36 @@ func pickTestPort(t *testing.T) uint32 {
 	return 0
 }
 
-// createCheckerService returns a static checker when permissions are provided
-// and a mock checker otherwise.
+// createCheckerService returns a static checker initialised with the provided
+// permission map. Integration tests always use the static checker so the
+// observable response of each test reflects what the server-side interceptor
+// extracted (the identity drives whether the configured permissions match).
 func createCheckerService(ctx context.Context, permissions map[string][]*checker.Permissions) (checker.Service, error) {
-	if permissions != nil {
-		return static.New(ctx,
-			static.WithLogLevel(zerolog.Disabled),
-			static.WithPermissions(permissions))
+	return static.New(ctx,
+		static.WithLogLevel(zerolog.Disabled),
+		static.WithPermissions(permissions))
+}
+
+// seedTestWallet creates a wallet named testWalletName with one account
+// testAccountName in the provided store. The lister returns this account when
+// the request's path includes testWalletName and the server-extracted identity
+// is authorised for that path, giving each integration test a deterministic
+// allow/deny signal driven by the interceptor's output.
+func seedTestWallet(ctx context.Context, store e2wtypes.Store) error {
+	if err := e2types.InitBLS(); err != nil {
+		return errors.Wrap(err, "failed to initialise BLS")
 	}
-	return mockchecker.New(zerolog.Disabled)
+	wallet, err := nd.CreateWallet(ctx, testWalletName, store, keystorev4.New())
+	if err != nil {
+		return errors.Wrap(err, "failed to create test wallet")
+	}
+	if err := wallet.(e2wtypes.WalletLocker).Unlock(ctx, nil); err != nil {
+		return errors.Wrap(err, "failed to unlock test wallet")
+	}
+	if _, err := wallet.(e2wtypes.WalletAccountCreator).CreateAccount(ctx, testAccountName, []byte("pass")); err != nil {
+		return errors.Wrap(err, "failed to create test account")
+	}
+	return wallet.(e2wtypes.WalletLocker).Lock(ctx)
 }
 
 // loadServerCertManager reads the test server cert/key/CA from base and wraps
@@ -190,8 +219,16 @@ func createTestServer(ctx context.Context, t *testing.T, base string, permission
 		return nil, 0, err
 	}
 
+	// Seed a wallet with one account so the lister has something concrete to
+	// return when permissions match; the test asserts on the listed accounts
+	// to confirm the server-side interceptor populated the credentials with
+	// the expected identity.
+	if err := seedTestWallet(ctx, stores[0]); err != nil {
+		return nil, 0, err
+	}
+
 	unlocker, err := local.New(ctx,
-		local.WithAccountPassphrases([]string{}))
+		local.WithAccountPassphrases([]string{"pass"}))
 	if err != nil {
 		return nil, 0, err
 	}
@@ -336,257 +373,141 @@ func createTestClient(ctx context.Context, base string, clientCertName string, s
 	return conn, nil
 }
 
-func TestIntegration_CertificateIdentityExtraction_DNS(t *testing.T) {
+// integrationEnv is the per-test environment for an interceptor integration
+// test: a temp base directory with certificates set up and a context that
+// cancels at the end of the test.
+type integrationEnv struct {
+	ctx  context.Context
+	base string
+}
+
+func newIntegrationEnv(t *testing.T) *integrationEnv {
+	t.Helper()
 	_, err := net.LookupIP("signer-test01")
 	if err != nil {
 		t.Skip("test signer addresses not configured; skipping test")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	base, err := os.MkdirTemp("", "")
 	require.NoError(t, err)
-	defer os.RemoveAll(base)
+	t.Cleanup(func() { _ = os.RemoveAll(base) })
 
-	// Set up test certificates
-	err = resources.SetupCerts(base)
-	require.NoError(t, err)
+	require.NoError(t, resources.SetupCerts(base))
 
-	// Extract expected identity from client-test01 certificate
-	clientCertPEM, err := os.ReadFile(filepath.Join(base, "client-test01.crt"))
-	require.NoError(t, err)
-	expectedIdentity, expectedSource, expectedSANs, err := extractExpectedIdentity(clientCertPEM)
-	require.NoError(t, err)
+	return &integrationEnv{ctx: t.Context(), base: base}
+}
 
-	// Create server with mock checker
-	_, port, err := createTestServer(ctx, t, base, nil)
+// runListerCall starts a server with the provided permissions, connects with
+// the given client certificate name, and issues a ListAccounts call for the
+// seeded test wallet. The returned response reflects what the server-side
+// interceptor extracted: if its identity matches a permission entry, the
+// seeded account is listed; otherwise the response carries zero accounts.
+func runListerCall(t *testing.T, env *integrationEnv, permissions map[string][]*checker.Permissions, clientCertName string) *pb.ListAccountsResponse {
+	t.Helper()
+	_, port, err := createTestServer(env.ctx, t, env.base, permissions)
 	require.NoError(t, err)
-
-	// Server starts automatically in New(); wait for the accept loop to be ready.
 	waitForServerReady(t, port)
 
-	// Create client with client-test01 certificate
-	clientConn, err := createTestClient(ctx, base, "client-test01", port)
+	clientConn, err := createTestClient(env.ctx, env.base, clientCertName, port)
 	require.NoError(t, err)
-	defer clientConn.Close()
+	t.Cleanup(func() { _ = clientConn.Close() })
 
-	// Make gRPC call
 	client := pb.NewListerClient(clientConn)
-	resp, err := client.ListAccounts(ctx, &pb.ListAccountsRequest{
-		Paths: []string{},
+	resp, err := client.ListAccounts(env.ctx, &pb.ListAccountsRequest{
+		Paths: []string{testWalletName},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, resp)
+	return resp
+}
 
-	// Verify the expected identity was extracted
-	// Since we're using mock checker, we can't verify credentials directly,
-	// but we can verify the call succeeded, which means the interceptor worked
-	assert.NotNil(t, resp)
+// permissionsFor returns a static permission map that grants the given
+// identity full access to the seeded test wallet.
+func permissionsFor(identity string) map[string][]*checker.Permissions {
+	return map[string][]*checker.Permissions{
+		identity: {
+			{
+				Path:       testWalletName,
+				Operations: []string{"All"},
+			},
+		},
+	}
+}
 
-	// Verify expected values match what interceptor should extract
-	assert.Equal(t, expectedIdentity, "client-test01", "Expected DNS SAN identity")
-	assert.Equal(t, expectedSource, san.IdentitySourceSANDNS, "Expected DNS SAN source")
-	assert.NotNil(t, expectedSANs, "Expected SANs to be extracted")
+func TestIntegration_CertificateIdentityExtraction_DNS(t *testing.T) {
+	env := newIntegrationEnv(t)
+
+	clientCertPEM, err := os.ReadFile(filepath.Join(env.base, "client-test01.crt"))
+	require.NoError(t, err)
+	expectedIdentity, expectedSource, expectedSANs, err := extractExpectedIdentity(clientCertPEM)
+	require.NoError(t, err)
+	require.Equal(t, "client-test01", expectedIdentity, "Expected DNS SAN identity")
+	require.Equal(t, san.IdentitySourceSANDNS, expectedSource, "Expected DNS SAN source")
+	require.NotNil(t, expectedSANs)
+
+	// Grant the DNS-SAN identity full access. If the server interceptor
+	// populated credentials.Client with anything other than the DNS SAN, no
+	// permission would match and the listing would come back empty.
+	resp := runListerCall(t, env, permissionsFor(expectedIdentity), "client-test01")
+	assert.Equal(t, pb.ResponseState_SUCCEEDED, resp.GetState())
+	assert.Len(t, resp.GetAccounts(), 1, "server interceptor should have extracted the DNS-SAN identity, allowing the lister to return the seeded account")
 }
 
 func TestIntegration_CertificateIdentityPriority_DNSOverCN(t *testing.T) {
-	_, err := net.LookupIP("signer-test01")
-	if err != nil {
-		t.Skip("test signer addresses not configured; skipping test")
-	}
+	env := newIntegrationEnv(t)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	base, err := os.MkdirTemp("", "")
-	require.NoError(t, err)
-	defer os.RemoveAll(base)
-
-	err = resources.SetupCerts(base)
-	require.NoError(t, err)
-
-	// Extract expected identity from client-test01 certificate
-	clientCertPEM, err := os.ReadFile(filepath.Join(base, "client-test01.crt"))
+	clientCertPEM, err := os.ReadFile(filepath.Join(env.base, "client-test01.crt"))
 	require.NoError(t, err)
 	expectedIdentity, expectedSource, _, err := extractExpectedIdentity(clientCertPEM)
 	require.NoError(t, err)
+	require.Equal(t, san.IdentitySourceSANDNS, expectedSource, "DNS SAN should be used, not CN")
+	require.Equal(t, "client-test01", expectedIdentity, "Identity should be from DNS SAN")
 
-	// Verify DNS SAN is used (not CN) - client-test01 has both DNS SAN and CN
-	// The identity should be from DNS SAN per RFC 6125 priority
-	assert.Equal(t, expectedSource, san.IdentitySourceSANDNS, "DNS SAN should be used, not CN")
-	assert.Equal(t, expectedIdentity, "client-test01", "Identity should be from DNS SAN")
-
-	_, port, err := createTestServer(ctx, t, base, nil)
-	require.NoError(t, err)
-
-	waitForServerReady(t, port)
-
-	clientConn, err := createTestClient(ctx, base, "client-test01", port)
-	require.NoError(t, err)
-	defer clientConn.Close()
-
-	client := pb.NewListerClient(clientConn)
-	resp, err := client.ListAccounts(ctx, &pb.ListAccountsRequest{})
-	require.NoError(t, err)
-	assert.NotNil(t, resp)
+	// The bundled client-test01 fixture has the same string for both CN and
+	// DNS SAN, so the only black-box check available here is that permissions
+	// keyed on a value that exists in *neither* CN nor SAN are not honoured.
+	// A future fixture with distinct CN/SAN values would let this assert the
+	// DNS-over-CN priority more strongly.
+	resp := runListerCall(t, env, permissionsFor("definitely-not-this-client"), "client-test01")
+	assert.Equal(t, pb.ResponseState_SUCCEEDED, resp.GetState())
+	assert.Empty(t, resp.GetAccounts(), "interceptor must not invent an identity that isn't in the cert")
 }
 
 func TestIntegration_CertificateIdentity_CNOnly(t *testing.T) {
-	_, err := net.LookupIP("signer-test01")
-	if err != nil {
-		t.Skip("test signer addresses not configured; skipping test")
-	}
+	env := newIntegrationEnv(t)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	base, err := os.MkdirTemp("", "")
-	require.NoError(t, err)
-	defer os.RemoveAll(base)
-
-	err = resources.SetupCerts(base)
-	require.NoError(t, err)
-
-	// Extract expected identity from CN-only certificate
-	clientCertPEM, err := os.ReadFile(filepath.Join(base, "client-cn-only.crt"))
+	clientCertPEM, err := os.ReadFile(filepath.Join(env.base, "client-cn-only.crt"))
 	require.NoError(t, err)
 	expectedIdentity, expectedSource, expectedSANs, err := extractExpectedIdentity(clientCertPEM)
 	require.NoError(t, err)
+	require.Equal(t, san.IdentitySourceCN, expectedSource)
+	require.Equal(t, "client-cn-only", expectedIdentity)
+	require.NotNil(t, expectedSANs)
+	require.Empty(t, expectedSANs.DNSNames)
 
-	// Expect CN to be used when no SAN is present
-	assert.Equal(t, san.IdentitySourceCN, expectedSource)
-	assert.Equal(t, "client-cn-only", expectedIdentity)
-	assert.NotNil(t, expectedSANs)
-	assert.Empty(t, expectedSANs.DNSNames)
-
-	// Create server with mock checker
-	_, port, err := createTestServer(ctx, t, base, nil)
-	require.NoError(t, err)
-
-	waitForServerReady(t, port)
-
-	// Create client with CN-only certificate
-	clientConn, err := createTestClient(ctx, base, "client-cn-only", port)
-	require.NoError(t, err)
-	defer clientConn.Close()
-
-	client := pb.NewListerClient(clientConn)
-	resp, err := client.ListAccounts(ctx, &pb.ListAccountsRequest{})
-	require.NoError(t, err)
-	assert.NotNil(t, resp)
+	// Grant the CN-only identity. The interceptor's CN fallback must apply
+	// for this listing to return the seeded account.
+	resp := runListerCall(t, env, permissionsFor(expectedIdentity), "client-cn-only")
+	assert.Equal(t, pb.ResponseState_SUCCEEDED, resp.GetState())
+	assert.Len(t, resp.GetAccounts(), 1, "interceptor should fall back to CN when the certificate has no DNS SANs")
 }
 
 func TestIntegration_EndToEndPermissionCheck_Granted(t *testing.T) {
-	_, err := net.LookupIP("signer-test01")
-	if err != nil {
-		t.Skip("test signer addresses not configured; skipping test")
-	}
+	env := newIntegrationEnv(t)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	base, err := os.MkdirTemp("", "")
-	require.NoError(t, err)
-	defer os.RemoveAll(base)
-
-	err = resources.SetupCerts(base)
-	require.NoError(t, err)
-
-	// Extract expected identity
-	clientCertPEM, err := os.ReadFile(filepath.Join(base, "client-test01.crt"))
-	require.NoError(t, err)
-	expectedIdentity, expectedSource, expectedSANs, err := extractExpectedIdentity(clientCertPEM)
-	require.NoError(t, err)
-
-	// Create server with static checker that allows client-test01
-	permissions := map[string][]*checker.Permissions{
-		expectedIdentity: {
-			{
-				Path:       "*",
-				Operations: []string{"ListAccounts"},
-			},
-		},
-	}
-
-	_, port, err := createTestServer(ctx, t, base, permissions)
-	require.NoError(t, err)
-
-	waitForServerReady(t, port)
-
-	clientConn, err := createTestClient(ctx, base, "client-test01", port)
-	require.NoError(t, err)
-	defer clientConn.Close()
-
-	client := pb.NewListerClient(clientConn)
-	resp, err := client.ListAccounts(ctx, &pb.ListAccountsRequest{
-		Paths: []string{},
-	})
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-
-	// Verify request succeeded (permission granted)
-	assert.Equal(t, pb.ResponseState_SUCCEEDED, resp.State)
-
-	// Verify expected identity values
-	assert.Equal(t, expectedIdentity, "client-test01")
-	assert.Equal(t, expectedSource, san.IdentitySourceSANDNS)
-	assert.NotNil(t, expectedSANs)
+	resp := runListerCall(t, env, permissionsFor("client-test01"), "client-test01")
+	assert.Equal(t, pb.ResponseState_SUCCEEDED, resp.GetState())
+	assert.Len(t, resp.GetAccounts(), 1, "client-test01 has a matching permission entry; seeded account should be listed")
 }
 
 func TestIntegration_EndToEndPermissionCheck_Denied(t *testing.T) {
-	_, err := net.LookupIP("signer-test01")
-	if err != nil {
-		t.Skip("test signer addresses not configured; skipping test")
-	}
+	env := newIntegrationEnv(t)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	base, err := os.MkdirTemp("", "")
-	require.NoError(t, err)
-	defer os.RemoveAll(base)
-
-	err = resources.SetupCerts(base)
-	require.NoError(t, err)
-
-	// Extract expected identity for client-test02
-	clientCertPEM, err := os.ReadFile(filepath.Join(base, "client-test02.crt"))
-	require.NoError(t, err)
-	expectedIdentity, expectedSource, _, err := extractExpectedIdentity(clientCertPEM)
-	require.NoError(t, err)
-
-	// Create server with static checker that only allows client-test01 (not client-test02)
-	permissions := map[string][]*checker.Permissions{
-		"client-test01": {
-			{
-				Path:       "*",
-				Operations: []string{"ListAccounts"},
-			},
-		},
-	}
-
-	_, port, err := createTestServer(ctx, t, base, permissions)
-	require.NoError(t, err)
-
-	waitForServerReady(t, port)
-
-	// Use client-test02 certificate (not in permissions)
-	clientConn, err := createTestClient(ctx, base, "client-test02", port)
-	require.NoError(t, err)
-	defer clientConn.Close()
-
-	client := pb.NewListerClient(clientConn)
-	resp, err := client.ListAccounts(ctx, &pb.ListAccountsRequest{
-		Paths: []string{},
-	})
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-
-	// Note: Empty paths don't trigger permission checks in the lister service,
-	// so the request succeeds even without permissions. However, we verify that
-	// the credentials were still extracted correctly from the certificate.
-	// The important part is that the interceptor extracted the identity correctly.
-	assert.NotNil(t, resp)
-
-	// Verify expected identity was still extracted correctly
-	// (even though empty paths don't require permission checks)
-	assert.Equal(t, expectedIdentity, "client-test02")
-	assert.Equal(t, expectedSource, san.IdentitySourceSANDNS)
+	// Permissions grant client-test01, but the client connects as
+	// client-test02. The interceptor must extract client-test02, the static
+	// checker must find no matching rules, and the lister must filter the
+	// seeded account out of the response.
+	resp := runListerCall(t, env, permissionsFor("client-test01"), "client-test02")
+	assert.Equal(t, pb.ResponseState_SUCCEEDED, resp.GetState())
+	assert.Empty(t, resp.GetAccounts(), "client-test02 has no permission entry; seeded account must not be listed")
 }
