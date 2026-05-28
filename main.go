@@ -845,8 +845,13 @@ func obtainCACert(ctx context.Context,
 			return nil, errors.Wrap(err, fmt.Sprintf("failed to obtain CA certificate from %s", viper.GetString("certificates.ca-cert")))
 		}
 	} else {
-		// CA certificate is optional - return empty slice to use standard CA certificates.
-		log.Warn().Msg("No CA certificate specified; using standard CA certificates")
+		// CA certificate is optional - empty bytes downstream cause the API
+		// server to fall back to the host's system CA pool for client
+		// certificate verification. Any client whose certificate chains to a
+		// publicly-trusted CA will be accepted, which is rarely desirable for
+		// a signer; operators should configure certificates.ca-cert with the
+		// private CA that issued the validator/Vouch client certificates.
+		log.Warn().Msg("No CA certificate specified; client certificates will be verified against the system trust store (any publicly-trusted CA will be accepted). Set certificates.ca-cert to restrict this.")
 	}
 	return caPEMBlock, nil
 }

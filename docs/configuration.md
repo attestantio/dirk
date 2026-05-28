@@ -46,6 +46,19 @@ certificates:
   # Note that only one reload operation can run at a time; concurrent reload attempts will return
   # an error while a reload is in progress.
   load-timeout: '10m'
+
+# IMPORTANT: SIGHUP reloads only the server certificate and key (server-cert / server-key).
+# The following TLS material is snapshotted at Dirk start and CANNOT be refreshed without a
+# full process restart:
+#
+#   - ca-cert (used as the trusted client CA pool for incoming connections)
+#   - the DKG client certificate and key (used for outbound peer connections; today these
+#     reuse server-cert / server-key, but the client certificate manager loads them once at
+#     start and holds them for the life of the process)
+#
+# Operational consequence: rotating ca-cert (adding a new client CA, revoking a compromised
+# one) or rotating the peer client certificate requires a full Dirk restart. SIGHUP alone
+# will quietly leave the cluster on the previous trust anchors. Plan rotations accordingly.
 # storage-path is the path where information created by the slashing protection system is stored.  If not
 # supplied it will default to using the 'storage' directory in the user's home directory.
 storage-path: /home/me/dirk/protection
