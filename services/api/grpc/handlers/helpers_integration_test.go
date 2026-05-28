@@ -15,10 +15,11 @@ package handlers_test
 
 import (
 	"context"
+	cryptorand "crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"net"
 	"os"
 	"path/filepath"
@@ -46,6 +47,7 @@ import (
 	"github.com/attestantio/dirk/util"
 	standardclientcert "github.com/attestantio/go-certmanager/client/standard"
 	"github.com/attestantio/go-certmanager/san"
+	servercert "github.com/attestantio/go-certmanager/server"
 	standardservercert "github.com/attestantio/go-certmanager/server/standard"
 	mockcertfetcher "github.com/attestantio/go-certmanager/testing/mock"
 	"github.com/pkg/errors"
@@ -99,10 +101,61 @@ func waitForServerReady(t *testing.T, port uint32) {
 	}, 5*time.Second, 10*time.Millisecond, "server at %s did not become ready", addr)
 }
 
+// pickTestPort returns a port in [8192, 16384) for a test server to bind to,
+// sourced from crypto/rand so the math/rand weak-randomness lint does not fire.
+func pickTestPort(t *testing.T) uint32 {
+	t.Helper()
+	n, err := cryptorand.Int(cryptorand.Reader, big.NewInt(8192))
+	require.NoError(t, err, "failed to pick test port")
+	return uint32(n.Uint64()) + 8192
+}
+
+// createCheckerService returns a static checker when permissions are provided
+// and a mock checker otherwise.
+func createCheckerService(ctx context.Context, permissions map[string][]*checker.Permissions) (checker.Service, error) {
+	if permissions != nil {
+		return static.New(ctx,
+			static.WithLogLevel(zerolog.Disabled),
+			static.WithPermissions(permissions))
+	}
+	return mockchecker.New(zerolog.Disabled)
+}
+
+// loadServerCertManager reads the test server cert/key/CA from base and wraps
+// them in a go-certmanager server cert manager backed by an in-memory fetcher.
+func loadServerCertManager(ctx context.Context, base string) (servercert.Service, []byte, error) {
+	certPEMBlock, err := os.ReadFile(filepath.Join(base, "signer-test01.crt"))
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to obtain server certificate")
+	}
+	keyPEMBlock, err := os.ReadFile(filepath.Join(base, "signer-test01.key"))
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to obtain server key")
+	}
+	caPEMBlock, err := os.ReadFile(filepath.Join(base, "ca.crt"))
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to obtain CA certificate")
+	}
+
+	certFetcher := mockcertfetcher.NewMajordomo(map[string][]byte{
+		"cert.pem": certPEMBlock,
+		"cert.key": keyPEMBlock,
+	})
+	certManager, err := standardservercert.New(ctx,
+		standardservercert.WithMajordomo(certFetcher),
+		standardservercert.WithCertPEMURI("cert.pem"),
+		standardservercert.WithCertKeyURI("cert.key"),
+	)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to create certificate manager")
+	}
+	return certManager, caPEMBlock, nil
+}
+
 // createTestServer creates a gRPC server with static checker and configured permissions.
 func createTestServer(ctx context.Context, t *testing.T, base string, permissions map[string][]*checker.Permissions) (*grpcapi.Service, uint32, error) {
-	rand.Seed(time.Now().UnixNano())
-	port := uint32((rand.Int() % 8192) + 8192)
+	t.Helper()
+	port := pickTestPort(t)
 
 	majordomo, err := util.InitMajordomo(ctx)
 	if err != nil {
@@ -146,20 +199,9 @@ func createTestServer(ctx context.Context, t *testing.T, base string, permission
 		return nil, 0, err
 	}
 
-	// Use static checker with provided permissions
-	var checkerSvc checker.Service
-	if permissions != nil {
-		checkerSvc, err = static.New(ctx,
-			static.WithLogLevel(zerolog.Disabled),
-			static.WithPermissions(permissions))
-		if err != nil {
-			return nil, 0, err
-		}
-	} else {
-		checkerSvc, err = mockchecker.New(zerolog.Disabled)
-		if err != nil {
-			return nil, 0, err
-		}
+	checkerSvc, err := createCheckerService(ctx, permissions)
+	if err != nil {
+		return nil, 0, err
 	}
 
 	lister, err := standard.New(ctx,
@@ -179,7 +221,6 @@ func createTestServer(ctx context.Context, t *testing.T, base string, permission
 		return nil, 0, err
 	}
 
-	// Create process service (required for grpcapi.New)
 	process, err := standardprocess.New(ctx,
 		standardprocess.WithChecker(checkerSvc),
 		standardprocess.WithGenerationPassphrase([]byte("secret")),
@@ -194,32 +235,9 @@ func createTestServer(ctx context.Context, t *testing.T, base string, permission
 		return nil, 0, err
 	}
 
-	// Load server certificate
-	certPEMBlock, err := os.ReadFile(filepath.Join(base, "signer-test01.crt"))
+	certManager, caPEMBlock, err := loadServerCertManager(ctx, base)
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "failed to obtain server certificate")
-	}
-	keyPEMBlock, err := os.ReadFile(filepath.Join(base, "signer-test01.key"))
-	if err != nil {
-		return nil, 0, errors.Wrap(err, "failed to obtain server key")
-	}
-	caPEMBlock, err := os.ReadFile(filepath.Join(base, "ca.crt"))
-	if err != nil {
-		return nil, 0, errors.Wrap(err, "failed to obtain CA certificate")
-	}
-
-	// Create certificate manager for server
-	certFetcher := mockcertfetcher.NewMajordomo(map[string][]byte{
-		"cert.pem": certPEMBlock,
-		"cert.key": keyPEMBlock,
-	})
-	certManager, err := standardservercert.New(ctx,
-		standardservercert.WithMajordomo(certFetcher),
-		standardservercert.WithCertPEMURI("cert.pem"),
-		standardservercert.WithCertKeyURI("cert.key"),
-	)
-	if err != nil {
-		return nil, 0, errors.Wrap(err, "failed to create certificate manager")
+		return nil, 0, err
 	}
 
 	serverSvc, err := grpcapi.New(ctx,
