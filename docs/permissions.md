@@ -9,20 +9,17 @@ Client identities are extracted from the certificate that is used to connect to 
 ### Client Identity Extraction
 Dirk extracts the client identity from certificates following RFC 6125 compliance by prioritizing Subject Alternative Name (SAN) fields over the deprecated Common Name (CN). The identity extraction follows this priority order:
 
-1. **DNS names from SAN** - Most common for service-to-service authentication (e.g., `validator-01.example.com`)
-2. **IP addresses from SAN** - Valid for direct IP-based connections (e.g., `192.168.1.100` or `2001:db8::1`)
-3. **Email addresses from SAN** - Common in client certificates for user identity (e.g., `validator@example.com`)
-4. **Common Name (CN)** - Fallback for backward compatibility with legacy certificates
+1. **DNS names from SAN** - The first valid DNS name in the SAN extension is used (e.g., `validator-01.example.com`)
+2. **Common Name (CN)** - Fallback for backward compatibility with legacy certificates that do not include a DNS SAN
 
 This approach ensures compatibility with:
-- **Modern certificates** issued by contemporary certificate authorities (often with empty CN and SAN-only)
-- **Legacy certificates** using only the CN field
-- **Multi-identity certificates** with multiple SANs (the first entry of the highest-priority type is used)
+- **Modern certificates** that follow RFC 6125 and carry the identity in a DNS SAN entry
+- **Legacy certificates** that rely on the CN field for identity
 
-**Note:** Dirk does not support URI-based SANs (such as SPIFFE IDs or HTTPS URIs) as these are not commonly used in validator/signer architectures and would complicate the permission matching system.
+**Note:** Other SAN types (IP addresses, email addresses, URIs such as SPIFFE IDs) are not used for identity extraction. Certificates must expose a DNS name in the SAN extension, or fall back to CN, to be usable for permission matching.
 
 ### Client Identity Best Practices
-Client identities should be fully qualified (_i.e._ `server.example.com` rather than just `server`) to avoid potential confusion with multiple clients of the same name in different domains. When using IP addresses, ensure they are static to maintain consistent authorization.
+For new certificates, client identities should be issued as a fully qualified DNS SAN (_e.g._ `server.example.com` rather than just `server`) to avoid potential confusion with multiple clients of the same name in different domains. Unqualified names are accepted (including via the CN fallback) for backward compatibility with existing deployments, but new permission entries should match the fully qualified DNS SAN of the issuing client.
 
 ## Accounts
 Accounts are standard `ethdo` account specifiers of the form `wallet/account`.  It is possible for either or both of `wallet` and `account` to be regular expressions.  Some examples of account specifiers are:
