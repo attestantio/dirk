@@ -176,13 +176,13 @@ func main() {
 	setRelease(ctx, ReleaseVersion)
 	setReady(ctx, false)
 
-	certManagerSvc, err := startCertManager(ctx, majordomoSvc)
+	certManagerSvc, err := startCertManager(ctx, majordomoSvc, monitor)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to set up certmanager service")
 		return
 	}
 
-	clientCertManagerSvc, err := startClientCertManager(ctx, majordomoSvc)
+	clientCertManagerSvc, err := startClientCertManager(ctx, majordomoSvc, monitor)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to set up client certmanager service")
 		return
@@ -397,7 +397,7 @@ func startMonitor(ctx context.Context) (metrics.Service, error) {
 	return monitor, nil
 }
 
-func startCertManager(ctx context.Context, majordomoSvc majordomo.Service) (servercert.Service, error) {
+func startCertManager(ctx context.Context, majordomoSvc majordomo.Service, monitor metrics.Service) (servercert.Service, error) {
 	log.Trace().Msg("Starting certificate manager service")
 
 	return standardservercert.New(ctx,
@@ -406,10 +406,12 @@ func startCertManager(ctx context.Context, majordomoSvc majordomo.Service) (serv
 		standardservercert.WithCertPEMURI(viper.GetString("certificates.server-cert")),
 		standardservercert.WithCertKeyURI(viper.GetString("certificates.server-key")),
 		standardservercert.WithLoadTimeout(viper.GetDuration("certificates.load-timeout")),
+		standardservercert.WithMonitor(monitor),
+		standardservercert.WithName("dirk"),
 	)
 }
 
-func startClientCertManager(ctx context.Context, majordomoSvc majordomo.Service) (clientcert.Service, error) {
+func startClientCertManager(ctx context.Context, majordomoSvc majordomo.Service, monitor metrics.Service) (clientcert.Service, error) {
 	log.Trace().Msg("Starting client certificate manager service")
 
 	return standardclientcert.New(ctx,
@@ -418,6 +420,8 @@ func startClientCertManager(ctx context.Context, majordomoSvc majordomo.Service)
 		standardclientcert.WithCertPEMURI(viper.GetString("certificates.server-cert")),
 		standardclientcert.WithCertKeyURI(viper.GetString("certificates.server-key")),
 		standardclientcert.WithCACertURI(viper.GetString("certificates.ca-cert")),
+		standardclientcert.WithMonitor(monitor),
+		standardclientcert.WithName("dirk"),
 	)
 }
 
