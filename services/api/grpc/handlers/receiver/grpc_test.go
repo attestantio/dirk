@@ -70,7 +70,7 @@ func TestAbort(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	servers, err := createServers(t, ctx)
+	servers, err := createServers(ctx, t)
 	require.NoError(t, err)
 	// #nosec G404
 	accountName := fmt.Sprintf("Test/%d", rand.Int())
@@ -91,7 +91,7 @@ func TestAbortUnknownEndpoint(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	servers, err := createServers(t, ctx)
+	servers, err := createServers(ctx, t)
 	require.NoError(t, err)
 	// #nosec G404
 	accountName := fmt.Sprintf("Test/%d", rand.Int())
@@ -113,7 +113,7 @@ func TestEndToEnd(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	servers, err := createServers(t, ctx)
+	servers, err := createServers(ctx, t)
 	require.NoError(t, err)
 	// #nosec G404
 	accountName := fmt.Sprintf("Test/%d", rand.Int())
@@ -158,7 +158,7 @@ type testServers struct {
 	processes map[uint64]process.Service
 }
 
-func createServers(t *testing.T, ctx context.Context) (*testServers, error) {
+func createServers(ctx context.Context, t *testing.T) (*testServers, error) {
 	t.Helper()
 
 	base, err := os.MkdirTemp("", "")
