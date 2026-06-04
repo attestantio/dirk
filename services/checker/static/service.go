@@ -148,7 +148,7 @@ func (s *Service) warnCNFallbackIfApplicable(credentials *checker.Credentials) {
 		Str("extracted_identity", credentials.Client).
 		Str("common_name", cn).
 		Str("client_identity_source", credentials.ClientIdentitySource.String()).
-		Msg("Client certificate's CN has permissions configured but the extracted identity (SAN-DNS) does not; update permissions.yaml to key on the SAN-DNS identity before the next release removes CN-based authorisation")
+		Msg("Client certificate's CN has permissions configured but the extracted identity (SAN-DNS) does not; update permissions.yaml to key on the SAN-DNS identity.")
 }
 
 // buildCheckLogger returns a logger annotated with the client identity fields
