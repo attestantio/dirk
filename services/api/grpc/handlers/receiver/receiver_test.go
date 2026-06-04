@@ -51,6 +51,11 @@ func TestNonInitiator(t *testing.T) {
 	require.NoError(t, resources.SetupCerts(base))
 	defer os.RemoveAll(base)
 
+	// Reset the package-global mock.Processes after this test so later tests
+	// see a clean slate; createServers in grpc_test.go relies on this map
+	// being either nil or freshly initialised by the fixture.
+	t.Cleanup(func() { mock.Processes = nil })
+
 	peers, err := staticpeers.New(ctx,
 		staticpeers.WithPeers(map[uint64]string{
 			1: "signer-test01:8881",

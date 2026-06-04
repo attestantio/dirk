@@ -1,4 +1,4 @@
-// Copyright © 2020 - 2024 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -105,7 +105,7 @@ func initFilesystemStore(ctx context.Context,
 	log.Trace().Str("name", storeDefinition.Name).Str("location", storeDefinition.Location).Msg("Adding filesystem store")
 
 	opts := make([]filesystem.Option, 0)
-	if len(storeDefinition.Passphrase) > 0 {
+	if storeDefinition.Passphrase != "" {
 		passphrase, err := majordomo.Fetch(ctx, storeDefinition.Passphrase)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to obtain passphrase")
@@ -130,7 +130,7 @@ func initS3Store(ctx context.Context,
 	log.Trace().Str("name", storeDefinition.Name).Str("location", storeDefinition.Location).Msg("Adding S3 store")
 
 	opts := make([]s3.Option, 0)
-	if len(storeDefinition.Passphrase) > 0 {
+	if storeDefinition.Passphrase != "" {
 		passphrase, err := majordomo.Fetch(ctx, storeDefinition.Passphrase)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to obtain passphrase")

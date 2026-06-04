@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,17 +15,16 @@ package grpc
 
 import (
 	"github.com/attestantio/dirk/services/metrics"
+	clientcert "github.com/attestantio/go-certmanager/client"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
 
 type parameters struct {
-	logLevel   zerolog.Level
-	monitor    metrics.SenderMonitor
-	name       string
-	serverCert []byte
-	serverKey  []byte
-	caCert     []byte
+	monitor     metrics.SenderMonitor
+	logLevel    zerolog.Level
+	name        string
+	certManager clientcert.Service
 }
 
 // Parameter is the interface for service parameters.
@@ -60,24 +59,10 @@ func WithName(name string) Parameter {
 	})
 }
 
-// WithServerCert sets the server certificate for this module.
-func WithServerCert(serverCert []byte) Parameter {
+// WithCertManager sets the certificate manager for this module.
+func WithCertManager(certManager clientcert.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.serverCert = serverCert
-	})
-}
-
-// WithServerKey sets the server key for this module.
-func WithServerKey(serverKey []byte) Parameter {
-	return parameterFunc(func(p *parameters) {
-		p.serverKey = serverKey
-	})
-}
-
-// WithCACert sets the CA certificate for this module.
-func WithCACert(caCert []byte) Parameter {
-	return parameterFunc(func(p *parameters) {
-		p.caCert = caCert
+		p.certManager = certManager
 	})
 }
 
@@ -87,7 +72,7 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 		logLevel: zerolog.GlobalLevel(),
 	}
 	for _, p := range params {
-		if params != nil {
+		if p != nil {
 			p.apply(&parameters)
 		}
 	}
@@ -99,11 +84,8 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	if parameters.name == "" {
 		return nil, errors.New("no name specified")
 	}
-	if len(parameters.serverCert) == 0 {
-		return nil, errors.New("no server certificate specified")
-	}
-	if len(parameters.serverKey) == 0 {
-		return nil, errors.New("no server key specified")
+	if parameters.certManager == nil {
+		return nil, errors.New("no certificate manager specified")
 	}
 
 	return &parameters, nil

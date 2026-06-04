@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/attestantio/dirk/services/checker"
 	"github.com/attestantio/dirk/services/metrics"
@@ -29,8 +30,9 @@ import (
 
 // Service checks access against a static list.
 type Service struct {
-	monitor metrics.CheckerMonitor
-	access  map[string][]*path
+	monitor          metrics.CheckerMonitor
+	access           map[string][]*path
+	warnedCNFallback sync.Map
 }
 
 type path struct {
@@ -81,7 +83,8 @@ func (s *Service) Check(_ context.Context, credentials *checker.Credentials, acc
 		log.Warn().Str("result", "denied").Msg("No client name")
 		return false
 	}
-	log := log.With().Str("account", account).Str("operation", operation).Str("client", credentials.Client).Str("account", account).Logger()
+
+	log := buildCheckLogger(credentials, account, operation)
 
 	walletName, accountName, err := e2wallet.WalletAndAccountNames(account)
 	if err != nil {
@@ -95,27 +98,86 @@ func (s *Service) Check(_ context.Context, credentials *checker.Credentials, acc
 
 	paths, exists := s.access[credentials.Client]
 	if !exists {
+		s.warnCNFallbackIfApplicable(credentials)
 		log.Warn().Str("result", "denied").Msg("No rules for client")
 		return false
 	}
 
 	antiOperation := fmt.Sprintf("~%s", operation)
 	for _, path := range paths {
-		if path.wallet.MatchString(walletName) && path.account.MatchString(accountName) {
-			for i := range path.operations {
-				if strings.EqualFold(path.operations[i], "none") || strings.EqualFold(path.operations[i], antiOperation) {
-					log.Trace().Str("result", "denied").Msg("Negative permission matched")
-					return false
-				}
-				if strings.EqualFold(path.operations[i], "all") || strings.EqualFold(path.operations[i], operation) {
-					log.Trace().Str("result", "succeeded").Msg("Positive permission matched")
-					return true
-				}
-			}
+		if !path.wallet.MatchString(walletName) || !path.account.MatchString(accountName) {
+			continue
 		}
+		matched, allowed := matchOperation(path.operations, operation, antiOperation)
+		if !matched {
+			continue
+		}
+		if !allowed {
+			log.Trace().Str("result", "denied").Msg("Negative permission matched")
+			return false
+		}
+		log.Trace().Str("result", "succeeded").Msg("Positive permission matched")
+		return true
 	}
 
 	log.Trace().Str("result", "denied").Msg("No matching rules")
 
 	return false
+}
+
+// warnCNFallbackIfApplicable emits a one-shot deprecation warning when the
+// extracted identity differs from the certificate's Common Name and a
+// permission entry exists for the CN. This indicates an operator whose
+// permissions.yaml is still keyed on legacy CN identities and would have
+// authorised this client before the SAN-DNS preference was introduced.
+func (s *Service) warnCNFallbackIfApplicable(credentials *checker.Credentials) {
+	cn := credentials.ClientCommonName
+	if cn == "" || cn == credentials.Client {
+		return
+	}
+	if _, hasCNRules := s.access[cn]; !hasCNRules {
+		return
+	}
+
+	dedupKey := credentials.Client + "\x00" + cn
+	if _, already := s.warnedCNFallback.LoadOrStore(dedupKey, struct{}{}); already {
+		return
+	}
+
+	log.Warn().
+		Str("extracted_identity", credentials.Client).
+		Str("common_name", cn).
+		Str("client_identity_source", credentials.ClientIdentitySource.String()).
+		Msg("Client certificate's CN has permissions configured but the extracted identity (SAN-DNS) does not; update permissions.yaml to key on the SAN-DNS identity.")
+}
+
+// buildCheckLogger returns a logger annotated with the client identity fields
+// used throughout a permission check.
+func buildCheckLogger(credentials *checker.Credentials, account, operation string) zerolog.Logger {
+	logContext := log.With().
+		Str("account", account).
+		Str("operation", operation).
+		Str("client", credentials.Client).
+		Str("client_identity_source", credentials.ClientIdentitySource.String())
+
+	if credentials.ClientCertificateSANs != nil && len(credentials.ClientCertificateSANs.DNSNames) > 0 {
+		logContext = logContext.Strs("cert_dns_names", credentials.ClientCertificateSANs.DNSNames)
+	}
+
+	return logContext.Logger()
+}
+
+// matchOperation walks the list of operation entries for a single path and
+// returns whether any entry decided the request, and if so whether it allows
+// or denies it.
+func matchOperation(operations []string, operation, antiOperation string) (bool, bool) {
+	for i := range operations {
+		if strings.EqualFold(operations[i], "none") || strings.EqualFold(operations[i], antiOperation) {
+			return true, false
+		}
+		if strings.EqualFold(operations[i], "all") || strings.EqualFold(operations[i], operation) {
+			return true, true
+		}
+	}
+	return false, false
 }

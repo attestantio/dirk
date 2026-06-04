@@ -1,4 +1,4 @@
-// Copyright © 2020, 2025 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@ package logger
 
 import (
 	"encoding/json"
+	"reflect"
 	"sync"
 	"testing"
 
@@ -25,8 +26,8 @@ import (
 
 // LogCapture allows testing code to query log output.
 type LogCapture struct {
-	mu      sync.Mutex
 	entries []map[string]any
+	mu      sync.Mutex
 }
 
 // NewLogCapture captures logs for querying.
@@ -109,30 +110,27 @@ func (*LogCapture) hasField(entry map[string]any, key string, value any) bool {
 			return entryValue == v
 		case string:
 			return entryValue == v
-		case int:
-			return int(entryValue.(float64)) == v
-		case int8:
-			return int8(entryValue.(float64)) == v
-		case int16:
-			return int16(entryValue.(float64)) == v
-		case int32:
-			return int32(entryValue.(float64)) == v
-		case int64:
-			return int64(entryValue.(float64)) == v
-		case uint:
-			return uint(entryValue.(float64)) == v
-		case uint8:
-			return uint8(entryValue.(float64)) == v
-		case uint16:
-			return uint16(entryValue.(float64)) == v
-		case uint32:
-			return uint32(entryValue.(float64)) == v
-		case uint64:
-			return uint64(entryValue.(float64)) == v
-		case float32:
-			return float32(entryValue.(float64)) == v
-		case float64:
-			return entryValue.(float64) == v
+		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+			ev, ok := entryValue.(float64)
+			if !ok {
+				return false
+			}
+
+			return ev == reflect.ValueOf(v).Convert(reflect.TypeFor[float64]()).Float()
+		case []any:
+			// Handle slice comparison.
+			if entrySlice, ok := entryValue.([]any); ok {
+				if len(v) != len(entrySlice) {
+					return false
+				}
+				for i, expected := range v {
+					if i >= len(entrySlice) || expected != entrySlice[i] {
+						return false
+					}
+				}
+				return true
+			}
+			return false
 		default:
 			panic("unhandled type")
 		}

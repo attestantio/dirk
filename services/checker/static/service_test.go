@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,6 +23,8 @@ import (
 	"github.com/attestantio/dirk/services/metrics"
 	"github.com/attestantio/dirk/services/metrics/prometheus"
 	"github.com/attestantio/dirk/services/ruler"
+	"github.com/attestantio/dirk/testing/logger"
+	"github.com/attestantio/go-certmanager/san"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -299,4 +301,214 @@ func TestLists(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCheckLogging(t *testing.T) {
+	logCapture := logger.NewLogCapture()
+
+	service, err := static.New(context.Background(),
+		static.WithLogLevel(zerolog.TraceLevel),
+		static.WithPermissions(map[string][]*checker.Permissions{
+			"test-client": {
+				{
+					Path:       "TestWallet",
+					Operations: []string{"Sign"},
+				},
+			},
+		}),
+	)
+	require.Nil(t, err)
+
+	tests := []struct {
+		name           string
+		credentials    *checker.Credentials
+		account        string
+		operation      string
+		expectedResult bool
+		expectedFields map[string]any // Expected log fields
+	}{
+		{
+			name: "Client with SAN DNS identity",
+			credentials: &checker.Credentials{
+				Client:               "test-client",
+				ClientIdentitySource: san.IdentitySourceSANDNS,
+				ClientCertificateSANs: &san.CertificateSANs{
+					DNSNames: []string{"validator.example.com", "backup.example.com"},
+				},
+			},
+			account:        "TestWallet/account1",
+			operation:      "Sign",
+			expectedResult: true,
+			expectedFields: map[string]any{
+				"client":                 "test-client",
+				"client_identity_source": san.IdentitySourceSANDNS.String(),
+				"cert_dns_names":         []any{"validator.example.com", "backup.example.com"},
+				"result":                 "succeeded",
+			},
+		},
+		{
+			name: "Client with CN identity (legacy)",
+			credentials: &checker.Credentials{
+				Client:               "test-client",
+				ClientIdentitySource: san.IdentitySourceCN,
+				ClientCertificateSANs: &san.CertificateSANs{
+					DNSNames: []string{},
+				},
+			},
+			account:        "TestWallet/account1",
+			operation:      "Sign",
+			expectedResult: true,
+			expectedFields: map[string]any{
+				"client":                 "test-client",
+				"client_identity_source": san.IdentitySourceCN.String(),
+				"result":                 "succeeded",
+			},
+		},
+		{
+			name: "Client with no SAN information",
+			credentials: &checker.Credentials{
+				Client:                "test-client",
+				ClientIdentitySource:  san.IdentitySourceSANDNS,
+				ClientCertificateSANs: nil,
+			},
+			account:        "TestWallet/account1",
+			operation:      "Sign",
+			expectedResult: true,
+			expectedFields: map[string]any{
+				"client":                 "test-client",
+				"client_identity_source": san.IdentitySourceSANDNS.String(),
+				"result":                 "succeeded",
+			},
+		},
+		{
+			name: "Access denied logs",
+			credentials: &checker.Credentials{
+				Client:               "unknown-client",
+				ClientIdentitySource: san.IdentitySourceSANDNS,
+				ClientCertificateSANs: &san.CertificateSANs{
+					DNSNames: []string{"denied.example.com"},
+				},
+			},
+			account:        "TestWallet/account1",
+			operation:      "Sign",
+			expectedResult: false,
+			expectedFields: map[string]any{
+				"client":                 "unknown-client",
+				"client_identity_source": san.IdentitySourceSANDNS.String(),
+				"cert_dns_names":         []any{"denied.example.com"},
+				"result":                 "denied",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Clear log entries before each test
+			logCapture.ClearEntries()
+
+			// Perform the check
+			result := service.Check(context.Background(), test.credentials, test.account, test.operation)
+
+			// Verify the result
+			assert.Equal(t, test.expectedResult, result)
+
+			// Verify that the expected log fields are present
+			assert.True(t, logCapture.HasLog(test.expectedFields),
+				"Expected log fields not found in captured logs. Fields: %+v, Entries: %+v",
+				test.expectedFields, logCapture.Entries())
+		})
+	}
+}
+
+// countDeprecationWarnings returns the number of captured warn entries that
+// match the SAN-vs-CN deprecation message.
+func countDeprecationWarnings(t *testing.T, logCapture *logger.LogCapture, expectedExtracted, expectedCN string) int {
+	t.Helper()
+	count := 0
+	for _, entry := range logCapture.Entries() {
+		extracted, _ := entry["extracted_identity"].(string)
+		cn, _ := entry["common_name"].(string)
+		if extracted == expectedExtracted && cn == expectedCN {
+			count++
+		}
+	}
+	return count
+}
+
+func TestCheck_WarnsOnSANDNSWhenCNHasPermissions(t *testing.T) {
+	logCapture := logger.NewLogCapture()
+
+	service, err := static.New(context.Background(),
+		static.WithLogLevel(zerolog.TraceLevel),
+		static.WithPermissions(map[string][]*checker.Permissions{
+			"validator-prod": {
+				{
+					Path:       "Wallet1",
+					Operations: []string{"Sign"},
+				},
+			},
+		}),
+	)
+	require.NoError(t, err)
+
+	credentials := &checker.Credentials{
+		Client:               "val01.internal.example.com",
+		ClientIdentitySource: san.IdentitySourceSANDNS,
+		ClientCommonName:     "validator-prod",
+	}
+
+	allowed := service.Check(context.Background(), credentials, "Wallet1/account1", "Sign")
+	assert.False(t, allowed, "the SAN-DNS identity has no permissions and should be denied")
+
+	require.Equal(t, 1, countDeprecationWarnings(t, logCapture, "val01.internal.example.com", "validator-prod"),
+		"expected exactly one CN-fallback deprecation warning on first denied check")
+
+	// Second check with the same identity pair must not double-log.
+	service.Check(context.Background(), credentials, "Wallet1/account1", "Sign")
+	require.Equal(t, 1, countDeprecationWarnings(t, logCapture, "val01.internal.example.com", "validator-prod"),
+		"expected the deprecation warning to be deduplicated across requests from the same identity pair")
+}
+
+func TestCheck_NoWarnWhenCNHasNoPermissions(t *testing.T) {
+	logCapture := logger.NewLogCapture()
+
+	service, err := static.New(context.Background(),
+		static.WithLogLevel(zerolog.TraceLevel),
+		static.WithPermissions(map[string][]*checker.Permissions{
+			"validator-prod": {{Path: "Wallet1", Operations: []string{"Sign"}}},
+		}),
+	)
+	require.NoError(t, err)
+
+	credentials := &checker.Credentials{
+		Client:               "val01.internal.example.com",
+		ClientIdentitySource: san.IdentitySourceSANDNS,
+		ClientCommonName:     "some-other-cn",
+	}
+
+	service.Check(context.Background(), credentials, "Wallet1/account1", "Sign")
+	require.Zero(t, countDeprecationWarnings(t, logCapture, "val01.internal.example.com", "some-other-cn"),
+		"expected no CN-fallback warning when the CN itself has no permissions")
+}
+
+func TestCheck_NoWarnWhenClientMatchesCN(t *testing.T) {
+	logCapture := logger.NewLogCapture()
+
+	service, err := static.New(context.Background(),
+		static.WithLogLevel(zerolog.TraceLevel),
+		static.WithPermissions(map[string][]*checker.Permissions{
+			"validator-prod": {{Path: "Wallet1", Operations: []string{"Sign"}}},
+		}),
+	)
+	require.NoError(t, err)
+
+	credentials := &checker.Credentials{
+		Client:               "validator-prod",
+		ClientIdentitySource: san.IdentitySourceCN,
+		ClientCommonName:     "validator-prod",
+	}
+
+	service.Check(context.Background(), credentials, "Wallet1/account1", "Sign")
+	require.Zero(t, countDeprecationWarnings(t, logCapture, "validator-prod", "validator-prod"),
+		"expected no warning when extracted identity already matches the CN")
 }

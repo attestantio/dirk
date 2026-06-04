@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,14 +13,27 @@
 
 package checker
 
-import "context"
+import (
+	"context"
+
+	"github.com/attestantio/go-certmanager/san"
+)
 
 // Credentials are the credentials used to check.
 type Credentials struct {
+	// Client is the authenticated client identity (extracted from certificate).
+	Client string
+	// ClientIdentitySource indicates where the Client identity came from.
+	// Possible values: "san-dns", "cn", or "unknown" if no identity.
+	ClientIdentitySource san.IdentitySource
+	// ClientCertificateSANs contains all Subject Alternative Names from the client certificate.
+	ClientCertificateSANs *san.CertificateSANs
+	// ClientCommonName is the Common Name field of the client certificate's
+	// Subject. Retained while SAN-DNS identities co-exist with legacy CN
+	// identities so the checker can warn about mismatches during migration.
+	ClientCommonName string
 	// RequestID is the ID of the request.
 	RequestID string
-	// Client is the authenticated client.
-	Client string
 	// IP is the originating IP address of the request.
 	IP string
 }

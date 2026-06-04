@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,6 +18,7 @@ import (
 
 	"github.com/attestantio/dirk/services/api/grpc/interceptors"
 	"github.com/attestantio/dirk/services/checker"
+	"github.com/attestantio/go-certmanager/san"
 )
 
 // GenerateCredentials generates checker credentials from the GRPC request information.
@@ -29,6 +30,15 @@ func GenerateCredentials(ctx context.Context) *checker.Credentials {
 	}
 	if client, ok := ctx.Value(&interceptors.ClientName{}).(string); ok {
 		res.Client = client
+	}
+	if identitySource, ok := ctx.Value(&interceptors.ClientIdentitySource{}).(san.IdentitySource); ok {
+		res.ClientIdentitySource = identitySource
+	}
+	if certSANs, ok := ctx.Value(&interceptors.ClientCertificateSANs{}).(*san.CertificateSANs); ok && certSANs != nil {
+		res.ClientCertificateSANs = certSANs
+	}
+	if cn, ok := ctx.Value(&interceptors.ClientCommonName{}).(string); ok {
+		res.ClientCommonName = cn
 	}
 	if ip, ok := ctx.Value(&interceptors.ExternalIP{}).(string); ok {
 		res.IP = ip

@@ -1,4 +1,4 @@
-// Copyright © 2020 - 2023 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,6 +19,8 @@ import (
 	"crypto/x509"
 	"net"
 
+	certcredentials "github.com/attestantio/go-certmanager/credentials"
+	servercert "github.com/attestantio/go-certmanager/server"
 	accountmanagerhandler "github.com/attestantio/dirk/services/api/grpc/handlers/accountmanager"
 	listerhandler "github.com/attestantio/dirk/services/api/grpc/handlers/lister"
 	receiverhandler "github.com/attestantio/dirk/services/api/grpc/handlers/receiver"
@@ -66,7 +68,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		monitor: parameters.monitor,
 	}
 
-	if err := s.createServer(parameters.name, parameters.serverCert, parameters.serverKey, parameters.caCert); err != nil {
+	if err := s.createServer(ctx, parameters.name, parameters.certManager, parameters.caCert); err != nil {
 		return nil, errors.Wrap(err, "failed to create API server")
 	}
 
@@ -133,10 +135,11 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 }
 
 // createServer creates the GRPC server.
-func (s *Service) createServer(name string, certPEMBlock []byte, keyPEMBlock []byte, caPEMBlock []byte) error {
+func (s *Service) createServer(ctx context.Context, name string, certManager servercert.Service, caPEMBlock []byte) error {
 	grpclog.SetLoggerV2(loggers.NewGRPCLoggerV2(log.With().Str("service", "grpc").Logger()))
 
-	grpcOpts := []grpc.ServerOption{
+	grpcOpts := make([]grpc.ServerOption, 0, 3)
+	grpcOpts = append(grpcOpts,
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.UnaryInterceptor(
 			grpcmiddleware.ChainUnaryServer(
@@ -145,35 +148,48 @@ func (s *Service) createServer(name string, certPEMBlock []byte, keyPEMBlock []b
 				interceptors.SourceIPInterceptor(),
 				interceptors.ClientInfoInterceptor(),
 			)),
-	}
+	)
 
 	if name == "" {
 		return errors.New("no server name provided; cannot proceed")
 	}
 
-	serverCert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
+	// Create server TLS config with client certificate verification.
+	tlsCfg, err := buildServerTLSConfig(ctx, certManager, caPEMBlock)
 	if err != nil {
-		return errors.Wrap(err, "failed to load server keypair")
+		return errors.Wrap(err, "failed to create server TLS config")
 	}
 
-	certPool := x509.NewCertPool()
-	if len(caPEMBlock) > 0 {
-		// Read in the certificate authority certificate; this is required to validate client certificates on incoming connections.
-		if ok := certPool.AppendCertsFromPEM(caPEMBlock); !ok {
-			return errors.New("could not add CA certificate to pool")
-		}
-	}
-
-	serverCreds := credentials.NewTLS(&tls.Config{
-		ClientAuth:   tls.RequireAndVerifyClientCert,
-		Certificates: []tls.Certificate{serverCert},
-		ClientCAs:    certPool,
-		MinVersion:   tls.VersionTLS13,
-	})
+	serverCreds := credentials.NewTLS(tlsCfg)
 	grpcOpts = append(grpcOpts, grpc.Creds(serverCreds))
 	s.grpcServer = grpc.NewServer(grpcOpts...)
 
 	return nil
+}
+
+// buildServerTLSConfig returns a TLS config that verifies client certificates,
+// using caPEMBlock as the client CA pool when provided and falling back to the
+// host's system root pool when caPEMBlock is empty (matching the documented
+// "use standard CA certificates" behaviour).
+func buildServerTLSConfig(ctx context.Context, certManager servercert.Service, caPEMBlock []byte) (*tls.Config, error) {
+	if len(caPEMBlock) > 0 {
+		return certcredentials.NewServerTLSConfig(ctx, certManager, caPEMBlock)
+	}
+
+	baseCfg, err := certManager.GetTLSConfig(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to obtain base TLS config")
+	}
+
+	systemPool, err := x509.SystemCertPool()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load system CA pool")
+	}
+
+	cfg := baseCfg.Clone()
+	cfg.ClientAuth = tls.RequireAndVerifyClientCert
+	cfg.ClientCAs = systemPool
+	return cfg, nil
 }
 
 // Serve serves the GRPC server.

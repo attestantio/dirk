@@ -1,6 +1,10 @@
 # Development
   - fix account manager completed metric OnGenerate error
-  - import latest go-eth2-wallet-store-s3 to enable force-path-style on S3 
+  - import latest go-eth2-wallet-store-s3 to enable force-path-style on S3
+  - integrate go-certmanager for TLS certificate management
+  - use DNS SAN for client certificate identity extraction, with CN fallback
+  - support on-demand reload of the server certificate on SIGHUP (the client certificate used for outgoing DKG connections is not reloaded)
+  - use separate client certificate manager for outgoing DKG connections 
 
 # Version 1.2.1
   - run slashing protection database garbage collection periodically

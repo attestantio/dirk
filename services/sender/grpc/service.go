@@ -1,4 +1,4 @@
-// Copyright © 2020 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,11 +15,10 @@ package grpc
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"sync"
 
 	"github.com/attestantio/dirk/core"
+	certcredentials "github.com/attestantio/go-certmanager/credentials"
 	"github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/jackc/puddle"
 	"github.com/pkg/errors"
@@ -34,8 +33,8 @@ import (
 type Service struct {
 	name                 string
 	credentials          credentials.TransportCredentials
-	connectionPoolsMutex sync.Mutex
 	connectionPools      map[string]*puddle.Pool
+	connectionPoolsMutex sync.Mutex
 }
 
 // module-wide log.
@@ -54,14 +53,15 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		log = log.Level(parameters.logLevel)
 	}
 
-	transportCredentials, err := composeCredentials(ctx, parameters.serverCert, parameters.serverKey, parameters.caCert)
+	// Create gRPC client credentials from certificate manager.
+	creds, err := certcredentials.NewGRPCClientCredentials(ctx, parameters.certManager)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to compose client credentials")
+		return nil, errors.Wrap(err, "failed to create gRPC client credentials")
 	}
 
 	service := &Service{
 		name:            parameters.name,
-		credentials:     transportCredentials,
+		credentials:     creds,
 		connectionPools: make(map[string]*puddle.Pool),
 	}
 
@@ -148,7 +148,7 @@ func (s *Service) Commit(ctx context.Context, peer *core.Endpoint, account strin
 func (s *Service) Abort(ctx context.Context, peer *core.Endpoint, account string) error {
 	connResource, err := s.obtainConnection(ctx, peer.ConnectAddress())
 	if err != nil {
-		return errors.Wrap(err, "failed to obtain connection for Execute()")
+		return errors.Wrap(err, "failed to obtain connection for Abort()")
 	}
 	defer connResource.Release()
 	client := pb.NewDKGClient(connResource.Value().(*grpc.ClientConn))
@@ -199,27 +199,6 @@ func (s *Service) SendContribution(ctx context.Context, peer *core.Endpoint, acc
 	}
 
 	return resSecret, resVVec, nil
-}
-
-func composeCredentials(_ context.Context, certPEMBlock []byte, keyPEMBlock []byte, caPEMBlock []byte) (credentials.TransportCredentials, error) {
-	clientCert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to access client certificate/key")
-	}
-
-	tlsCfg := &tls.Config{
-		Certificates: []tls.Certificate{clientCert},
-		MinVersion:   tls.VersionTLS13,
-	}
-	if len(caPEMBlock) > 0 {
-		cp := x509.NewCertPool()
-		if !cp.AppendCertsFromPEM(caPEMBlock) {
-			return nil, errors.New("failed to add CA certificate")
-		}
-		tlsCfg.RootCAs = cp
-	}
-
-	return credentials.NewTLS(tlsCfg), nil
 }
 
 // obtainConnection obtains a connection to the required address via GRPC.

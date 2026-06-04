@@ -1,4 +1,4 @@
-// Copyright © 2020 - 2024 Attestant Limited.
+// Copyright © 2020 - 2026 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -39,6 +39,9 @@ import (
 	standardwalletmanager "github.com/attestantio/dirk/services/walletmanager/standard"
 	"github.com/attestantio/dirk/testing/logger"
 	"github.com/attestantio/dirk/testing/resources"
+	standardclientcert "github.com/attestantio/go-certmanager/client/standard"
+	standardservercert "github.com/attestantio/go-certmanager/server/standard"
+	mockcertfetcher "github.com/attestantio/go-certmanager/testing/mock"
 	"github.com/pkg/errors"
 	e2types "github.com/wealdtech/go-eth2-types/v2"
 	distributed "github.com/wealdtech/go-eth2-wallet-distributed"
@@ -114,6 +117,8 @@ var Wallet2Keys = [][]byte{
 // Returns the log capture for the daemon, along with the filesystem path for the wallets.
 //
 //nolint:maintidx
+//
+//skipcq: GO-R1005
 func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[uint64]string) (*logger.LogCapture, string, error) {
 	capture := logger.NewLogCapture()
 	if err := e2types.InitBLS(); err != nil {
@@ -276,11 +281,24 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		return nil, "", errors.Wrap(err, "failed to create static peers")
 	}
 
+	senderCertFetcher := mockcertfetcher.NewMajordomo(map[string][]byte{
+		"sender.cert": resources.SignerCerts[id],
+		"sender.key":  resources.SignerKeys[id],
+		"ca.cert":     resources.CACrt,
+	})
+	senderCertManager, err := standardclientcert.New(ctx,
+		standardclientcert.WithMajordomo(senderCertFetcher),
+		standardclientcert.WithCertPEMURI("sender.cert"),
+		standardclientcert.WithCertKeyURI("sender.key"),
+		standardclientcert.WithCACertURI("ca.cert"),
+	)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed to create sender certificate manager")
+	}
+
 	sender, err := sendergrpc.New(ctx,
 		sendergrpc.WithName(fmt.Sprintf("signer-test%02d", id)),
-		sendergrpc.WithServerCert(resources.SignerCerts[id]),
-		sendergrpc.WithServerKey(resources.SignerKeys[id]),
-		sendergrpc.WithCACert(resources.CACrt),
+		sendergrpc.WithCertManager(senderCertManager),
 	)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to create GRPC sender")
@@ -322,6 +340,20 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		return nil, "", errors.Wrap(err, "failed to create standard wallet manager")
 	}
 
+	// Create certificate manager for test daemon.
+	certFetcher := mockcertfetcher.NewMajordomo(map[string][]byte{
+		"cert.pem": resources.SignerCerts[id],
+		"cert.key": resources.SignerKeys[id],
+	})
+	certManager, err := standardservercert.New(ctx,
+		standardservercert.WithMajordomo(certFetcher),
+		standardservercert.WithCertPEMURI("cert.pem"),
+		standardservercert.WithCertKeyURI("cert.key"),
+	)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed to create certificate manager")
+	}
+
 	_, err = grpcapi.New(ctx,
 		grpcapi.WithSigner(signer),
 		grpcapi.WithLister(lister),
@@ -331,8 +363,7 @@ func New(ctx context.Context, path string, id uint64, port uint32, peersMap map[
 		grpcapi.WithPeers(peers),
 		grpcapi.WithName(fmt.Sprintf("signer-test%02d", id)),
 		grpcapi.WithID(id),
-		grpcapi.WithServerCert(resources.SignerCerts[id]),
-		grpcapi.WithServerKey(resources.SignerKeys[id]),
+		grpcapi.WithCertManager(certManager),
 		grpcapi.WithCACert(resources.CACrt),
 		grpcapi.WithListenAddress(fmt.Sprintf("0.0.0.0:%d", port)),
 	)

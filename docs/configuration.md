@@ -33,9 +33,35 @@ certificates:
   server-cert: file:///home/me/dirk/security/certificates/myserver.example.com.crt
   # server-key is the majordomo URL to the server's key.
   server-key: file:///home/me/dirk/security/certificates/myserver.example.com.key
-  # ca-cert is the certificate of the CA that issued the client certificates.  If not present Dirk will use
-  # the standard CA certificates supplied with the server.
+  # ca-cert is the certificate of the CA that issued the client certificates.  If not present, Dirk
+  # falls back to the host's system trust store, which means any client certificate that chains to a
+  # publicly-trusted CA will pass TLS verification.  Client authentication then rests solely on
+  # permissions.yaml (which matches on the certificate identity); set ca-cert to your own issuing CA
+  # to restrict which certificates can establish a connection at all.
+  # Note: Client certificates should include the client identity in Subject Alternative Names (SAN).
+  # Dirk supports DNS names in SAN fields.
+  # Legacy certificates using only Common Name (CN) are still supported for backward compatibility.
   ca-cert: file:///home/me/dirk/security/certificates/ca.crt
+  # load-timeout defines the maximum time allowed for a certificate reload operation to complete.
+  # If the operation exceeds this duration, it will be cancelled. If not specified or set to 0,
+  # Certificates are loaded at Dirk start up with no timeout.
+  # They can also be reloaded on demand by sending a SIGHUP signal to Dirk's process.
+  # Note that only one reload operation can run at a time; concurrent reload attempts will return
+  # an error while a reload is in progress.
+  load-timeout: '10m'
+
+# IMPORTANT: SIGHUP reloads only the server certificate and key (server-cert / server-key).
+# The following TLS material is snapshotted at Dirk start and CANNOT be refreshed without a
+# full process restart:
+#
+#   - ca-cert (used as the trusted client CA pool for incoming connections)
+#   - the DKG client certificate and key (used for outbound peer connections; today these
+#     reuse server-cert / server-key, but the client certificate manager loads them once at
+#     start and holds them for the life of the process)
+#
+# Operational consequence: rotating ca-cert (adding a new client CA, revoking a compromised
+# one) or rotating the peer client certificate requires a full Dirk restart. SIGHUP alone
+# will quietly leave the cluster on the previous trust anchors. Plan rotations accordingly.
 # storage-path is the path where information created by the slashing protection system is stored.  If not
 # supplied it will default to using the 'storage' directory in the user's home directory.
 storage-path: /home/me/dirk/protection
@@ -121,6 +147,7 @@ Modules levels are used for each module, overriding the global log level.  The a
 
   - **accountmanager** operations on accounts such as locking and unlocking existing accounts, and generating new accounts
   - **api** operations from the external API
+  - **certmanager** manages TLS certificates for server and client connections
   - **checker** checks client access to operations
   - **fetcher** fetches wallets and accounts from Ethereum 2 stores
   - **lister** lists accounts that match a given path specification
