@@ -33,8 +33,11 @@ certificates:
   server-cert: file:///home/me/dirk/security/certificates/myserver.example.com.crt
   # server-key is the majordomo URL to the server's key.
   server-key: file:///home/me/dirk/security/certificates/myserver.example.com.key
-  # ca-cert is the certificate of the CA that issued the client certificates.  If not present Dirk will use
-  # the standard CA certificates supplied with the server.
+  # ca-cert is the certificate of the CA that issued the client certificates.  If not present, Dirk
+  # falls back to the host's system trust store, which means any client certificate that chains to a
+  # publicly-trusted CA will pass TLS verification.  Client authentication then rests solely on
+  # permissions.yaml (which matches on the certificate identity); set ca-cert to your own issuing CA
+  # to restrict which certificates can establish a connection at all.
   # Note: Client certificates should include the client identity in Subject Alternative Names (SAN).
   # Dirk supports DNS names in SAN fields.
   # Legacy certificates using only Common Name (CN) are still supported for backward compatibility.
