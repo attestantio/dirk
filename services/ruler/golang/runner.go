@@ -59,6 +59,7 @@ func (s *Service) RunRules(ctx context.Context,
 
 	// Only some actions require locking.
 	if action == ruler.ActionSign ||
+		action == ruler.ActionSignVoluntaryExit ||
 		action == ruler.ActionSignBeaconProposal ||
 		action == ruler.ActionSignBeaconAttestation {
 		// We cannot allow multiple requests for the same public key.
@@ -140,6 +141,14 @@ func (s *Service) runRules(ctx context.Context,
 					continue
 				}
 				results[i] = s.rules.OnSign(ctx, metadata, rulesData)
+			case ruler.ActionSignVoluntaryExit:
+				rulesData, isExpectedType := rulesData[i].Data.(*rules.SignData)
+				if !isExpectedType {
+					log.Warn().Msg("Data not of expected type")
+					results[i] = rules.FAILED
+					continue
+				}
+				results[i] = s.rules.OnSignVoluntaryExit(ctx, metadata, rulesData)
 			case ruler.ActionSignBeaconProposal:
 				reqData, isExpectedType := rulesData[i].Data.(*rules.SignBeaconProposalData)
 				if !isExpectedType {

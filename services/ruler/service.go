@@ -27,6 +27,8 @@ var (
 	ActionSignBeaconAttestation = "Sign beacon attestation"
 	// ActionSignBeaconProposal is the action of signing a beacon proposal.
 	ActionSignBeaconProposal = "Sign beacon proposal"
+	// ActionSignVoluntaryExit is the action of signing a voluntary exit.
+	ActionSignVoluntaryExit = "Sign voluntary exit"
 	// ActionAccessAccount is the action of accessing an account.
 	ActionAccessAccount = "Access account"
 	// ActionCreateAccount is the action of creating an account.

@@ -24,7 +24,10 @@ server:
   # to `0.0.0.0` to listen on all network interfaces.
   listen-address: 127.0.0.1:13141
   rules:
-    # admin-ips is a list of IP addresses from which requests for voluntary exists will be accepted.
+    # admin-ips is a list of IP addresses from which requests for voluntary exits will be accepted
+    # when the client is authorized through the generic "Sign" permission.  Clients with the
+    # "Sign voluntary exit" permission can sign voluntary exits from any IP address, in which case
+    # this setting is not required.
     admin-ips: [ 1.2.3.4, 5.6.7.8 ]
     # periodic-pruning will prune the rules storage if enabled every 1-2 days to keep the database size down.
     periodic-pruning: true

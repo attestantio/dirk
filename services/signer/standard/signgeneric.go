@@ -91,7 +91,7 @@ func (s *Service) SignGeneric(
 		e.Msg("Data to sign")
 	}
 
-	wallet, account, checkRes := s.preCheck(ctx, credentials, accountName, pubKey, ruler.ActionSign)
+	wallet, account, action, checkRes := s.preCheckSign(ctx, credentials, accountName, pubKey, data)
 	if checkRes != core.ResultSucceeded {
 		s.monitor.SignCompleted(started, "generic", checkRes)
 		span.SetStatus(codes.Ok, "")
@@ -111,7 +111,7 @@ func (s *Service) SignGeneric(
 			Data:        data,
 		},
 	}
-	results := s.ruler.RunRules(ctx, credentials, ruler.ActionSign, rulesData)
+	results := s.ruler.RunRules(ctx, credentials, action, rulesData)
 	switch results[0] {
 	case rules.DENIED:
 		s.monitor.SignCompleted(started, "generic", core.ResultDenied)

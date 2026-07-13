@@ -23,3 +23,8 @@ import (
 func (*Service) OnSign(_ context.Context, _ *rules.ReqMetadata, _ *rules.SignData) rules.Result {
 	return rules.APPROVED
 }
+
+// OnSignVoluntaryExit is called when a request to sign a voluntary exit needs to be approved.
+func (*Service) OnSignVoluntaryExit(_ context.Context, _ *rules.ReqMetadata, _ *rules.SignData) rules.Result {
+	return rules.APPROVED
+}

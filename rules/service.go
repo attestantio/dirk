@@ -113,6 +113,8 @@ type Service interface {
 	OnListAccounts(ctx context.Context, metadata *ReqMetadata, req *AccessAccountData) Result
 	// OnSign is called when a request to sign generic data needs to be approved.
 	OnSign(ctx context.Context, metadata *ReqMetadata, req *SignData) Result
+	// OnSignVoluntaryExit is called when a request to sign a voluntary exit needs to be approved.
+	OnSignVoluntaryExit(ctx context.Context, metadata *ReqMetadata, req *SignData) Result
 	// OnSignBeaconAttestation is called when a request to sign a beacon block attestation needs to be approved.
 	OnSignBeaconAttestation(ctx context.Context, metadata *ReqMetadata, req *SignBeaconAttestationData) Result
 	// OnSignBeaconAttestations is called when a request to sign multiple beacon block attestations needs to be approved.

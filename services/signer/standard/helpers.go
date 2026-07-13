@@ -14,14 +14,52 @@
 package standard
 
 import (
+	"bytes"
 	context "context"
 	"fmt"
 
 	"github.com/attestantio/dirk/core"
+	"github.com/attestantio/dirk/rules"
 	"github.com/attestantio/dirk/services/checker"
+	"github.com/attestantio/dirk/services/ruler"
 	"github.com/opentracing/opentracing-go"
+	e2types "github.com/wealdtech/go-eth2-types/v2"
 	e2wtypes "github.com/wealdtech/go-eth2-wallet-types/v2"
 )
+
+// signAction returns the ruler action appropriate for the given signing data.
+func signAction(data *rules.SignData) string {
+	if len(data.Domain) >= 4 && bytes.Equal(data.Domain[0:4], e2types.DomainVoluntaryExit[:]) {
+		return ruler.ActionSignVoluntaryExit
+	}
+
+	return ruler.ActionSign
+}
+
+// preCheckSign carries out pre-checks for a generic signing request.  Voluntary exit requests
+// are authorised by the client's "Sign voluntary exit" permission where present, falling back
+// to the generic "Sign" permission whose rules apply the admin IP address check.
+// It returns the action under which the request was authorised, for use when running rules.
+func (s *Service) preCheckSign(ctx context.Context,
+	credentials *checker.Credentials,
+	name string,
+	pubKey []byte,
+	data *rules.SignData,
+) (
+	e2wtypes.Wallet,
+	e2wtypes.Account,
+	string,
+	core.Result,
+) {
+	action := signAction(data)
+	wallet, account, result := s.preCheck(ctx, credentials, name, pubKey, action)
+	if result != core.ResultSucceeded && action == ruler.ActionSignVoluntaryExit {
+		action = ruler.ActionSign
+		wallet, account, result = s.preCheck(ctx, credentials, name, pubKey, action)
+	}
+
+	return wallet, account, action, result
+}
 
 // preCheck carries out pre-checks for all signing requests.
 func (s *Service) preCheck(ctx context.Context, credentials *checker.Credentials, name string, pubKey []byte, action string) (e2wtypes.Wallet, e2wtypes.Account, core.Result) {

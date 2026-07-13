@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/attestantio/dirk/core"
+	"github.com/attestantio/dirk/rules"
 	mockrules "github.com/attestantio/dirk/rules/mock"
 	"github.com/attestantio/dirk/services/checker"
 	mockchecker "github.com/attestantio/dirk/services/checker/mock"
@@ -165,6 +166,46 @@ func TestFetchAccount(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			_, _, res := signerSvc.fetchAccount(context.Background(), test.accountName, test.pubKey)
 			assert.Equal(t, test.res, res)
+		})
+	}
+}
+
+func TestSignAction(t *testing.T) {
+	tests := []struct {
+		name   string
+		domain []byte
+		action string
+	}{
+		{
+			name:   "NilDomain",
+			action: ruler.ActionSign,
+		},
+		{
+			name:   "ShortDomain",
+			domain: []byte{0x04},
+			action: ruler.ActionSign,
+		},
+		{
+			name: "GenericDomain",
+			domain: []byte{
+				0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			},
+			action: ruler.ActionSign,
+		},
+		{
+			name: "VoluntaryExitDomain",
+			domain: []byte{
+				0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			},
+			action: ruler.ActionSignVoluntaryExit,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.action, signAction(&rules.SignData{Domain: test.domain}))
 		})
 	}
 }

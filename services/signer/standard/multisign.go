@@ -109,6 +109,7 @@ func (s *Service) Multisign(ctx context.Context,
 	span.SetAttributes(attribute.Int("requests", entries))
 	rulesData := make([]*ruler.RulesData, entries)
 	accounts := make([]e2wtypes.Account, entries)
+	actions := make([]string, entries)
 	_, err := util.Scatter(entries, func(offset int, entries int, _ *sync.RWMutex) (any, error) {
 		for i := offset; i < offset+entries; i++ {
 			var pubKey []byte
@@ -121,7 +122,7 @@ func (s *Service) Multisign(ctx context.Context,
 				accountName = accountNames[i]
 			}
 
-			wallet, account, checkRes := s.preCheck(ctx, credentials, accountName, pubKey, ruler.ActionSign)
+			wallet, account, action, checkRes := s.preCheckSign(ctx, credentials, accountName, pubKey, data[i])
 			if checkRes != core.ResultSucceeded {
 				s.monitor.SignCompleted(started, "generic", checkRes)
 				results[i] = checkRes
@@ -135,6 +136,7 @@ func (s *Service) Multisign(ctx context.Context,
 				Data:        data[i],
 			}
 			accounts[i] = account
+			actions[i] = action
 		}
 
 		return make([]*util.ScatterResult, 0), nil
@@ -150,8 +152,28 @@ func (s *Service) Multisign(ctx context.Context,
 	}
 	log.Trace().Dur("elapsed", time.Since(started)).Msg("Completed precheck")
 
-	// Confirm approval via rules.
-	rulesResults := s.ruler.RunRules(ctx, credentials, ruler.ActionSign, rulesData)
+	// Confirm approval via rules.  Requests can be authorised under different actions,
+	// so run the rules separately for each action.
+	rulesResults := make([]rules.Result, len(rulesData))
+	for _, action := range []string{ruler.ActionSign, ruler.ActionSignVoluntaryExit} {
+		indices := make([]int, 0, len(rulesData))
+		for i := range actions {
+			if actions[i] == action {
+				indices = append(indices, i)
+			}
+		}
+		if len(indices) == 0 {
+			continue
+		}
+		actionData := make([]*ruler.RulesData, len(indices))
+		for j, index := range indices {
+			actionData[j] = rulesData[index]
+		}
+		actionResults := s.ruler.RunRules(ctx, credentials, action, actionData)
+		for j, index := range indices {
+			rulesResults[index] = actionResults[j]
+		}
+	}
 	log.Trace().Dur("elapsed", time.Since(started)).Msg("Completed rules")
 
 	// Carry out the signing.

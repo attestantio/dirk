@@ -1,4 +1,5 @@
 # Development
+  - add "Sign voluntary exit" permission to authorize voluntary exits by client certificate rather than source IP address
   - fix account manager completed metric OnGenerate error
   - import latest go-eth2-wallet-store-s3 to enable force-path-style on S3 
 

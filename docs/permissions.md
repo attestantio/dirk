@@ -35,6 +35,13 @@ Sign beacon proposal is the operation of signing a proposed beacon block.
 ### Sign
 Sign is the generic signing operation.  Because there are no specific anti-slashing required for signing entities other than beacon attestations and proposals the data requirements for these operations are lower: only the data root and the signing domain are required.
 
+Note that voluntary exit requests signed under this permission are additionally required to originate from an IP address listed in `server.rules.admin-ips`; use the "Sign voluntary exit" permission to authorize voluntary exits without an IP address check.
+
+### Sign voluntary exit
+Sign voluntary exit is the operation of signing a voluntary exit for a validator.  A client with this permission can sign voluntary exits regardless of its source IP address, so the `server.rules.admin-ips` configuration is not required.
+
+If a client does not have this permission, voluntary exit requests fall back to the generic "Sign" permission, in which case they must also originate from an IP address listed in `server.rules.admin-ips`.  As a consequence, an explicit denial of this permission only removes the IP-free path: a client whose permissions also allow "Sign" can still sign voluntary exits from an address in `server.rules.admin-ips`.
+
 ### Access account
 Access account is the operation to access the account, for example to list all accounts in a wallet or to obtain the account's public key.
 
@@ -83,7 +90,7 @@ In addition to an implicit denial, it is possible to have explicit denials.  Exp
 Explicit denial is configured by prepending the ~ symbol to the operation, for example the permission list:
 
 ```
-  [~Voluntary exit, All]
+  [~Sign voluntary exit, All]
 ```
 
 is read by Dirk as "do not allow voluntary exits, allow all other operations".  Explicit denials are useful when you want your permissions to be of the form "allow all operations _except_..."

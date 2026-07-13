@@ -79,6 +79,11 @@ func (*denyingService) OnSign(_ context.Context, _ *rules.ReqMetadata, _ *rules.
 	return rules.DENIED
 }
 
+// OnSignVoluntaryExit is called when a request to sign a voluntary exit needs to be approved.
+func (*denyingService) OnSignVoluntaryExit(_ context.Context, _ *rules.ReqMetadata, _ *rules.SignData) rules.Result {
+	return rules.DENIED
+}
+
 // ExportSlashingProtection exports the slashing protection data.
 func (*denyingService) ExportSlashingProtection(_ context.Context) (map[[48]byte]*rules.SlashingProtection, error) {
 	return make(map[[48]byte]*rules.SlashingProtection), nil
