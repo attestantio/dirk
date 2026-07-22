@@ -53,7 +53,8 @@ func (s *Service) preCheckSign(ctx context.Context,
 ) {
 	action := signAction(data)
 	wallet, account, result := s.preCheck(ctx, credentials, name, pubKey, action)
-	if result != core.ResultSucceeded && action == ruler.ActionSignVoluntaryExit {
+	// Only fall back on an authorisation denial; system failures are returned as-is.
+	if result == core.ResultDenied && action == ruler.ActionSignVoluntaryExit {
 		action = ruler.ActionSign
 		wallet, account, result = s.preCheck(ctx, credentials, name, pubKey, action)
 	}

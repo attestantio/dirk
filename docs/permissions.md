@@ -94,3 +94,5 @@ Explicit denial is configured by prepending the ~ symbol to the operation, for e
 ```
 
 is read by Dirk as "do not allow voluntary exits, allow all other operations".  Explicit denials are useful when you want your permissions to be of the form "allow all operations _except_..."
+
+Note that in this example the explicit denial only removes the IP-free voluntary exit path: because "All" still grants the generic "Sign" operation, voluntary exits remain possible from IP addresses listed in `server.rules.admin-ips`.  To disallow voluntary exits entirely, ensure that the client's address is not present in `server.rules.admin-ips` (or explicitly deny "Sign" as well).

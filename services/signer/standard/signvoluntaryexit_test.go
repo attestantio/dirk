@@ -300,4 +300,15 @@ func TestMultisignVoluntaryExit(t *testing.T) {
 			assert.Equal(t, test.res, res)
 		})
 	}
+
+	// A batch containing multiple requests for the same key must fail, even when the
+	// requests are authorised under different actions.
+	t.Run("DuplicateKey", func(t *testing.T) {
+		res, _ := signerSvc.Multisign(ctx,
+			&checker.Credentials{Client: "all"},
+			[]string{"Test wallet/Test account 1", "Test wallet/Test account 1"},
+			nil,
+			data)
+		assert.Equal(t, []core.Result{core.ResultFailed, core.ResultFailed}, res)
+	})
 }

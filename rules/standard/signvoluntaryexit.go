@@ -35,6 +35,11 @@ func (s *Service) OnSignVoluntaryExit(ctx context.Context, metadata *rules.ReqMe
 	}
 	log := s.log.With().Str("client", metadata.Client).Str("account", metadata.Account).Str("rule", "sign voluntary exit").Logger()
 
+	if req == nil {
+		log.Warn().Msg("No request data to evaluate request")
+		return rules.FAILED
+	}
+
 	if len(req.Domain) < 4 || !bytes.Equal(req.Domain[0:4], e2types.DomainVoluntaryExit[:]) {
 		log.Warn().Msg("Not signing non-voluntary exit request with voluntary exit signer")
 		return rules.DENIED

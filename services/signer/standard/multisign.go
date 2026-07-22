@@ -152,6 +152,24 @@ func (s *Service) Multisign(ctx context.Context,
 	}
 	log.Trace().Dur("elapsed", time.Since(started)).Msg("Completed precheck")
 
+	// The rules are run separately for each action, and their duplicate public key check
+	// only covers a single run, so carry out the check across the entire batch here.
+	pubKeyMap := make(map[[48]byte]bool)
+	for i := range rulesData {
+		var key [48]byte
+		copy(key[:], rulesData[i].PubKey)
+		if _, exists := pubKeyMap[key]; exists {
+			log.Debug().Str("pubkey", fmt.Sprintf("%#x", rulesData[i].PubKey)).Str("result", "failed").Msg("Multiple requests for same key")
+			s.monitor.SignCompleted(started, "generic", core.ResultFailed)
+			for i := range results {
+				results[i] = core.ResultFailed
+			}
+
+			return results, nil
+		}
+		pubKeyMap[key] = true
+	}
+
 	// Confirm approval via rules.  Requests can be authorised under different actions,
 	// so run the rules separately for each action.
 	rulesResults := make([]rules.Result, len(rulesData))

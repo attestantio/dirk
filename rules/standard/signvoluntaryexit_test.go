@@ -50,6 +50,11 @@ func TestSignVoluntaryExit(t *testing.T) {
 			res: rules.FAILED,
 		},
 		{
+			name:     "RequestNil",
+			metadata: &rules.ReqMetadata{},
+			res:      rules.FAILED,
+		},
+		{
 			name:     "AttestationDomain",
 			metadata: &rules.ReqMetadata{},
 			req: &rules.SignData{
