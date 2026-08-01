@@ -51,7 +51,8 @@ func WithStoragePath(storagePath string) Parameter {
 	})
 }
 
-// WithAdminIPs sets the administration IP addreses for the module.
+// WithAdminIPs sets the administration IP addresses for the module.  Entries may be
+// individual IP addresses or CIDR ranges.
 func WithAdminIPs(adminIPs []string) Parameter {
 	return parameterFunc(func(p *parameters) {
 		p.adminIPs = adminIPs

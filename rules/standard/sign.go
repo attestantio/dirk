@@ -48,14 +48,7 @@ func (s *Service) OnSign(ctx context.Context, metadata *rules.ReqMetadata, req *
 			log.Warn().Msg("Not signing voluntary exit request from unknown source")
 			return rules.DENIED
 		}
-		validIP := false
-		for i := range s.adminIPs {
-			if metadata.IP == s.adminIPs[i] {
-				validIP = true
-				break
-			}
-		}
-		if !validIP {
+		if !adminIPAllowed(s.adminIPNets, metadata.IP) {
 			log.Warn().Str("request_ip", metadata.IP).Msg("Not signing voluntary exit request from unapproved IP address")
 			return rules.DENIED
 		}
