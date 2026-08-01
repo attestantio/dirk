@@ -40,7 +40,7 @@ func TestSign(t *testing.T) {
 
 	testRules, err := standardrules.New(ctx,
 		standardrules.WithStoragePath(base),
-		standardrules.WithAdminIPs([]string{"1.2.3.4", "5.6.7.8"}),
+		standardrules.WithAdminIPs([]string{"1.2.3.4", "5.6.7.8", "10.0.0.0/8"}),
 	)
 	require.NoError(t, err)
 
@@ -115,6 +115,28 @@ func TestSign(t *testing.T) {
 				Domain: _byteStr(t, "0400000000000000000000000000000000000000000000000000000000000000"),
 			},
 			res: rules.APPROVED,
+		},
+		{
+			name: "GoodVEIPCIDR",
+			metadata: &rules.ReqMetadata{
+				IP: "10.1.2.3",
+			},
+			req: &rules.SignData{
+				Data:   _byteStr(t, "0000000000000000000000000000000000000000000000000000000000000000"),
+				Domain: _byteStr(t, "0400000000000000000000000000000000000000000000000000000000000000"),
+			},
+			res: rules.APPROVED,
+		},
+		{
+			name: "OutsideVEIPCIDR",
+			metadata: &rules.ReqMetadata{
+				IP: "11.1.2.3",
+			},
+			req: &rules.SignData{
+				Data:   _byteStr(t, "0000000000000000000000000000000000000000000000000000000000000000"),
+				Domain: _byteStr(t, "0400000000000000000000000000000000000000000000000000000000000000"),
+			},
+			res: rules.DENIED,
 		},
 	}
 

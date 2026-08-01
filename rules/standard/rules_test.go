@@ -57,6 +57,26 @@ func TestRules(t *testing.T) {
 			logLevel: zerolog.Disabled,
 			path:     os.TempDir(),
 		},
+		{
+			name:     "AdminIPsCIDRGood",
+			logLevel: zerolog.Disabled,
+			path:     os.TempDir(),
+			validIPs: []string{"1.2.3.4", "10.0.0.0/8", "::1/128"},
+		},
+		{
+			name:     "AdminIPsBad",
+			logLevel: zerolog.Disabled,
+			path:     os.TempDir(),
+			validIPs: []string{"not-an-ip"},
+			err:      []string{`problem with admin IPs: invalid admin IP address "not-an-ip"`},
+		},
+		{
+			name:     "AdminIPsBadCIDR",
+			logLevel: zerolog.Disabled,
+			path:     os.TempDir(),
+			validIPs: []string{"10.0.0.0/33"},
+			err:      []string{`problem with admin IPs: invalid admin IP CIDR range "10.0.0.0/33"`},
+		},
 	}
 
 	for _, test := range tests {

@@ -15,6 +15,7 @@ package standard
 
 import (
 	"context"
+	"net"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -23,9 +24,9 @@ import (
 
 // Service is the structure that keeps track of rules.
 type Service struct {
-	log      zerolog.Logger
-	store    *Store
-	adminIPs []string
+	log         zerolog.Logger
+	store       *Store
+	adminIPNets []*net.IPNet
 }
 
 // New creates new rules.
@@ -41,15 +42,20 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		log = log.Level(parameters.logLevel)
 	}
 
+	adminIPNets, err := parseAdminIPs(parameters.adminIPs)
+	if err != nil {
+		return nil, errors.Wrap(err, "problem with admin IPs")
+	}
+
 	store, err := NewStore(ctx, parameters.storagePath, parameters.periodicPruning, log)
 	if err != nil {
 		return nil, err
 	}
 
 	s := &Service{
-		log:      log,
-		store:    store,
-		adminIPs: parameters.adminIPs,
+		log:         log,
+		store:       store,
+		adminIPNets: adminIPNets,
 	}
 
 	// Close the store when the context is cancelled.
