@@ -40,7 +40,7 @@ func TestSign(t *testing.T) {
 
 	testRules, err := standardrules.New(ctx,
 		standardrules.WithStoragePath(base),
-		standardrules.WithAdminIPs([]string{"1.2.3.4", "5.6.7.8", "10.0.0.0/8"}),
+		standardrules.WithAdminIPs([]string{"1.2.3.4", "5.6.7.8", "10.0.0.0/8", "2001:db8::1"}),
 	)
 	require.NoError(t, err)
 
@@ -138,12 +138,74 @@ func TestSign(t *testing.T) {
 			},
 			res: rules.DENIED,
 		},
+		{
+			name: "GoodVEIPv6",
+			metadata: &rules.ReqMetadata{
+				IP: "2001:db8::1",
+			},
+			req: &rules.SignData{
+				Data:   _byteStr(t, "0000000000000000000000000000000000000000000000000000000000000000"),
+				Domain: _byteStr(t, "0400000000000000000000000000000000000000000000000000000000000000"),
+			},
+			res: rules.APPROVED,
+		},
+		{
+			name: "InvalidVEIPv6",
+			metadata: &rules.ReqMetadata{
+				IP: "2001:db8::2",
+			},
+			req: &rules.SignData{
+				Data:   _byteStr(t, "0000000000000000000000000000000000000000000000000000000000000000"),
+				Domain: _byteStr(t, "0400000000000000000000000000000000000000000000000000000000000000"),
+			},
+			res: rules.DENIED,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			res := testRules.OnSign(ctx, test.metadata, test.req)
 			assert.Equal(t, test.res, res)
+		})
+	}
+}
+
+// TestSignAdminIPsCIDRHostBits confirms that a CIDR entry with non-zero host bits
+// (e.g. "10.1.2.3/24" rather than "10.1.2.0/24") is treated as invalid and skipped,
+// rather than being silently widened to the whole network.
+func TestSignAdminIPsCIDRHostBits(t *testing.T) {
+	ctx := context.Background()
+	base, err := os.MkdirTemp("", "")
+	require.NoError(t, err)
+	defer os.RemoveAll(base)
+
+	testRules, err := standardrules.New(ctx,
+		standardrules.WithStoragePath(base),
+		standardrules.WithAdminIPs([]string{"10.1.2.3/24"}),
+	)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name string
+		ip   string
+	}{
+		{
+			name: "EntryAddress",
+			ip:   "10.1.2.3",
+		},
+		{
+			name: "OtherAddressInNetwork",
+			ip:   "10.1.2.99",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			res := testRules.OnSign(ctx, &rules.ReqMetadata{IP: test.ip}, &rules.SignData{
+				Data:   _byteStr(t, "0000000000000000000000000000000000000000000000000000000000000000"),
+				Domain: _byteStr(t, "0400000000000000000000000000000000000000000000000000000000000000"),
+			})
+			assert.Equal(t, rules.DENIED, res)
 		})
 	}
 }

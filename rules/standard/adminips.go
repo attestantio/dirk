@@ -17,20 +17,35 @@ import (
 	"net"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 )
 
 // parseAdminIPs turns the configured admin IP entries in to IP networks that can be
 // checked against an incoming request IP address.  Each entry may be a single IP
 // address, e.g. "1.2.3.4", or a CIDR range, e.g. "10.0.0.0/8"; a single IP address is
 // treated as a CIDR range covering that address alone.
-func parseAdminIPs(entries []string) ([]*net.IPNet, error) {
+//
+// Invalid entries are logged and skipped rather than treated as a fatal error: a
+// misconfigured entry only narrows the set of addresses trusted for voluntary exits,
+// never widens it, so it is not worth failing Dirk's startup over.
+func parseAdminIPs(entries []string, log zerolog.Logger) []*net.IPNet {
 	ipNets := make([]*net.IPNet, 0, len(entries))
 	for _, entry := range entries {
 		if strings.Contains(entry, "/") {
-			_, ipNet, err := net.ParseCIDR(entry)
+			ip, ipNet, err := net.ParseCIDR(entry)
 			if err != nil {
-				return nil, errors.Wrapf(err, "invalid admin IP CIDR range %q", entry)
+				log.Warn().Str("entry", entry).Err(err).Msg("Invalid admin IP CIDR range; ignoring entry")
+
+				continue
+			}
+			if !ip.Equal(ipNet.IP) {
+				// The entry has non-zero host bits, e.g. "10.1.2.3/24" rather than
+				// "10.1.2.0/24".  Treat this as a misconfiguration rather than silently
+				// widening the range to the whole network the operator may not have intended.
+				log.Warn().Str("entry", entry).Str("network", ipNet.String()).
+					Msg("Admin IP CIDR range has non-zero host bits; ignoring entry")
+
+				continue
 			}
 			ipNets = append(ipNets, ipNet)
 
@@ -39,7 +54,9 @@ func parseAdminIPs(entries []string) ([]*net.IPNet, error) {
 
 		ip := net.ParseIP(entry)
 		if ip == nil {
-			return nil, errors.Errorf("invalid admin IP address %q", entry)
+			log.Warn().Str("entry", entry).Msg("Invalid admin IP address; ignoring entry")
+
+			continue
 		}
 		if ip4 := ip.To4(); ip4 != nil {
 			ipNets = append(ipNets, &net.IPNet{IP: ip4, Mask: net.CIDRMask(32, 32)})
@@ -48,7 +65,7 @@ func parseAdminIPs(entries []string) ([]*net.IPNet, error) {
 		}
 	}
 
-	return ipNets, nil
+	return ipNets
 }
 
 // adminIPAllowed returns true if the given request IP address falls within any of the

@@ -42,10 +42,7 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		log = log.Level(parameters.logLevel)
 	}
 
-	adminIPNets, err := parseAdminIPs(parameters.adminIPs)
-	if err != nil {
-		return nil, errors.Wrap(err, "problem with admin IPs")
-	}
+	adminIPNets := parseAdminIPs(parameters.adminIPs, log)
 
 	store, err := NewStore(ctx, parameters.storagePath, parameters.periodicPruning, log)
 	if err != nil {
