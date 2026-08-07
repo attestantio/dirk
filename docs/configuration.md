@@ -25,7 +25,9 @@ server:
   listen-address: 127.0.0.1:13141
   rules:
     # admin-ips is a list of IP addresses and/or CIDR ranges from which requests for voluntary exits
-    # will be accepted.
+    # will be accepted.  A CIDR range must be given as a network address, e.g. 10.0.0.0/8 rather than
+    # 10.1.2.3/8; entries that are neither a valid IP address nor a valid network address are logged
+    # and ignored rather than preventing Dirk from starting.
     admin-ips: [ 1.2.3.4, 5.6.7.8, 10.0.0.0/8 ]
     # periodic-pruning will prune the rules storage if enabled every 1-2 days to keep the database size down.
     periodic-pruning: true
