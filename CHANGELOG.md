@@ -1,4 +1,5 @@
 # Development
+  - support CIDR ranges in `server.rules.admin-ips`, in addition to individual IP addresses
   - fix account manager completed metric OnGenerate error
   - import latest go-eth2-wallet-store-s3 to enable force-path-style on S3 
 
