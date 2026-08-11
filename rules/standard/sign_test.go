@@ -59,6 +59,74 @@ func TestSign(t *testing.T) {
 			res: rules.FAILED,
 		},
 		{
+			name:     "DomainEmpty",
+			metadata: &rules.ReqMetadata{},
+			req: &rules.SignData{
+				Data:   _byteStr(t, "0000000000000000000000000000000000000000000000000000000000000000"),
+				Domain: []byte{},
+			},
+			res: rules.FAILED,
+		},
+		{
+			name:     "DomainOneByte",
+			metadata: &rules.ReqMetadata{},
+			req: &rules.SignData{
+				Data:   _byteStr(t, "0000000000000000000000000000000000000000000000000000000000000000"),
+				Domain: []byte{0x04},
+			},
+			res: rules.FAILED,
+		},
+		{
+			name:     "DomainTwoBytes",
+			metadata: &rules.ReqMetadata{},
+			req: &rules.SignData{
+				Data:   _byteStr(t, "0000000000000000000000000000000000000000000000000000000000000000"),
+				Domain: []byte{0x04, 0x00},
+			},
+			res: rules.FAILED,
+		},
+		{
+			name:     "DomainThreeBytes",
+			metadata: &rules.ReqMetadata{},
+			req: &rules.SignData{
+				Data:   _byteStr(t, "0000000000000000000000000000000000000000000000000000000000000000"),
+				Domain: []byte{0x04, 0x00, 0x00},
+			},
+			res: rules.FAILED,
+		},
+		{
+			name:     "DomainFourBytes",
+			metadata: &rules.ReqMetadata{},
+			req: &rules.SignData{
+				Data:   _byteStr(t, "0000000000000000000000000000000000000000000000000000000000000000"),
+				Domain: []byte{0x04, 0x00, 0x00, 0x00},
+			},
+			res: rules.FAILED,
+		},
+		{
+			name:     "Domain31Bytes",
+			metadata: &rules.ReqMetadata{},
+			req: &rules.SignData{
+				Data:   _byteStr(t, "0000000000000000000000000000000000000000000000000000000000000000"),
+				Domain: make([]byte, 31),
+			},
+			res: rules.FAILED,
+		},
+		{
+			name:     "Domain33Bytes",
+			metadata: &rules.ReqMetadata{},
+			req: &rules.SignData{
+				Data:   _byteStr(t, "0000000000000000000000000000000000000000000000000000000000000000"),
+				Domain: make([]byte, 33),
+			},
+			res: rules.FAILED,
+		},
+		{
+			name:     "RequestNil",
+			metadata: &rules.ReqMetadata{},
+			res:      rules.FAILED,
+		},
+		{
 			name:     "AttestationDomain",
 			metadata: &rules.ReqMetadata{},
 			req: &rules.SignData{

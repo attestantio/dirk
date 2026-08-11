@@ -33,6 +33,15 @@ func (s *Service) OnSign(ctx context.Context, metadata *rules.ReqMetadata, req *
 	}
 	log := s.log.With().Str("client", metadata.Client).Str("account", metadata.Account).Str("rule", "sign").Logger()
 
+	if req == nil {
+		log.Warn().Msg("No request to evaluate")
+		return rules.FAILED
+	}
+	if len(req.Domain) != 32 {
+		log.Warn().Int("domain_length", len(req.Domain)).Msg("Invalid domain length")
+		return rules.FAILED
+	}
+
 	if bytes.Equal(req.Domain[0:4], e2types.DomainBeaconAttester[:]) {
 		log.Warn().Msg("Not signing beacon attestation request with generic signer")
 		return rules.DENIED
