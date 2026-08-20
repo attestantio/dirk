@@ -83,7 +83,7 @@ In addition to an implicit denial, it is possible to have explicit denials.  Exp
 Explicit denial is configured by prepending the ~ symbol to the operation, for example the permission list:
 
 ```
-  [~Voluntary exit, All]
+  [~Create account, All]
 ```
 
 is read by Dirk as "do not allow voluntary exits, allow all other operations".  Explicit denials are useful when you want your permissions to be of the form "allow all operations _except_..."
