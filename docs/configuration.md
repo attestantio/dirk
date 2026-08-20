@@ -27,7 +27,9 @@ server:
     # admin-ips is a list of IP addresses and/or CIDR ranges from which requests for voluntary exits
     # will be accepted.  A CIDR range must be given as a network address, e.g. 10.0.0.0/8 rather than
     # 10.1.2.3/8; entries that are neither a valid IP address nor a valid network address are logged
-    # and ignored rather than preventing Dirk from starting.
+    # and ignored rather than preventing Dirk from starting.  Such entries are always logged at warn
+    # level, even if a higher log level has been configured for the rules module.  Note that setting
+    # the global log level above warn will still suppress them.
     admin-ips: [ 1.2.3.4, 5.6.7.8, 10.0.0.0/8 ]
     # periodic-pruning will prune the rules storage if enabled every 1-2 days to keep the database size down.
     periodic-pruning: true
