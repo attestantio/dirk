@@ -71,14 +71,14 @@ func TestRules(t *testing.T) {
 			// Invalid entries must not prevent Dirk from starting; they are logged and
 			// skipped instead, as they can only narrow the set of trusted addresses.
 			name:     "AdminIPsBad",
-			logLevel: zerolog.WarnLevel,
+			logLevel: zerolog.ErrorLevel,
 			path:     os.TempDir(),
 			validIPs: []string{"not-an-ip"},
 			logMsg:   "Invalid admin IP address; ignoring entry",
 		},
 		{
 			name:     "AdminIPsBadCIDR",
-			logLevel: zerolog.WarnLevel,
+			logLevel: zerolog.ErrorLevel,
 			path:     os.TempDir(),
 			validIPs: []string{"10.0.0.0/33"},
 			logMsg:   "Invalid admin IP CIDR range; ignoring entry",
@@ -87,7 +87,7 @@ func TestRules(t *testing.T) {
 			// "10.1.2.3/24" has non-zero host bits: net.ParseCIDR would otherwise
 			// silently widen this to the whole "10.1.2.0/24" network.
 			name:     "AdminIPsCIDRHostBits",
-			logLevel: zerolog.WarnLevel,
+			logLevel: zerolog.ErrorLevel,
 			path:     os.TempDir(),
 			validIPs: []string{"10.1.2.3/24"},
 			logMsg:   "Admin IP CIDR range has non-zero host bits; ignoring entry",
