@@ -6,3 +6,4 @@ enabled = true
 
   [analyzers.meta]
   import_root = "github.com/attestantio/dirk"
+  cyclomatic_complexity_threshold = "high"
