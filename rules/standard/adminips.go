@@ -27,8 +27,12 @@ import (
 //
 // Invalid entries are logged and skipped rather than treated as a fatal error: a
 // misconfigured entry only narrows the set of addresses trusted for voluntary exits,
-// never widens it, so it is not worth failing Dirk's startup over.
+// never widens it, so it is not worth failing Dirk's startup over.  Because the log entry
+// is the only sign that this has happened, the level of the supplied logger is floored at
+// warn so that a quieter setting for the module cannot hide it.
 func parseAdminIPs(entries []string, log zerolog.Logger) []*net.IPNet {
+	log = log.Level(min(log.GetLevel(), zerolog.WarnLevel))
+
 	ipNets := make([]*net.IPNet, 0, len(entries))
 	for _, entry := range entries {
 		if strings.Contains(entry, "/") {
